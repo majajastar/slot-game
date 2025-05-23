@@ -1,7 +1,9 @@
 // game.js
 import { config, ROW_COUNT, LAYOUT, SCALE, GAME_WIDTH, GAME_HEIGHT, COLORS } from './config.js';
 import { STYLE } from './style.js';
+import { createLineButtonGroup } from './line.js'
 import { createSpinButton, setupReelsWithMask } from './reels.js'
+import { createInfoButtons } from './info.js'
 
 function preload() {
   this.load.image('reel1', 'assets/symbol_1.png');
@@ -27,46 +29,54 @@ function create() {
 
   setupReelsWithMask(this);
 
-  const finalSymbolsPerReel = getFinalSymbols();
-
-  const spinButton = createSpinButton.call(this, finalSymbolsPerReel);
+  const spinButton = createSpinButton(this);
 
   // Configurable values
   let currentBet = 1;
   let currentLines = 1;
 
   // Create BET controls
-  const betControls = createControls.call(this, 'BET', currentBet, (val) => currentBet = val);
+  const betControls = createControls(this, 'BET', currentBet, (val) => {
+    currentBet = val;
+    updateTotalBet();
+  }, 1, 50);
 
   // Create LINE controls
-  const lineControls = createControls.call(this, 'LINES', currentLines, (val) => currentLines = val);
+  const lineControls = createControls(this, 'LINES', currentLines, (val) => {
+    currentLines = val;
+    updateTotalBet();
+  });
 
   const reelsBottom = LAYOUT.baseY + ROW_COUNT * LAYOUT.reelSpacingY;
 
-  const balanceDisplay = createDisplayField.call(this, 'BALANCE', 1000, STYLE.BigVlaueBox);
+  const totalBetDisplay = createDisplayField.call(this, 'TOTAL BET', currentBet * currentLines, STYLE.BigVlaueBox);
 
   const winDisplay = createDisplayField.call(this, 'WIN', 0, STYLE.valueBox);
 
-  positionControlsAndSpinButton.call(this, betControls, lineControls, spinButton, reelsBottom, balanceDisplay, winDisplay);
+  positionControlsAndSpinButton.call(this, betControls, lineControls, spinButton, reelsBottom, totalBetDisplay, winDisplay);
 
-  const radius = 20 * SCALE;
-  const padding = 5 * SCALE
-  const icon_x = 40 * SCALE
-  const icon_y = 40 * SCALE
-  const info = createInfoIcon(this, icon_x, icon_y, radius);
-  const options = createOptionsIcon(this,icon_x, icon_y * 2 + padding);
-
-  createUserGameCard(this, GAME_WIDTH - 20 * SCALE, 20 * SCALE, "User1234", "Game5678");
+  createUserGameCard(this, GAME_WIDTH - 20 * SCALE, 20 * SCALE, "User1234", "Game5678", 9999999);
 
   // Top center: Game Name
   createGameTitle(this, GAME_WIDTH / 2, 30 * SCALE);
+
+  const lineButtonGroup = createLineButtonGroup(this, lineControls);
+  lineButtonGroup[1].clickEffect(true);
+  lineControls.setLineButtonGroup(lineButtonGroup);
+  createInfoButtons(this);
+
+  // Update total bet display
+  function updateTotalBet() {
+    totalBetDisplay.valueText.setText(currentBet * currentLines);
+  }
 }
 
-function createUserGameCard(scene, x, y, userId, gameId) {
-  const padding = 10 * SCALE;
+function createUserGameCard(scene, x, y, userId, gameId, balance) {
+  const padding = 22 * SCALE;
   const radius = 12 * SCALE;
 
-  const text = scene.add.text(0, 0, `👤 ${userId}\n🎮 ${gameId}`, STYLE.infoText);
+  const textContent = `👤 ${userId}\n🎮 ${gameId}\n💰 ${balance}`;
+  const text = scene.add.text(0, 0, textContent, STYLE.userInfoText);
 
   const textBounds = text.getBounds();
   const cardWidth = textBounds.width + padding * 2;
@@ -89,7 +99,6 @@ function createUserGameCard(scene, x, y, userId, gameId) {
 
   return { background: bg, label: text };
 }
-
 
 function createGameTitle(scene, x, y, title = "Spin Deluxe") {
   const paddingX = 16 * SCALE;
@@ -120,68 +129,6 @@ function createGameTitle(scene, x, y, title = "Spin Deluxe") {
   return { background: bg, label: titleText };
 }
 
-function createInfoIcon(scene, x, y, radius = 20 * SCALE) {
-  const g = scene.add.graphics({ x, y });
-
-  // Ocean color gradient simulation (manual layer approach)
-  const outerRadius = radius;
-  const innerRadius = radius - 3 * SCALE;
-
-  // Outer border (darker ocean)
-  g.fillStyle(0x005f73, 1);
-  g.fillCircle(0, 0, outerRadius);
-
-  // Inner fill (lighter ocean)
-  g.fillStyle(0x00b4d8, 1);
-  g.fillCircle(0, 0, innerRadius);
-
-  // Optional glossy top highlight
-  g.fillStyle(0xffffff, 0.15);
-  g.fillCircle(0, -innerRadius * 0.5, innerRadius * 0.6);
-
-  // Add "i" text
-  const text = scene.add.text(x, y + 1, 'i', STYLE.iconText).setOrigin(0.5);
-
-  // Optional drop shadow
-  text.setShadow(1, 1, '#000', 2, true, true);
-
-  // Interactive zone (optional)
-  const zone = scene.add.zone(x, y, radius * 2, radius * 2).setInteractive();
-  zone.setOrigin(0.5);
-
-  return { bg: g, label: text, interactiveZone: zone };
-}
-
-function createOptionsIcon(scene, x, y, lineWidth = 14 * SCALE, lineHeight = 2 * SCALE, spacing = 6 * SCALE) {
-  const g = scene.add.graphics({ x, y });
-
-  const circleRadius = 20 * SCALE;
-
-  // Outer border (darker ocean)
-  g.fillStyle(0x005f73, 1);
-  g.fillCircle(0, 0, circleRadius);
-
-  // Inner fill (lighter ocean)
-  g.fillStyle(0x00b4d8, 1);
-  g.fillCircle(0, 0, circleRadius - 3 * SCALE);
-
-  // Optional glossy top highlight
-  g.fillStyle(0xffffff, 0.15);
-  g.fillCircle(0, -circleRadius * 0.4, circleRadius * 0.6);
-
-  // Draw three horizontal lines (menu-style)
-  g.fillStyle(0xffffff, 1);
-  for (let i = -1; i <= 1; i++) {
-    g.fillRect(-lineWidth / 2, i * spacing - lineHeight / 2, lineWidth, lineHeight);
-  }
-
-  // Create interactive zone
-  const zone = scene.add.zone(x, y, circleRadius * 2, circleRadius * 2).setInteractive();
-  zone.setOrigin(0.5);
-
-  return { icon: g, interactiveZone: zone };
-}
-
 // Interactive button with hover and click effects
 function createButton(scene, label, onClick) {
   const btn = scene.add.text(0, 0, label, STYLE.button)
@@ -205,25 +152,62 @@ function createButton(scene, label, onClick) {
   return btn;
 }
 
-function createControls(labelText, initialValue, onChange) {
+function createControls(scene, labelText, initialValue, onChange, minVal = 1, maxVal = 20) {
   let value = initialValue;
-
-  const minusBtn = createButton(this, '−', () => {
-    value = Math.max(1, value - 1);
+  let lineButtonGroup = null
+  const minusBtn = createButton(scene, '-', () => {
+    value = Math.max(minVal, value - 1);
     valueText.setText(value);
     onChange(value);
+    updateLineButton();
   });
 
-  const plusBtn = createButton(this, '+', () => {
-    value += 1;
+  const plusBtn = createButton(scene, '+', () => {
+    value = Math.min(maxVal, value + 1);
     valueText.setText(value);
     onChange(value);
+    updateLineButton();
   });
 
-  const valueText = this.add.text(0, 0, value, STYLE.valueBox).setOrigin(0.5, 0);
-  const label = this.add.text(0, 0, labelText, STYLE.label);
+  const updateText = (val) => {
+    valueText.setText(val);
+    value = Number(val);
+  };
 
-  return { minusBtn, plusBtn, valueText, label };
+  const setLineButtonGroup = (group) => {
+    lineButtonGroup = group;
+  };
+
+  const updateLineButton = () => {
+    if (!lineButtonGroup) return;
+    let lineEffectTimer = null; // Store timer reference outside the function
+
+    // Cancel any existing delayed call
+    if (lineEffectTimer) {
+      lineEffectTimer.remove(); // Cancel the timer
+      lineEffectTimer = null;
+    }
+    for (let i = 1; i <= 20; i++) {
+      const button = lineButtonGroup[i]
+      if (i <= value) {
+        button.clickEffect(true);
+      } else {
+        button.clickEffect(false);
+      }
+    }
+    const button = lineButtonGroup[value];
+    button.lineEffect();
+    // Schedule cancelLineEffect after 1 second
+    lineEffectTimer = scene.time.delayedCall(1000, () => {
+      button.cancelLineEffect();
+      lineEffectTimer = null; // Clear the reference after it's done
+    });
+  }
+
+  const valueText = scene.add.text(0, 0, value, STYLE.valueBox).setOrigin(0.5, 0);
+  const label = scene.add.text(0, 0, labelText, STYLE.label);
+
+  return { minusBtn, plusBtn, valueText, label, updateText, setLineButtonGroup };
 }
 
 function createDisplayField(labelText, initialValue, style) {
@@ -232,18 +216,7 @@ function createDisplayField(labelText, initialValue, style) {
   return { valueText, label };
 }
 
-
-function getFinalSymbols() {
-  return [
-    ['reel1', 'reel3', 'reel2'],
-    ['reel3', 'reel1', 'reel1'],
-    ['reel2', 'reel2', 'reel3'],
-    ['reel1', 'reel3', 'reel2'],
-    ['reel3', 'reel1', 'reel3']
-  ];
-}
-
-function positionControlsAndSpinButton(betControls, lineControls, spinButton, reelsBottom, balanceDisplay, winDisplay) {
+function positionControlsAndSpinButton(betControls, lineControls, spinButton, reelsBottom, totalBetDisplay, winDisplay) {
   const yPos = reelsBottom + 30 * SCALE;
   const screenWidth = this.cameras.main.width;
 
@@ -256,7 +229,6 @@ function positionControlsAndSpinButton(betControls, lineControls, spinButton, re
     // 1) Compute basics
     const padding = 8 * SCALE;
     const radius = 6 * SCALE;
-    const x = center
     const labelH = parseInt(STYLE.label.fontSize);
     const controlH = parseInt(STYLE.valueBox.fontSize) + padding;
     const groupW = 130 * SCALE
@@ -303,7 +275,6 @@ function positionControlsAndSpinButton(betControls, lineControls, spinButton, re
     // 1) Compute basics
     const padding = 8 * SCALE;
     const radius = 6 * SCALE;
-    const x = center
     const labelH = parseInt(STYLE.label.fontSize);
     const controlH = parseInt(STYLE.valueBox.fontSize) + padding;
     const groupW = 130 * SCALE
@@ -341,25 +312,27 @@ function positionControlsAndSpinButton(betControls, lineControls, spinButton, re
     cardContainer.add(display.valueText);
   }
 
+  const spinCenter = slotWidth * 2.5;
+  const distance = (150) * SCALE
+
   // Line group
-  const lineCenter = slotWidth * 0.5;
+  const lineCenter = spinCenter - distance * 2;
   makeControlContainer(this, lineControls, lineCenter)
 
   // BET group
-  const betCenter = slotWidth * 1.5;
+  const betCenter = spinCenter - distance * 1;
   makeControlContainer(this, betControls, betCenter)
 
   // SPIN button center
-  const spinCenter = slotWidth * 2.5;
   spinButton.setPosition(spinCenter, yPos);
 
 
   // BALANCE display
-  const balanceCenter = slotWidth * 3.5;
-  makeDisplayContainer(this, balanceDisplay, balanceCenter)
+  const totalBet = spinCenter + distance * 1;
+  makeDisplayContainer(this, totalBetDisplay, totalBet)
 
   // WIN display
-  const winCenter = slotWidth * 4.5;
+  const winCenter = spinCenter + distance * 2;
   makeDisplayContainer(this, winDisplay, winCenter)
 }
 

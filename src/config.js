@@ -87,8 +87,9 @@ export const screenWidth = window.innerWidth;
 export const screenHeight = window.innerHeight;
 
 // Base design width and height (original design)
-export const BASE_WIDTH = 800;
-export const BASE_HEIGHT = 600;
+export const BASE_WIDTH = 1280;
+export const BASE_HEIGHT = 720;
+
 
 // Calculate scale factors based on the base design
 export const scaleX = screenWidth / BASE_WIDTH;
@@ -100,14 +101,16 @@ export const SCALE = Math.min(scaleX, scaleY);
 // Set game size to fit the window while preserving aspect ratio
 export const GAME_WIDTH = BASE_WIDTH * SCALE;
 export const GAME_HEIGHT = BASE_HEIGHT * SCALE;
+export const POP_WIDTH = GAME_WIDTH * 0.8;
+export const POP_HEIGHT = GAME_HEIGHT * 0.8;
 
 // Scale layout constants
-const spacingX = 130
+const spacingX = 150
 
 export const LAYOUT = {
-  SYMBOL_SIZE: 100 * SCALE,
+  SYMBOL_SIZE: 140 * SCALE,
   reelSpacingX: spacingX * SCALE,
-  reelSpacingY: 110 * SCALE,
+  reelSpacingY: 150 * SCALE,
   baseX: (BASE_WIDTH/2 - spacingX * 2) * SCALE,
   baseY: 180 * SCALE,
 };

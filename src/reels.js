@@ -1,9 +1,9 @@
-import { REEL_COUNT, ROW_COUNT, symbols, LAYOUT, SCALE, GAME_WIDTH, COLORS} from './config.js';
+import { REEL_COUNT, ROW_COUNT, symbols, LAYOUT, SCALE, GAME_WIDTH, COLORS } from './config.js';
 import { STYLE } from './style.js';
 
 
 function createMask() {
-  const baseX = GAME_WIDTH/2 - LAYOUT.reelSpacingX * 2
+  const baseX = GAME_WIDTH / 2 - LAYOUT.reelSpacingX * 2
   const maskShape = this.make.graphics();
   const maskX = baseX - LAYOUT.SYMBOL_SIZE / 2;
   const maskY = LAYOUT.baseY - LAYOUT.SYMBOL_SIZE / 2;
@@ -15,14 +15,14 @@ function createMask() {
 }
 
 function createReels(mask) {
-  const baseX = GAME_WIDTH/2 - LAYOUT.reelSpacingX * 2
+  const baseX = GAME_WIDTH / 2 - LAYOUT.reelSpacingX * 2
   for (let col = 0; col < REEL_COUNT; col++) {
-    const bgWidth   = LAYOUT.reelSpacingX - 10;
-    const bgX       = baseX + col * LAYOUT.reelSpacingX - bgWidth / 2;
-    const bgY       = LAYOUT.baseY - LAYOUT.SYMBOL_SIZE / 2;
-    const bgHeight  = ROW_COUNT * LAYOUT.reelSpacingY;
+    const bgWidth = LAYOUT.reelSpacingX - 10;
+    const bgX = baseX + col * LAYOUT.reelSpacingX - bgWidth / 2;
+    const bgY = LAYOUT.baseY - LAYOUT.SYMBOL_SIZE / 2;
+    const bgHeight = ROW_COUNT * LAYOUT.reelSpacingY;
     const cornerRad = 16 * SCALE;
-    const borderTh  = 8 * SCALE;
+    const borderTh = 8 * SCALE;
 
     // 1) Outer “border” rounded‐rect with gradient
     const border = this.add.graphics();
@@ -34,11 +34,11 @@ function createReels(mask) {
       1
     );
     border.fillRoundedRect(
-      bgX - borderTh/2,
-      bgY - borderTh/2,
-      bgWidth  + borderTh,
+      bgX - borderTh / 2,
+      bgY - borderTh / 2,
+      bgWidth + borderTh,
       bgHeight + borderTh,
-      cornerRad + borderTh/2
+      cornerRad + borderTh / 2
     );
 
     // 2) Inner reel background (solid or gradient)
@@ -55,8 +55,8 @@ function createReels(mask) {
     // 3) Masked symbols on top
     const reel = [];
     for (let i = 0; i < ROW_COUNT + 1; i++) {
-      const x   = baseX + col * LAYOUT.reelSpacingX;
-      const y   = LAYOUT.baseY + (i - 1) * LAYOUT.reelSpacingY;
+      const x = baseX + col * LAYOUT.reelSpacingX;
+      const y = LAYOUT.baseY + (i - 1) * LAYOUT.reelSpacingY;
       const key = Phaser.Utils.Array.GetRandom(symbols);
 
       const symbol = this.add.image(x, y, key)
@@ -74,19 +74,19 @@ export function setupReelsWithMask(scene) {
   createReels.call(scene, mask);
 }
 
-function spinReels(finalSymbolsPerReel, onCompleteAll) {
+function spinReels(finalSymbolsPerReel, onCompleteAll, winSymbols) {
   const MAX_SPEED = 50;
   const MIN_SPEED = 8;
 
   let completedReels = 0;
-
+  const finalShiftArray = Array.from({ length: 5 }, () => Phaser.Utils.Array.GetRandom([0, 1]));
   this.reels.forEach((reel, colIndex) => {
     const totalSteps = Phaser.Math.Between(15, 30) + 3;
     const finalSymbols = finalSymbolsPerReel[colIndex];
     let stepsDone = 0;
-    const finalShift = Phaser.Utils.Array.GetRandom([0, 1]);
+    const finalShift = finalShiftArray[colIndex];
     const spinInterval = this.time.addEvent({
-      delay: 16, // ~60fps
+      delay: 16,
       callback: () => {
         const stepsLeft = totalSteps - stepsDone - 1;
         const t = Phaser.Math.Clamp(stepsLeft / totalSteps, 0, 1);
@@ -112,40 +112,55 @@ function spinReels(finalSymbolsPerReel, onCompleteAll) {
         if (stepsDone >= totalSteps) {
           spinInterval.remove();
 
-          // Snap symbols to grid and hide overflow
-          // Sort visible symbols by y ascending
+          // Snap symbols to final positions
           reel.sort((a, b) => a.y - b.y);
-          const duration = 600
+          const duration = 600;
+
+          let completedSymbols = 0;
           reel.forEach((symbol, idx) => {
-            let targetY;
-            if (finalShift == 0 ){
-              targetY = LAYOUT.baseY + (idx) * LAYOUT.reelSpacingY;
-            } else {
-              targetY = LAYOUT.baseY + (idx - 1) * LAYOUT.reelSpacingY;
-            }
+            let targetY = finalShift === 0
+              ? LAYOUT.baseY + (idx) * LAYOUT.reelSpacingY
+              : LAYOUT.baseY + (idx - 1) * LAYOUT.reelSpacingY;
+
             this.tweens.add({
               targets: symbol,
               y: targetY,
               ease: 'Quad.easeOut',
               duration: duration,
               onComplete: () => {
-                // After snapping, do a scale "pop" animation
-                /*
-                this.tweens.add({
-                  targets: symbol,
-                  y: targetY - 10,
-                  yoyo: true,
-                  ease: 'Quad.easeOut',
-                  duration: 150
-                });
-                */
+                completedSymbols++;
+                if (completedSymbols === reel.length) {
+                  // All symbols in this reel are done snapping
+                  completedReels++;
+                  if (completedReels === this.reels.length) {
+                    // ✅ All reels done: now apply shake effect
+                    for (let col = 0; col < this.reels.length; col++) {
+                      const finalShift = finalShiftArray[col];
+                      for (let j = 0; j < 3; j++) {
+                        if (!winSymbols[col][j]) {
+                          continue;
+                        }
+                        const symbol = this.reels[col][j + finalShift];
+                        this.tweens.add({
+                          targets: symbol,
+                          x: symbol.x + 5,
+                          duration: 50,
+                          yoyo: true,
+                          repeat: 3,
+                          ease: 'Sine.easeInOut',
+                          onComplete: () => {
+                            symbol.x -= 5; // Reset
+                          }
+                        });
+                      }
+                    }
+
+                    if (onCompleteAll) onCompleteAll();
+                  }
+                }
               }
             });
           });
-          completedReels++;
-          if (completedReels === this.reels.length && onCompleteAll) {
-            onCompleteAll();
-          }
         }
       },
       loop: true
@@ -153,15 +168,14 @@ function spinReels(finalSymbolsPerReel, onCompleteAll) {
   });
 }
 
-export function createSpinButton(finalSymbolsPerReel) {
-  const scene = this;
-  const baseX = GAME_WIDTH/2 - LAYOUT.reelSpacingX * 2
+export function createSpinButton(scene) {
+  const baseX = GAME_WIDTH / 2 - LAYOUT.reelSpacingX * 2
   // 1) Create a container to hold bg + text
   const container = scene.add.container(0, 0);
   const reelsBottom = LAYOUT.baseY + ROW_COUNT * LAYOUT.reelSpacingY;
   // 2) Draw a rounded‐corner gradient background
   const w = 120 * SCALE;   // or pull from text width + padding
-  const h = 60  * SCALE;
+  const h = 60 * SCALE;
   const radius = 12 * SCALE;
 
   const bg = scene.add.graphics();
@@ -172,18 +186,18 @@ export function createSpinButton(finalSymbolsPerReel) {
     COLORS.spinButtonBg.bottomRight,
     1
   );
-  bg.fillRoundedRect(-w/2, -h/2, w, h, radius);
+  bg.fillRoundedRect(-w / 2, -h / 2, w, h, radius);
 
   // 3) Create the text label
   const label = scene.add.text(0, 0, 'SPIN', STYLE.spinButton)
-  .setOrigin(0.5);
+    .setOrigin(0.5);
 
   // 4) Put them together
-  container.add([ bg, label ]);
+  container.add([bg, label]);
   container.setSize(w, h);
   container.setInteractive({ useHandCursor: true }); // automatic bounds
   container.setPosition(
-    baseX + 2 * LAYOUT.reelSpacingX, 
+    baseX + 2 * LAYOUT.reelSpacingX,
     reelsBottom + 30 * SCALE
   );
   container.setDepth(1);
@@ -218,12 +232,43 @@ export function createSpinButton(finalSymbolsPerReel) {
         ease: 'Quad.easeIn',
         yoyo: true,
         onComplete: () => {
-          spinReels.call(scene, finalSymbolsPerReel, () => {
+          const winningLineYs = {
+            3: [2, 2, 2, 2, 2],
+            6: [1, 0, 1, 0, 1],
+          }
+
+          spinReels.call(scene, getFinalSymbols(), () => {
             scene.isSpinning = false;
-          });
+          }, getWinSymbols(winningLineYs));
         }
       });
     });
 
   return container;
+}
+
+function getFinalSymbols() {
+  return [
+    ['reel1', 'reel3', 'reel2'],
+    ['reel3', 'reel1', 'reel2'],
+    ['reel1', 'reel2', 'reel2'],
+    ['reel1', 'reel1', 'reel2'],
+    ['reel1', 'reel1', 'reel2']
+  ];
+}
+
+function getWinSymbols(winningLineYs) {
+  const winSymbols = [
+    [false, false, false],
+    [false, false, false],
+    [false, false, false],
+    [false, false, false],
+    [false, false, false]
+  ]
+  for (const line in winningLineYs) {
+    for (let i = 0; i < 5; i++) {
+      winSymbols[i][winningLineYs[line][i]] = true;
+    }
+  }
+  return winSymbols;
 }
