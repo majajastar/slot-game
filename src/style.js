@@ -4,16 +4,6 @@ import { COLORS, SCALE } from './config.js';
 export const FONT = 'Comic Sans MS'
 
 export const STYLE = {
-  iconText: {
-    fontSize: `${26 * SCALE}px`,
-    fontFamily: FONT,
-    fill: COLORS.buttonText,
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2 * SCALE,
-    padding: { x: 10 * SCALE, y: 0 * SCALE },
-    align: 'center'
-  },
   titleText: {
     fontSize: `${30 * SCALE}px`,
     fontFamily: FONT,
@@ -171,8 +161,8 @@ export const STYLE = {
     align: 'center'
   },
   INFO_CARD_STYLE: {
-    width: 120 * SCALE,
-    height: 80 * SCALE,
+    width: 80 * SCALE,
+    height: 50 * SCALE,
     cornerRadius: 8 * SCALE,
     borderColor: 0x333333,
     borderWidth: 2 * SCALE,

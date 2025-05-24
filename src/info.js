@@ -1,6 +1,6 @@
 import { SCALE, POP_WIDTH, POP_HEIGHT, COLORS } from './config.js';
 import { STYLE } from './style.js'
-import { winningLineY } from './line.js'
+import { winningPatterns } from './line.js'
 
 
 export function createInfoButtons(scene) {
@@ -409,8 +409,8 @@ function getPage1Content(scene, width, height) {
     const subtitle = createSubtitle(scene, 'Winning Line Patterns', height, yStart);
     container.add(subtitle);
 
-    const cardWidth = STYLE.INFO_CARD_STYLE.width * SCALE;
-    const cardHeight = STYLE.INFO_CARD_STYLE.height * SCALE;
+    const cardWidth = STYLE.INFO_CARD_STYLE.width;
+    const cardHeight = STYLE.INFO_CARD_STYLE.height;
     const cols = 5;
     const rows = 4;
     const spacingX = (width - cols * cardWidth) / (cols + 1);
@@ -421,11 +421,11 @@ function getPage1Content(scene, width, height) {
         const col = i % cols;
         const row = Math.floor(i / cols);
 
-        const x = spacingX + col * (cardWidth + spacingX) - width / 2;
+        const x = spacingX - cardWidth/2 + col * (cardWidth + spacingX) - width / 2;
         const y = marginY + row * (cardHeight + spacingY) - height / 2;
         const label = `LINE ${i + 1}`;
 
-        const highlightPattern = winningLineY[i + 1];
+        const highlightPattern = winningPatterns[i + 1];
         const { card, cardText } = createCard(scene, x, y, label, highlightPattern);
         container.add([card, cardText]);
     }
@@ -438,8 +438,8 @@ function createSymbolCard(scene, x, y, symbolUrl, lines) {
     const { width, height, borderColor, borderWidth, cornerRadius } = STYLE.SYMBOL_CARD_STYLE
     const padding = 15 * SCALE;
     const imageSize = height - padding * 2;
-    const cardWidth = width * SCALE;
-    const cardHeight = height * SCALE;
+    const cardWidth = width ;
+    const cardHeight = height;
     // Card background
     const card = scene.add.graphics();
     card.fillGradientStyle(COLORS.wooden.topLeft, COLORS.wooden.topRight, COLORS.wooden.bottomLeft, COLORS.wooden.bottomRight, 1);
@@ -482,8 +482,8 @@ function getPage2Content(scene, width, height) {
     const subtitle = createSubtitle(scene, 'Symbol Payouts', height, yStart);
     container.add(subtitle);
 
-    const cardWidth = STYLE.SYMBOL_CARD_STYLE.width * SCALE;
-    const cardHeight = STYLE.SYMBOL_CARD_STYLE.height * SCALE;
+    const cardWidth = STYLE.SYMBOL_CARD_STYLE.width;
+    const cardHeight = STYLE.SYMBOL_CARD_STYLE.height ;
     const rows = [3, 3, 4]; // Updated layout: 3 cards, 3 cards, 4 cards
     const marginY = 50 * SCALE;
     const spacingY = 30 * SCALE;
@@ -496,7 +496,7 @@ function getPage2Content(scene, width, height) {
         const spacingX = (width - cols * cardWidth) / (cols + 1);
 
         for (let c = 0; c < cols; c++) {
-            const x = spacingX + c * (cardWidth + spacingX) - width / 2;
+            const x = spacingX -cardWidth/2 + c * (cardWidth + spacingX) - width / 2;
             const y = yOffset;
 
             const exampleLines = ["5: 100x", "4: 20x", "3: 3x"];

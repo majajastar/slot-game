@@ -232,14 +232,14 @@ export function createSpinButton(scene) {
         ease: 'Quad.easeIn',
         yoyo: true,
         onComplete: () => {
-          const winningLineYs = {
+          const winningPatternss = {
             3: [2, 2, 2, 2, 2],
             6: [1, 0, 1, 0, 1],
           }
 
           spinReels.call(scene, getFinalSymbols(), () => {
             scene.isSpinning = false;
-          }, getWinSymbols(winningLineYs));
+          }, getWinSymbols(winningPatternss));
         }
       });
     });
@@ -257,7 +257,7 @@ function getFinalSymbols() {
   ];
 }
 
-function getWinSymbols(winningLineYs) {
+function getWinSymbols(winningPatternss) {
   const winSymbols = [
     [false, false, false],
     [false, false, false],
@@ -265,9 +265,9 @@ function getWinSymbols(winningLineYs) {
     [false, false, false],
     [false, false, false]
   ]
-  for (const line in winningLineYs) {
+  for (const line in winningPatternss) {
     for (let i = 0; i < 5; i++) {
-      winSymbols[i][winningLineYs[line][i]] = true;
+      winSymbols[i][winningPatternss[line][i]] = true;
     }
   }
   return winSymbols;

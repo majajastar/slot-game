@@ -6,7 +6,7 @@ let _cachedLayoutSignature = null;
 
 const lineButtonLeft = [4, 2, 8, 10, 6, 1, 7, 9, 3, 5]
 const lineButtonRight = [14, 20, 12, 18, 16, 11, 17, 13, 15, 19]
-export const winningLineY = {
+export const winningPatterns = {
     1: [1, 1, 1, 1, 1],
     2: [0, 0, 0, 0, 0],
     3: [2, 2, 2, 2, 2],
@@ -170,7 +170,7 @@ export function createLineButton(scene, x, y, num = 0, radius = 20 * SCALE) {
         for (let i = 1; i <= num; i++) {
             const winningIndexes = []
             for (let j = 0; j < 5; j++) {
-                winningIndexes.push([j, winningLineY[i][j]])
+                winningIndexes.push([j, winningPatterns[i][j]])
             }
             const winningLine = drawWinningLine(scene, winningIndexes, STYLE.LINE_COLOR_HOVER_LIST[i-1]); // `this` is the Phaser scene
             winningLineGroup.push(winningLine);
