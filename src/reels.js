@@ -1,26 +1,26 @@
-import { REEL_CONFIG, symbols, LAYOUT, SCALE, COLORS } from './config.js';
+import { REEL_COUNT, ROW_COUNT, symbols, LAYOUT, SCALE, GAME_WIDTH, COLORS } from './config.js';
 import { STYLE } from './style.js';
 
 
 function createMask() {
-  const BASE_X = LAYOUT.GAME_WIDTH / 2 - LAYOUT.REEL_SPACING_X * 2
+  const baseX = GAME_WIDTH / 2 - LAYOUT.reelSpacingX * 2
   const maskShape = this.make.graphics();
-  const maskX = BASE_X - LAYOUT.SYMBOL_SIZE / 2;
-  const maskY = LAYOUT.BASE_Y - LAYOUT.SYMBOL_SIZE / 2;
-  const maskWidth = REEL_CONFIG.REEL_COUNT * LAYOUT.REEL_SPACING_X + LAYOUT.SYMBOL_SIZE / 2;
-  const maskHeight = REEL_CONFIG.ROW_COUNT * LAYOUT.REEL_SPACING_Y;
+  const maskX = baseX - LAYOUT.SYMBOL_SIZE / 2;
+  const maskY = LAYOUT.baseY - LAYOUT.SYMBOL_SIZE / 2;
+  const maskWidth = REEL_COUNT * LAYOUT.reelSpacingX + LAYOUT.SYMBOL_SIZE / 2;
+  const maskHeight = ROW_COUNT * LAYOUT.reelSpacingY;
 
   maskShape.fillRect(maskX, maskY, maskWidth, maskHeight);
   return maskShape.createGeometryMask();
 }
 
 function createReels(mask) {
-  const BASE_X = LAYOUT.GAME_WIDTH / 2 - LAYOUT.REEL_SPACING_X * 2
-  for (let col = 0; col < REEL_CONFIG.REEL_COUNT; col++) {
-    const bgWidth = LAYOUT.REEL_SPACING_X - 10;
-    const bgX = BASE_X + col * LAYOUT.REEL_SPACING_X - bgWidth / 2;
-    const bgY = LAYOUT.BASE_Y - LAYOUT.SYMBOL_SIZE / 2;
-    const bgHeight = REEL_CONFIG.ROW_COUNT * LAYOUT.REEL_SPACING_Y;
+  const baseX = GAME_WIDTH / 2 - LAYOUT.reelSpacingX * 2
+  for (let col = 0; col < REEL_COUNT; col++) {
+    const bgWidth = LAYOUT.reelSpacingX - 10;
+    const bgX = baseX + col * LAYOUT.reelSpacingX - bgWidth / 2;
+    const bgY = LAYOUT.baseY - LAYOUT.SYMBOL_SIZE / 2;
+    const bgHeight = ROW_COUNT * LAYOUT.reelSpacingY;
     const cornerRad = 16 * SCALE;
     const borderTh = 8 * SCALE;
 
@@ -54,9 +54,9 @@ function createReels(mask) {
 
     // 3) Masked symbols on top
     const reel = [];
-    for (let i = 0; i < REEL_CONFIG.ROW_COUNT + 1; i++) {
-      const x = BASE_X + col * LAYOUT.REEL_SPACING_X;
-      const y = LAYOUT.BASE_Y + (i - 1) * LAYOUT.REEL_SPACING_Y;
+    for (let i = 0; i < ROW_COUNT + 1; i++) {
+      const x = baseX + col * LAYOUT.reelSpacingX;
+      const y = LAYOUT.baseY + (i - 1) * LAYOUT.reelSpacingY;
       const key = Phaser.Utils.Array.GetRandom(symbols);
 
       const symbol = this.add.image(x, y, key)
@@ -94,10 +94,10 @@ function spinReels(finalSymbolsPerReel, onCompleteAll, winSymbols) {
 
         for (let i = 0; i < reel.length; i++) {
           reel[i].y += SPIN_SPEED;
-          const boundary = LAYOUT.BASE_Y + REEL_CONFIG.ROW_COUNT * LAYOUT.REEL_SPACING_Y;
-          if (reel[i].y >= boundary + LAYOUT.REEL_SPACING_Y / 3) {
+          const boundary = LAYOUT.baseY + ROW_COUNT * LAYOUT.reelSpacingY;
+          if (reel[i].y >= boundary + LAYOUT.reelSpacingY / 3) {
             const out_boundary = reel[i].y - boundary;
-            reel[i].y = LAYOUT.BASE_Y - LAYOUT.REEL_SPACING_Y + out_boundary;
+            reel[i].y = LAYOUT.baseY - LAYOUT.reelSpacingY + out_boundary;
             if (stepsLeft >= finalShift && stepsLeft < 3 + finalShift) {
               const newKey = finalSymbols[stepsLeft - finalShift];
               reel[i].setTexture(newKey);
@@ -119,8 +119,8 @@ function spinReels(finalSymbolsPerReel, onCompleteAll, winSymbols) {
           let completedSymbols = 0;
           reel.forEach((symbol, idx) => {
             let targetY = finalShift === 0
-              ? LAYOUT.BASE_Y + (idx) * LAYOUT.REEL_SPACING_Y
-              : LAYOUT.BASE_Y + (idx - 1) * LAYOUT.REEL_SPACING_Y;
+              ? LAYOUT.baseY + (idx) * LAYOUT.reelSpacingY
+              : LAYOUT.baseY + (idx - 1) * LAYOUT.reelSpacingY;
 
             this.tweens.add({
               targets: symbol,
@@ -169,10 +169,10 @@ function spinReels(finalSymbolsPerReel, onCompleteAll, winSymbols) {
 }
 
 export function createSpinButton(scene) {
-  const BASE_X = LAYOUT.GAME_WIDTH / 2 - LAYOUT.REEL_SPACING_X * 2
+  const baseX = GAME_WIDTH / 2 - LAYOUT.reelSpacingX * 2
   // 1) Create a container to hold bg + text
   const container = scene.add.container(0, 0);
-  const reelsBottom = LAYOUT.BASE_Y + REEL_CONFIG.ROW_COUNT * LAYOUT.REEL_SPACING_Y;
+  const reelsBottom = LAYOUT.baseY + ROW_COUNT * LAYOUT.reelSpacingY;
   // 2) Draw a rounded‐corner gradient background
   const w = 120 * SCALE;   // or pull from text width + padding
   const h = 60 * SCALE;
@@ -197,7 +197,7 @@ export function createSpinButton(scene) {
   container.setSize(w, h);
   container.setInteractive({ useHandCursor: true }); // automatic bounds
   container.setPosition(
-    BASE_X + 2 * LAYOUT.REEL_SPACING_X,
+    baseX + 2 * LAYOUT.reelSpacingX,
     reelsBottom + 30 * SCALE
   );
   container.setDepth(1);

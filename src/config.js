@@ -109,30 +109,22 @@ const spacingX = 150
 
 export const LAYOUT = {
   SYMBOL_SIZE: 140 * SCALE,
-  REEL_SPACING_X: spacingX * SCALE,
-  REEL_SPACING_Y: 150 * SCALE,
-  BASE_X: (BASE_WIDTH/2 - spacingX * 2) * SCALE,
-  BASE_Y: 180 * SCALE,
-  GAME_WIDTH: GAME_WIDTH,
-  GAME_HEIGHT: GAME_HEIGHT,
-  POP_WIDTH: POP_WIDTH,
-  POP_HEIGHT: POP_HEIGHT
-
-
+  reelSpacingX: spacingX * SCALE,
+  reelSpacingY: 150 * SCALE,
+  baseX: (BASE_WIDTH/2 - spacingX * 2) * SCALE,
+  baseY: 180 * SCALE,
 };
 
-export const REEL_CONFIG = {
-  REEL_COUNT: 5, 
-  ROW_COUNT: 3
-}
-
+export const REEL_COUNT = 5;
+export const ROW_COUNT = 3;
 export const symbols = ['reel1', 'reel2', 'reel3'];
 
 export const config = {
   type: Phaser.AUTO,
-  width: LAYOUT.GAME_WIDTH,
-  height: LAYOUT.GAME_HEIGHT,
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
   backgroundColor: 0x886644,
+  scene: MainScene,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
