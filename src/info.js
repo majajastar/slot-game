@@ -1,4 +1,4 @@
-import { SCALE, POP_WIDTH, POP_HEIGHT, COLORS } from './config.js';
+import { SCALE, LAYOUT, COLORS } from './config.js';
 import { STYLE } from './style.js'
 import { winningPatterns } from './line.js'
 
@@ -54,7 +54,7 @@ function createInfoIcon(scene, x, y, radius = 20 * SCALE) {
             yoyo: true,
             onComplete: () => {
                 if (!scene._infoPopup) {
-                    scene._infoPopup = createPopupWindow(scene, POP_WIDTH, POP_HEIGHT);
+                    scene._infoPopup = createPopupWindow(scene, LAYOUT.POP_WIDTH, LAYOUT.POP_HEIGHT);
                 }
             }
         });

@@ -1,4 +1,4 @@
-import { ROW_COUNT, REEL_COUNT, LAYOUT, SCALE, GAME_WIDTH } from './config.js';
+import { REEL_CONFIG, LAYOUT, SCALE } from './config.js';
 import { STYLE } from './style.js'
 
 let _cachedSymbolCoordinates = null;
@@ -32,9 +32,9 @@ export const winningPatterns = {
 function calculateSymbolCoordinates() {
     // Create a simple "signature" of the current layout
     const layoutSignature = JSON.stringify({
-        baseY: LAYOUT.baseY,
-        spacingX: LAYOUT.reelSpacingX,
-        spacingY: LAYOUT.reelSpacingY,
+        BASE_Y: LAYOUT.BASE_Y,
+        spacingX: LAYOUT.REEL_SPACING_X,
+        spacingY: LAYOUT.REEL_SPACING_Y,
         symbolSize: LAYOUT.SYMBOL_SIZE
     });
 
@@ -45,13 +45,13 @@ function calculateSymbolCoordinates() {
 
     // Layout changed → recalculate
     const coordinates = [];
-    const baseX = GAME_WIDTH / 2 - LAYOUT.reelSpacingX * 2;
+    const BASE_X = LAYOUT.GAME_WIDTH / 2 - LAYOUT.REEL_SPACING_X * 2;
 
-    for (let col = 0; col < REEL_COUNT; col++) {
+    for (let col = 0; col < REEL_CONFIG.REEL_COUNT; col++) {
         const column = [];
-        for (let row = 0; row < ROW_COUNT; row++) {
-            const x = baseX + col * LAYOUT.reelSpacingX;
-            const y = LAYOUT.baseY + row * LAYOUT.reelSpacingY;
+        for (let row = 0; row < REEL_CONFIG.ROW_COUNT; row++) {
+            const x = BASE_X + col * LAYOUT.REEL_SPACING_X;
+            const y = LAYOUT.BASE_Y + row * LAYOUT.REEL_SPACING_Y;
             column.push({ x, y });
         }
         coordinates.push(column);
@@ -214,15 +214,15 @@ export function createLineButton(scene, x, y, num = 0, radius = 20 * SCALE) {
 export function createLineButtonGroup(scene, lineControls) {
     const screenWidth = scene.cameras.main.width;
     const radius = 16 * SCALE
-    const icon_xL = screenWidth / 2 - LAYOUT.reelSpacingX * (2.5) - radius - 5
-    const icon_xR = screenWidth / 2 + LAYOUT.reelSpacingX * (2.5) + radius + 5
+    const icon_xL = screenWidth / 2 - LAYOUT.REEL_SPACING_X * (2.5) - radius - 5
+    const icon_xR = screenWidth / 2 + LAYOUT.REEL_SPACING_X * (2.5) + radius + 5
     const lineButtonGroup = {}
     for (let i = 0; i < 10; i++) {
         const numL = lineButtonLeft[i]
         const numR = lineButtonRight[i]
-        const height = LAYOUT.reelSpacingY * 3
+        const height = LAYOUT.REEL_SPACING_Y * 3
         const spacing = (height - radius * 2 * 10) / 9
-        const icon_y = LAYOUT.baseY - LAYOUT.SYMBOL_SIZE / 2 + radius + (radius * 2 + spacing) * i;
+        const icon_y = LAYOUT.BASE_Y - LAYOUT.SYMBOL_SIZE / 2 + radius + (radius * 2 + spacing) * i;
         const lineButtonL = createLineButton(scene, icon_xL, icon_y, numL, radius)
         const lineButtonR = createLineButton(scene, icon_xR, icon_y, numR, radius)
         lineButtonGroup[numL] = lineButtonL
