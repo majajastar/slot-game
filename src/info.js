@@ -145,8 +145,8 @@ export class PopupWindow {
             this.prevButton.setVisible(true).setPosition(0, y);
             this.nextButton.setVisible(false);
         } else {
-            this.prevButton.setVisible(true).setPosition(-100, y);
-            this.nextButton.setVisible(true).setPosition(100, y);
+            this.prevButton.setVisible(true).setPosition(-this.width/4, y);
+            this.nextButton.setVisible(true).setPosition(this.width/4, y);
         }
     }
 
@@ -241,13 +241,13 @@ function getPage1Content(scene, width, height, winningPatterns) {
     const cardHeight = STYLE.INFO_CARD_STYLE.height;
     const cols = 5;
     const rows = 4;
-    const spacingX = Math.floor((width - cols * cardWidth) / (cols + 1));
-    const spacingY = Math.floor((height - rows * cardHeight) / (rows + 1)) - 30 * SCALE;
+    const spacingX = Math.floor((width - rows * cardWidth) / (rows + 1));
+    const spacingY = Math.floor((height - cols * cardHeight) / (cols + 1)) - 30 * SCALE;
     const marginY = 120 * SCALE;
 
     for (let i = 0; i < 20; i++) {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
+        const col = Math.floor(i / cols);
+        const row = i % cols;
 
         const x = col * (cardWidth + spacingX) - width / 2 + spacingX;
         const y = marginY + row * (cardHeight + spacingY) - height / 2;
@@ -312,7 +312,7 @@ function getPage2Content(scene, width, height, mul5x, mul4x, mul3x, symbols) {
 
     const cardWidth = STYLE.SYMBOL_CARD_STYLE.width;
     const cardHeight = STYLE.SYMBOL_CARD_STYLE.height;
-    const rows = [3, 3, 4]; // Updated layout: 3 cards, 3 cards, 4 cards
+    const rows = [3, 3, 3, 1]; // Updated layout: 3 cards, 3 cards, 4 cards
     const marginY = 50 * SCALE;
     const spacingY = 30 * SCALE;
 

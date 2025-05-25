@@ -316,7 +316,7 @@ export class Control {
 
     // 🔒 Private helper method to create a button
     #createButton(label, onClick) {
-        const btn = this.scene.add.text(0, 0, label, STYLE.button)
+        const btn = this.scene.add.text(0, 0, label, STYLE.ADD_MINUS_BUTTON)
             .setInteractive({ useHandCursor: true })
             .on('pointerover', function () {
                 this.setScale(1.05);

@@ -225,9 +225,9 @@ export class SlotMachine {
     const BASE_X = LAYOUT.GAME_WIDTH / 2 - LAYOUT.REEL_SPACING_X * 2;
     const container = this.scene.add.container(0, 0);
     const reelsBottom = LAYOUT.BASE_Y + REEL_CONFIG.ROW_COUNT * LAYOUT.REEL_SPACING_Y;
-    const w = 120 * SCALE;
-    const h = 60 * SCALE;
-    const radius = 12 * SCALE;
+    const w = LAYOUT.CONTROL_WIDTH * 1.4;
+    const h = LAYOUT.CONTROL_HEIGHT * 1.2;
+    const radius = LAYOUT.CONTROL_HEIGHT/6;
 
     const bg = this.scene.add.graphics();
     bg.fillGradientStyle(

@@ -1,11 +1,11 @@
 // style.js
-import { COLORS, SCALE } from './config.js';
+import { COLORS, LAYOUT, SCALE } from './config.js';
 
 export const FONT = 'Comic Sans MS'
 
 export const STYLE = {
   titleText: {
-    fontSize: `${30 * SCALE}px`,
+    fontSize: `${40 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.buttonText,
     fontStyle: 'bold',
@@ -15,7 +15,7 @@ export const STYLE = {
     align: 'center'
   },
   infoText: {
-    fontSize: `${18 * SCALE}px`,
+    fontSize: `${30 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.buttonText,
     fontStyle: 'bold',
@@ -34,18 +34,18 @@ export const STYLE = {
     padding: { x: 10 * SCALE, y: 0 * SCALE },
     align: 'left'
   },
-  button: {
-    fontSize: `${26 * SCALE}px`,
+  ADD_MINUS_BUTTON: {
+    fontSize: `${100 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.buttonText,
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2 * SCALE,
-    padding: { x: 10 * SCALE, y: 0 * SCALE },
+    padding: { x: 0  * SCALE, y: -15 * SCALE },
     align: 'center'
   },
   spinButton: {
-    fontSize: `${32 * SCALE}px`,
+    fontSize: `${60 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.spinButtonText,
     fontStyle: 'bold',
@@ -55,27 +55,17 @@ export const STYLE = {
     align: 'center'
   },
   valueBox: {
-    fontSize: `${20 * SCALE}px`,
+    fontSize: `${28 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.valueBoxText,
     stroke: '#000000',
     strokeThickness: 2 * SCALE,
     padding: { x: 10 * SCALE, y: 4 * SCALE },
     align: 'center',
-    fixedWidth: 150 * SCALE
-  },
-  BigVlaueBox: {
-    fontSize: `${18 * SCALE}px`,
-    fontFamily: FONT,
-    fill: COLORS.valueBoxText,
-    stroke: '#000000',
-    strokeThickness: 2 * SCALE,
-    padding: { x: 10 * SCALE, y: 4 * SCALE },
-    align: 'center',
-    fixedWidth: 150 * SCALE
+    fixedWidth: LAYOUT.CONTROL_WIDTH
   },
   label: {
-    fontSize: `${18 * SCALE}px`,
+    fontSize: `${34 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.labelText,
     fontStyle: 'bold',
@@ -203,7 +193,7 @@ export const STYLE = {
     },
   },
   BUTTON_INFO: {
-    fontSize: `${16 * SCALE}px`,
+    fontSize: `${36 * SCALE}px`,
     color: '#00aaff',
     fontFamily: FONT,
     fontWeight: 'bold',
@@ -234,8 +224,9 @@ export const STYLE = {
     fontFamily: FONT
   },
   smallCardText: {
-    fontSize: 12 * SCALE,
+    fontSize: 22 * SCALE,
     color: '#ffffff',
-    fontFamily: FONT
+    fontFamily: FONT,
+    symbolSize: 22 * SCALE
   }
 };

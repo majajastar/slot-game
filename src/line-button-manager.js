@@ -31,7 +31,7 @@ export class LineButtonsManager {
         this.scene = scene;
         this.lineControls = lineControls;
 
-        this.radius = 16 * SCALE;
+        this.radius = 18 * SCALE;
 
         // Cache for symbol coordinates and layout signature
         this._cachedSymbolCoordinates = null;

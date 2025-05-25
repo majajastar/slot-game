@@ -30,7 +30,7 @@ export async function callLaunchApi(sid) {
     },
     apiSecret: '53XbWSzKwEtAQBAjSB3wSKznHeDHMWqqcMLKNK1U',
   });
-  console.log(`launchUrl = ${launchUrl}`)
+  //console.log(`launchUrl = ${launchUrl}`)
   const response = await fetch(launchUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

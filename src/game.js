@@ -141,12 +141,16 @@ export class SlotGameScene extends Phaser.Scene {
 
   showWinPopup(matchDetails) {
     const popup = this.add.container(0, 0).setDepth(Number.MAX_SAFE_INTEGER);
-
-    const maxRow = 4;
+    if (matchDetails.length) {
+      while (matchDetails.length < 20) {
+        matchDetails.push(matchDetails[0]);
+      }
+    }
+    const maxRow = 7;
     const maxCol = Math.ceil(matchDetails.length / maxRow); // 5 columns for 20 items with 4 rows
 
     // Popup size - adjust if needed (max 80% screen size)
-    const width = LAYOUT.GAME_WIDTH * 0.8;
+    const width = LAYOUT.GAME_WIDTH ;
     const height = LAYOUT.GAME_HEIGHT * 0.8;
     const margin_x = (LAYOUT.GAME_WIDTH - width) / 2;
     const margin_y = (LAYOUT.GAME_HEIGHT - height) / 2;
@@ -189,15 +193,20 @@ export class SlotGameScene extends Phaser.Scene {
     // Make background interactive to close popup on click anywhere
     bg.setInteractive(new Phaser.Geom.Rectangle(margin_x, margin_y, width, height), Phaser.Geom.Rectangle.Contains);
 
-    // Local helper to create symbol images row (keep inside or outside)
-    const createSymbolImagesRow = (scene, x, y, symbolKey, count, symbolSize = 22, spacing = 1) => {
+    const createSymbolImagesRow = (scene, x, y, symbolKey, count, symbolSize = 50) => {
       const container = scene.add.container(x, y);
-      for (let i = 0; i < count; i++) {
-        const img = scene.add.image(i * (symbolSize * SCALE + spacing * SCALE), 0, symbolKey);
-        img.setOrigin(0, 0);
-        img.setDisplaySize(symbolSize * SCALE, symbolSize * SCALE);
-        container.add(img);
-      }
+
+      // Create and add the symbol image
+      const img = scene.add.image(0, 0, symbolKey);
+      img.setOrigin(0, 0);
+      img.setDisplaySize(symbolSize * SCALE, symbolSize * SCALE);
+      container.add(img);
+
+      // Create and add the multiplier text
+      const text = scene.add.text(symbolSize * 1.2, symbolSize * 0.6 , `x ${count}`, STYLE.smallCardText);
+      text.setOrigin(0, 0.5); // Vertically center it next to the symbol
+      container.add(text);
+
       return container;
     };
 
@@ -223,12 +232,12 @@ export class SlotGameScene extends Phaser.Scene {
 
       // Info block on left side
       const infoX = cardWidth + 3 * SCALE;
-      const infoY = cardHeight / 5;
+      const infoY = cardHeight / 4;
 
-      const symbolsRow = createSymbolImagesRow(this, infoX, 0, getSymbolName(matchDetails[i].symbol), matchDetails[i].count);
+      const symbolsRow = createSymbolImagesRow(this, infoX, 0, getSymbolName(matchDetails[i].symbol), matchDetails[i].count, STYLE.smallCardText.symbolSize);
 
-      const multiplierLine = `Multiplier: ${matchDetails[i].multiplier}x`;
-      const winAmountLine = `Win Amount: ${matchDetails[i].multiplier * this.betControls.getValue()}`;
+      const multiplierLine = `MUL: ${matchDetails[i].multiplier}x`;
+      const winAmountLine = `WIN: ${matchDetails[i].multiplier * this.betControls.getValue()}`;
 
       const multiplierText = this.add.text(infoX, infoY * 2, multiplierLine, STYLE.smallCardText).setOrigin(0, 0);
       const winAmountText = this.add.text(infoX, infoY * 4, winAmountLine, STYLE.smallCardText).setOrigin(0, 0);
@@ -282,7 +291,7 @@ export class SlotGameScene extends Phaser.Scene {
       this.currentLines = val;
       this.totalBetDisplay.valueText.setText(`${this.currencySymbol}${this.currentBet * this.currentLines}`);
     });
-    this.userGameCard = new UserGameCard(this, LAYOUT.GAME_WIDTH - 20 * SCALE, 20 * SCALE, this.playerId, this.gameId, this.balance);
+    this.userGameCard = new UserGameCard(this, LAYOUT.GAME_WIDTH, 0, this.playerId, this.gameId, this.balance);
     this.lineButtonsManager = new LineButtonsManager(this, this.lineControls);
     this.lineButtonsManager.lineButtonGroup[1].clickEffect(true);
     this.infoButton = new InfoButton(this, 40 * SCALE, 40 * SCALE);
@@ -328,28 +337,27 @@ export class SlotGameScene extends Phaser.Scene {
   }
 
   positionControlsAndSpinButton() {
-    const screenWidth = this.cameras.main.width;
-    const reelsBottom = LAYOUT.BASE_Y + REEL_CONFIG.ROW_COUNT * LAYOUT.REEL_SPACING_Y;
-    const yPos = reelsBottom + 30 * SCALE;
+    const screenWidth = LAYOUT.GAME_WIDTH;
+    const yPos = LAYOUT.GAME_HEIGHT / 2 + LAYOUT.CONTROL_SPACING_Y
 
-    const groupCount = 5;
-    const slotWidth = screenWidth / groupCount;
-    const spinCenter = slotWidth * 2.5;
-    const distance = 150 * SCALE;
+    const spinCenter = screenWidth / 2;
+    const distance = screenWidth / 5;
 
-    const lineCenter = spinCenter - distance * 2;
-    const betCenter = spinCenter - distance * 1;
-    const totalBetCenter = spinCenter + distance * 1;
-    const winCenter = spinCenter + distance * 2;
+    const totalBetCenter = spinCenter - distance * 1;
+    const winCenter = spinCenter + distance * 1;
 
-    this.makeControlContainer(this.betControls, betCenter, yPos);
-    this.makeControlContainer(this.lineControls, lineCenter, yPos);
+    const lineCenter = spinCenter - distance * 1.5;
+    const betCenter = spinCenter + distance * 1.5;
+
     this.makeDisplayContainer(this.totalBetDisplay, totalBetCenter, yPos);
     this.makeDisplayContainer(this.winDisplay, winCenter, yPos, () => {
       this.showWinPopup(this.matchDetails);
     });
+    this.makeControlContainer(this.betControls, betCenter, yPos + LAYOUT.CONTROL_SPACING_Y);
+    this.makeControlContainer(this.lineControls, lineCenter, yPos + LAYOUT.CONTROL_SPACING_Y);
 
-    this.slotMachine.spinButton.setPosition(spinCenter, yPos);
+
+    this.slotMachine.spinButton.setPosition(spinCenter, yPos + LAYOUT.CONTROL_SPACING_Y * 2);
   }
 
   makeControlContainer(controls, center, yPos) {
@@ -357,7 +365,7 @@ export class SlotGameScene extends Phaser.Scene {
     const radius = 6 * SCALE;
     const labelH = parseInt(STYLE.label.fontSize);
     const controlH = parseInt(STYLE.valueBox.fontSize) + padding;
-    const groupW = 130 * SCALE;
+    const groupW = LAYOUT.CONTROL_WIDTH;
     const cardW = groupW + padding;
     const cardH = labelH + controlH + padding * 2;
     const cardY = yPos - labelH - padding;
@@ -375,9 +383,9 @@ export class SlotGameScene extends Phaser.Scene {
     container.add(bg);
 
     controls.label.setPosition(0, cardY).setOrigin(0.5, 0).setShadow(2, 2, '#000', 3, false, true);
-    controls.minusBtn.setPosition(-groupW / 2, yPos);
+    controls.minusBtn.setPosition(-groupW / 2, yPos - cardH / 2);
     controls.valueText.setPosition(0, yPos);
-    controls.plusBtn.setPosition(groupW / 2 - controls.plusBtn.width, yPos);
+    controls.plusBtn.setPosition(groupW / 2 - controls.plusBtn.width, yPos - cardH / 2);
 
     container.add([controls.label, controls.minusBtn, controls.valueText, controls.plusBtn]);
   }
@@ -389,7 +397,7 @@ export class SlotGameScene extends Phaser.Scene {
     const labelH = parseInt(STYLE.label.fontSize);
     const controlH = parseInt(STYLE.valueBox.fontSize) + padding;
 
-    const groupW = 130 * SCALE;
+    const groupW = LAYOUT.CONTROL_WIDTH;
     const cardW = groupW + padding;
     const cardH = labelH + controlH + padding * 2;
     const cardY = yPos - labelH - padding;
@@ -416,7 +424,7 @@ export class SlotGameScene extends Phaser.Scene {
     container.add([bg, display.label, display.valueText]);
     if (onClickCallback) {
       // Create info button (circle with "i") at top right corner of card
-      const infoRadius = 10 * SCALE;
+      const infoRadius = cardH / 4;
       const infoX = cardW / 2 - infoRadius - 4 * SCALE;  // padding from right edge
       const infoY = cardY + infoRadius + 4 * SCALE;      // padding from top edge
 
