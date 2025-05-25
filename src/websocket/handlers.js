@@ -1,7 +1,7 @@
-const messages = require('./messages');
+import * as messages from './messages.js';
 
-class MessageHandler {
-  constructor(socket) {
+export class MessageHandler {
+  constructor(socket, onMessageCallback) {
     this.socket = socket;
 
     // Stored state
@@ -9,6 +9,7 @@ class MessageHandler {
     this.lobbyData = null;
     this.roomData = null;
     this.roomStatus = null;
+    this.onMessageCallback = onMessageCallback;
   }
 
   // Central dispatch method
@@ -41,13 +42,10 @@ class MessageHandler {
     }
 
     this.loginData = data;
-    console.log('======[Login]======');
-    console.log('Session ID:', data.sessionId);
-    console.log('Player ID:', data.playerId);
-    console.log('Lobby Server IP:', data.lobbyServerIp);
-    console.log('Lobby Server Port:', data.lobbyServerPort);
+    console.log('===[Login]===');
+    console.log(`🆔 Session ID: ${data.sessionId} | 👤 Player ID: ${data.playerId} | 🌐 Lobby IP: ${data.lobbyServerIp}:${data.lobbyServerPort}`);
 
-    this.socket.send(messages.lobby());
+    this.onMessageCallback('login', data);
   }
 
   // Store lobby data
@@ -58,14 +56,10 @@ class MessageHandler {
     }
 
     this.lobbyData = data;
-    console.log('======[Lobby]======');
-    console.log('Game ID:', data.gameId);
-    console.log('Balance:', data.balance);
-    console.log('Server Time:', data.serverTime);
-    console.log('Currency:', data.currency);
-    console.log('Wallet Type:', data.walletType);
+    console.log('===[Lobby]===');
+    console.log(`🎮 Game ID: ${data.gameId} | 💰 Balance: ${data.balance} | 🕒 Server Time: ${data.serverTime} | 💱 Currency: ${data.currency} | 👜 Wallet Type: ${data.walletType}`);
 
-    this.socket.send(messages.joinRoom());
+    this.onMessageCallback('lobby', data);
   }
 
   handleGameMessage(data) {
@@ -85,45 +79,61 @@ class MessageHandler {
   // Store room data
   handleJoinRoom(data) {
     this.roomData = data;
-    console.log('======[Game] Joined room======');
-    console.log("🎮 Game Type:", data.gameType);
-    console.log("🏠 Room ID:", data.roomId);
-    console.log("💰 Balance:", data.balance.toLocaleString());
+    console.log('===[Joined room]===');
+    console.log(`🎮 Game Type: ${data.gameType} | 🏠 Room ID: ${data.roomId} | 💰 Balance: ${data.balance.toLocaleString()}`);
 
-    console.log("\n🎲 Bet Info:");
+    console.log("🎲 Bet Info:");
     data.betInfo.forEach((bet, idx) => {
-      console.log(`  [${idx}] Game: ${bet.gameName}`);
-      console.log(`      Min Bet: ${bet.minBet}`);
-      console.log(`      Max Bet: ${bet.maxBet}`);
-      console.log(`      Default Bet: ${bet.defaultBet}`);
-      console.log(`      Decimal Allowed: ${bet.decimalCount}`);
+      console.log(`[${idx}] Game: ${bet.gameName} | Min Bet: ${bet.minBet} | Max Bet: ${bet.maxBet} | Default Bet: ${bet.defaultBet} | Decimal Allowed: ${bet.decimalCount}`);
     });
 
-    console.log("\n💱 Currency Info:");
+    console.log("💱 Currency Info:");
     data.currencyInfo.forEach((currency, idx) => {
-      console.log(`  [${idx}] Currency ID: ${currency.currencyId}`);
-      console.log(`      Symbol: ${currency.currency}`);
+      console.log(`[${idx}] Currency ID: ${currency.currencyId} | Symbol: ${currency.currency}`);
     });
-
-    this.socket.send(messages.transfer());
-    this.socket.send(messages.getRecords());
-    this.socket.send(messages.syncRoomInfo());
+    this.onMessageCallback('joinRoom', data);
+    //this.socket.send(messages.transfer());
+    //this.socket.send(messages.getRecords());
+    //this.socket.send(messages.syncRoomInfo());
   }
 
   handleSubData(subData) {
     if (!subData || !subData.opCode) {
       return console.warn('[SubData] Missing opCode');
     }
-
     switch (subData.opCode) {
       case 'GetRecords':
         console.log('[Records] subData: ', JSON.stringify(subData));
         break;
       case 'SyncRoomInfo':
-        console.log('[Room Info] subData: ', JSON.stringify(subData));
+        const roomInfo = subData.roomInfo;
+        const minBet = parseFloat(roomInfo.minBet);
+        const maxBet = parseFloat(roomInfo.maxBet);
+        const winningPatterns = roomInfo.winningPatterns;  // Object of patternId -> array of positions
+        const multipliers = roomInfo.multipliers;          // Array of arrays with multiplier values
+        const recordList = roomInfo.recordList;            // Empty array here
+        console.log("===[Parsed Room Info] ===");
+        //console.log('Winning Patterns:', winningPatterns);
+        //console.log('Multipliers:', multipliers);
+        this.onMessageCallback('SyncRoomInfo', subData);
         break;
       case 'SetBet':
-        console.log('[Bet Result] subData: ', JSON.stringify(subData));
+        const info = subData.betInfo[0];
+        const result = info.gameResult;
+        console.log("===[Parsed Bet Info] ===");
+        //console.log(`Error Code: ${subData.errCode}`);
+        //console.log(`Operation Code: ${subData.opCode}`);
+        //console.log(`Bet Amount: ${info.bet}`);
+        //console.log(`Line: ${info.line}`);
+        //console.log(`Round ID: ${info.roundId}`);
+        //console.log(`Balance: ${info.balance.toFixed(2)}`);
+        console.log(`Final Balance: ${info.finalBalance.toFixed(2)}`);
+        //console.log("Award Base:", result.awardBase);
+        //console.log("Win Amount:", result.winAmount);
+        //console.log("Final Symbols:");
+        result.finalSymbols.forEach(row => console.log("  ", row.join(", ")));
+        console.log("Match Details:", result.matchDetails.length ? result.matchDetails : "[]");
+        this.onMessageCallback('SetBet', subData);
         break;
       default:
         console.warn('[SubData] Unknown opCode:', subData.opCode);
@@ -133,7 +143,7 @@ class MessageHandler {
   // Store room status
   handleRoomStatus(data) {
     this.roomStatus = data;
-    console.log('======[Room Status]======');
+    console.log('===[Room Status]===');
     console.log("🎮 Game Type:", data.gameType);
     console.log("🏠 Room Index:", data.roomIndex);
     console.log("🚪 Is Occupied:", data.isOccupied ? "Yes" : "No");
@@ -164,7 +174,3 @@ class MessageHandler {
     return this.roomStatus;
   }
 }
-
-module.exports = {
-  MessageHandler,
-};

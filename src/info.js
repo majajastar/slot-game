@@ -1,67 +1,5 @@
-import { SCALE, POP_WIDTH, POP_HEIGHT, COLORS } from './config.js';
-import { STYLE } from './style.js'
-import { winningPatterns } from './line.js'
-
-
-export function createInfoButtons(scene) {
-
-    const radius = 20 * SCALE;
-    const icon_x = 40 * SCALE
-    const icon_y = 40 * SCALE
-    const info = createInfoIcon(scene, icon_x, icon_y, radius);
-
-}
-
-function createInfoIcon(scene, x, y, radius = 20 * SCALE) {
-    const g = scene.add.graphics({ x, y });
-    const outerRadius = radius;
-    const innerRadius = radius - 3 * SCALE;
-
-    // Ocean styling
-    g.fillStyle(STYLE.OCEAN_STYLE.outer.color, STYLE.OCEAN_STYLE.outer.alpha);
-    g.fillCircle(0, 0, outerRadius);
-    g.fillStyle(STYLE.OCEAN_STYLE.inner.color, STYLE.OCEAN_STYLE.inner.alpha);
-    g.fillCircle(0, 0, innerRadius);
-    g.fillStyle(STYLE.OCEAN_STYLE.highlight.color, STYLE.OCEAN_STYLE.highlight.alpha);
-    g.fillCircle(
-        0,
-        innerRadius * STYLE.OCEAN_STYLE.highlight.offsetYFactor,
-        innerRadius * STYLE.OCEAN_STYLE.highlight.radiusFactor
-    );
-
-    // Info label
-    const text = scene.add.text(x, y + 1, 'i', STYLE.iconText).setOrigin(0.5);
-    text.setShadow(1, 1, '#000', 2, true, true);
-
-    // Interactive zone
-    const zone = scene.add.zone(x, y, radius * 2, radius * 2).setInteractive({ useHandCursor: true }).setOrigin(0.5);
-
-    // Hover scale
-    zone.on('pointerover', () => {
-        scene.tweens.add({ targets: [g, text], scale: 1.1, duration: 150, ease: 'Quad.easeOut' });
-    });
-    zone.on('pointerout', () => {
-        scene.tweens.add({ targets: [g, text], scale: 1.0, duration: 150, ease: 'Quad.easeOut' });
-    });
-
-    // Click = pop + show popup
-    zone.on('pointerdown', () => {
-        scene.tweens.add({
-            targets: [g, text],
-            scale: 0.9,
-            duration: 80,
-            ease: 'Quad.easeIn',
-            yoyo: true,
-            onComplete: () => {
-                if (!scene._infoPopup) {
-                    scene._infoPopup = createPopupWindow(scene, POP_WIDTH, POP_HEIGHT);
-                }
-            }
-        });
-    });
-
-    return { bg: g, label: text, interactiveZone: zone };
-}
+import { SCALE, COLORS } from './config.js';
+import { STYLE, FONT } from './style.js'
 
 function createOptionsIcon(scene, x, y, lineWidth = 14 * SCALE, lineHeight = 2 * SCALE, spacing = 6 * SCALE) {
     const g = scene.add.graphics({ x, y });
@@ -102,8 +40,8 @@ function createOptionsIcon(scene, x, y, lineWidth = 14 * SCALE, lineHeight = 2 *
 
 
 function createTitleBar(scene, width, height, title = '-- PAY TABLE --') {
-    const titleBarHeight = 50;
-    const titleCornerRadius = 12;
+    const titleBarHeight = 40 * SCALE;
+    const titleCornerRadius = 10 * SCALE;
 
     // Title background bar with gradient and rounded top corners
     const titleBg = scene.add.graphics();
@@ -130,8 +68,8 @@ function createTitleBar(scene, width, height, title = '-- PAY TABLE --') {
 
 function createCloseButton(scene, width, height, onClose) {
     const { radius, colors, text, shadow } = STYLE.BUTTON_CLOSE;
-    const closeX = width / 2 - radius - 10;
-    const closeY = -height / 2 + radius + 10;
+    const closeX = width / 2 - radius;
+    const closeY = -height / 2 + radius;
 
     // Create container for grouping but container itself not interactive
     const container = scene.add.container(closeX, closeY);
@@ -215,150 +153,156 @@ function createCloseButton(scene, width, height, onClose) {
     return container;
 }
 
-function createPopupWindow(scene, width = 800, height = 600) {
-    if (!scene.popupLayer) {
-        scene.popupLayer = scene.add.container(0, 0);
-        scene.popupLayer.setDepth(1000); // Top layer
+export class PopupWindow {
+    constructor(scene, width = 800, height = 600, winningPatterns, mul5x, mul4x, mul3x, symbols) {
+        this.scene = scene;
+        this.width = width;
+        this.height = height;
+        this.currentPage = 0;
+        this.contentContainer = null;
+
+        this.initPopupLayer();
+        this.createPopupElements(winningPatterns, mul5x, mul4x, mul3x, symbols)
+        this.updatePage();
     }
 
-    const popupContainer = scene.add.container(scene.cameras.main.centerX, scene.cameras.main.centerY);
-    // Full-screen transparent input blocker to disable background interactions
-    const inputBlocker = scene.add.rectangle(
-        scene.cameras.main.centerX,
-        scene.cameras.main.centerY,
-        scene.cameras.main.width,
-        scene.cameras.main.height,
-        0x000000,
-        0
-    ).setInteractive();
-    // Popup background
-    const bg = scene.add.graphics();
-    bg.fillStyle(0x000000, 0.85);
-    bg.fillRoundedRect(-width / 2, -height / 2, width, height, 20);
-
-    // Text fallback container (hidden if using custom container content)
-    const contentText = scene.add.text(0, 0, '', {
-        fontSize: '20px',
-        color: '#ffffff',
-        wordWrap: { width: width - 100 * SCALE },
-        align: 'center'
-    }).setOrigin(0.5);
-
-    scene.popupLayer.add(inputBlocker);
-    scene.popupLayer.add(popupContainer);
-
-    const { titleBg, titleText } = createTitleBar(scene, width, height, '-- PAY TABLE --');
-    const closeButton = createCloseButton(scene, width, height, () => {
-        // Your close callback here
-        popupContainer.destroy();
-        inputBlocker.destroy();
-        scene._infoPopup = null;
-    });
-
-
-    const nextButton = scene.add.text(0, height / 2 - 40 * SCALE, 'Next Page', STYLE.BUTTON_INFO).setOrigin(0.5).setInteractive();
-    const prevButton = scene.add.text(0, height / 2 - 40 * SCALE, 'Prev Page', STYLE.BUTTON_INFO).setOrigin(0.5).setInteractive();
-
-    [nextButton, prevButton].forEach(btn => {
-        btn.on('pointerover', () => {
-            btn.setScale(1.1); // Pop in slightly
-        });
-
-        btn.on('pointerout', () => {
-            btn.setScale(1); // Reset scale
-        });
-
-        btn.on('pointerdown', () => {
-            btn.setScale(0.95); // Pop in slightly
-        });
-
-        btn.on('pointerup', () => {
-            btn.setScale(1); // Restore scale
-        });
-    });
-
-    // Page content containers support
-    let currentContentContainer = null;
-    let currentPage = 0;
-
-    // Page content functions
-    const contentFunctions = [
-        (scene, w, h) => getPage1Content(scene, w, h),
-        (scene, w, h) => getPage2Content(scene, w, h),
-        (scene, w, h) => getPage3Content(scene, w, h)
-    ];
-
-    nextButton.on('pointerdown', () => {
-        if (currentPage < contentFunctions.length - 1) {
-            currentPage++;
-            updatePage();
-        }
-    });
-
-    prevButton.on('pointerdown', () => {
-        if (currentPage > 0) {
-            currentPage--;
-            updatePage();
-        }
-    });
-
-    // Add popup base elements
-    popupContainer.add([bg, titleBg, titleText, closeButton, contentText, nextButton, prevButton]);
-    function updatePage() {
-        // Clear previous content container if any
-        if (currentContentContainer) {
-            currentContentContainer.destroy();
-            currentContentContainer = null;
+    initPopupLayer() {
+        if (!this.scene.popupLayer) {
+            this.scene.popupLayer = this.scene.add.container(0, 0);
+            this.scene.popupLayer.setDepth(1000); // Top layer
         }
 
-        // Get new content for current page
-        const result = contentFunctions[currentPage](scene, width, height);
+        this.popupContainer = this.scene.add.container(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY);
+
+        this.inputBlocker = this.scene.add.rectangle(
+            this.scene.cameras.main.centerX,
+            this.scene.cameras.main.centerY,
+            this.scene.cameras.main.width,
+            this.scene.cameras.main.height,
+            0x000000,
+            0
+        ).setInteractive();
+
+        this.scene.popupLayer.add([this.inputBlocker, this.popupContainer]);
+    }
+
+    createPopupElements(winningPatterns, mul5x, mul4x, mul3x, symbols) {
+        const { width, height, scene } = this;
+
+        // Background
+        const bg = scene.add.graphics();
+        bg.fillStyle(0x000000, 0.85);
+        bg.fillRoundedRect(-width / 2, -height / 2, width, height, 20 * SCALE);
+
+        // Title
+        const { titleBg, titleText } = createTitleBar(scene, width, height, '-- PAY TABLE --');
+
+        // Close
+        const closeButton = createCloseButton(scene, width, height, () => this.destroy());
+
+        // Page text fallback
+        this.contentText = scene.add.text(0, 0, '', {
+            fontSize: '20px',
+            color: '#ffffff',
+            wordWrap: { width: width - 100 * SCALE },
+            align: 'center'
+        }).setOrigin(0.5);
+
+        // Page content methods
+        this.pageContentFns = [
+            (s, w, h) => getPage1Content(s, w, h, winningPatterns),
+            (s, w, h) => getPage2Content(s, w, h, mul5x, mul4x, mul3x, symbols),
+            (s, w, h) => getPage3Content(s, w, h),
+        ];
+
+        // Buttons
+        this.prevButton = this.createNavButton('Prev Page', () => this.prevPage());
+        this.nextButton = this.createNavButton('Next Page', () => this.nextPage());
+
+        this.popupContainer.add([bg, titleBg, titleText, closeButton, this.contentText, this.prevButton, this.nextButton]);
+    }
+
+    createNavButton(text, callback) {
+        const button = this.scene.add.text(0, this.height / 2 - 40 * SCALE, text, STYLE.BUTTON_INFO)
+            .setOrigin(0.5)
+            .setInteractive();
+
+        button.on('pointerover', () => button.setScale(1.1));
+        button.on('pointerout', () => button.setScale(1));
+        button.on('pointerdown', () => button.setScale(0.95));
+        button.on('pointerup', () => {
+            button.setScale(1);
+            callback();
+        });
+
+        return button;
+    }
+
+    updatePage() {
+        if (this.contentContainer) {
+            this.contentContainer.destroy();
+            this.contentContainer = null;
+        }
+
+        const result = this.pageContentFns[this.currentPage](this.scene, this.width, this.height);
 
         if (typeof result === 'string') {
-            contentText.setText(result);
-            contentText.setVisible(true);
+            this.contentText.setText(result);
+            this.contentText.setVisible(true);
         } else {
-            contentText.setVisible(false);
-            currentContentContainer = result;
-            popupContainer.add(currentContentContainer);
+            this.contentText.setVisible(false);
+            this.contentContainer = result;
+            this.popupContainer.add(this.contentContainer);
         }
 
-        // Update buttons visibility and position
-        if (currentPage === 0) {
-            // Only Next button centered
-            nextButton.setVisible(true);
-            nextButton.setPosition(0, height / 2 - 40);
+        this.updateNavButtons();
+    }
 
-            prevButton.setVisible(false);
-        } else if (currentPage === contentFunctions.length - 1) {
-            // Only Prev button centered
-            prevButton.setVisible(true);
-            prevButton.setPosition(0, height / 2 - 40);
+    updateNavButtons() {
+        const totalPages = this.pageContentFns.length;
+        const y = this.height / 2 - 40;
 
-            nextButton.setVisible(false);
+        if (this.currentPage === 0) {
+            this.prevButton.setVisible(false);
+            this.nextButton.setVisible(true).setPosition(0, y);
+        } else if (this.currentPage === totalPages - 1) {
+            this.prevButton.setVisible(true).setPosition(0, y);
+            this.nextButton.setVisible(false);
         } else {
-            // Both buttons visible on left/right
-            prevButton.setVisible(true);
-            prevButton.setPosition(-100, height / 2 - 40);
-
-            nextButton.setVisible(true);
-            nextButton.setPosition(100, height / 2 - 40);
+            this.prevButton.setVisible(true).setPosition(-100, y);
+            this.nextButton.setVisible(true).setPosition(100, y);
         }
     }
-    // Show first page
-    updatePage();
 
-    return popupContainer;
+    nextPage() {
+        if (this.currentPage < this.pageContentFns.length - 1) {
+            this.currentPage++;
+            this.updatePage();
+        }
+    }
+
+    prevPage() {
+        if (this.currentPage > 0) {
+            this.currentPage--;
+            this.updatePage();
+        }
+    }
+
+    destroy() {
+        this.popupContainer.destroy();
+        this.inputBlocker.destroy();
+        this.scene._infoPopup = null;
+    }
 }
 
 
-function createCard(scene, x, y, label, highlightRows = [-1, -1, -1, -1, -1]) {
+export function createCard(scene, x, y, label, highlightRows = [-1, -1, -1, -1, -1], scale = 1) {
     const { width, height, cornerRadius, borderColor, borderWidth, grid } = STYLE.INFO_CARD_STYLE;
     const card = scene.add.graphics();
-    const cardWidth = width * SCALE;
-    const cardHeight = height * SCALE;
-    const radius = cornerRadius * SCALE
-    const bWidth = borderWidth * SCALE
+    const cardWidth = width * scale;
+    const cardHeight = height * scale;
+    const radius = cornerRadius * scale;
+    const bWidth = borderWidth * scale;
     card.fillGradientStyle(COLORS.wooden.topLeft, COLORS.wooden.topRight, COLORS.wooden.bottomLeft, COLORS.wooden.bottomRight, 1);
     card.fillRoundedRect(0, 0, cardWidth, cardHeight, radius);
     card.lineStyle(bWidth, borderColor);
@@ -366,20 +310,29 @@ function createCard(scene, x, y, label, highlightRows = [-1, -1, -1, -1, -1]) {
     card.setPosition(x, y);
 
     // Label text at top center (add some padding)
-    const labelY = 5; // 18 px from top, adjust as needed
-    const cardText = scene.add.text(x + cardWidth / 2, y + labelY, label, STYLE.infoText).setOrigin(0.5, 0); // origin 0.5 horizontally, 0 vertically (top align)
+    const labelY = 2 * SCALE * scale; // 18 px from top, adjust as needed
+    const cardText = scene.add.text(x + cardWidth / 2, y + labelY, label, {
+        fontSize: `${16 * SCALE * scale}px`,
+        fontFamily: FONT,
+        fill: COLORS.buttonText,
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 2 * SCALE * scale,
+        padding: { x: 10 * SCALE * scale, y: 0 * SCALE * scale },
+        align: 'center'
+    }).setOrigin(0.5, 0); // origin 0.5 horizontally, 0 vertically (top align)
 
     const { cols, rows, paddingX, squareBorderColor, squareBorderWidth, squareHighlightColor, squareMarginFactor, squareScaleFactor } = grid;
-
+    const spacingY = 20 * SCALE * scale
     // Adjust grid height to leave space for label on top
     const gridWidth = cardWidth - 2 * paddingX;
-    const gridHeight = cardHeight - labelY - 20; // subtract label height + some margin
+    const gridHeight = cardHeight - labelY - spacingY; // subtract label height + some margin
 
     const squareSizeX = gridWidth / cols * squareScaleFactor;
     const squareSizeY = gridHeight / rows * squareScaleFactor;
 
     const offsetX = paddingX + (gridWidth - (squareSizeX * cols)) / 2;
-    const offsetY = labelY + 20 + (gridHeight - (squareSizeY * rows)) / 2; // offset grid below label
+    const offsetY = labelY + spacingY + (gridHeight - (squareSizeY * rows)) / 2; // offset grid below label
 
     for (let col = 0; col < cols; col++) {
         for (let row = 0; row < rows; row++) {
@@ -394,7 +347,6 @@ function createCard(scene, x, y, label, highlightRows = [-1, -1, -1, -1, -1]) {
             card.strokeRect(sqX, sqY, squareSizeX * squareMarginFactor, squareSizeY * squareMarginFactor);
         }
     }
-
     return { card, cardText };
 }
 
@@ -403,7 +355,7 @@ function createSubtitle(scene, text, height, ystart) {
 }
 
 
-function getPage1Content(scene, width, height) {
+function getPage1Content(scene, width, height, winningPatterns) {
     const container = scene.add.container(0, 0);
     const yStart = 70 * SCALE;
     const subtitle = createSubtitle(scene, 'Winning Line Patterns', height, yStart);
@@ -413,15 +365,15 @@ function getPage1Content(scene, width, height) {
     const cardHeight = STYLE.INFO_CARD_STYLE.height;
     const cols = 5;
     const rows = 4;
-    const spacingX = (width - cols * cardWidth) / (cols + 1);
-    const spacingY = (height - rows * cardHeight) / (rows + 1) - 30*SCALE;
+    const spacingX = Math.floor((width - cols * cardWidth) / (cols + 1));
+    const spacingY = Math.floor((height - rows * cardHeight) / (rows + 1)) - 30 * SCALE;
     const marginY = 120 * SCALE;
 
     for (let i = 0; i < 20; i++) {
         const col = i % cols;
         const row = Math.floor(i / cols);
 
-        const x = spacingX - cardWidth/2 + col * (cardWidth + spacingX) - width / 2;
+        const x = col * (cardWidth + spacingX) - width / 2 + spacingX;
         const y = marginY + row * (cardHeight + spacingY) - height / 2;
         const label = `LINE ${i + 1}`;
 
@@ -438,7 +390,7 @@ function createSymbolCard(scene, x, y, symbolUrl, lines) {
     const { width, height, borderColor, borderWidth, cornerRadius } = STYLE.SYMBOL_CARD_STYLE
     const padding = 15 * SCALE;
     const imageSize = height - padding * 2;
-    const cardWidth = width ;
+    const cardWidth = width;
     const cardHeight = height;
     // Card background
     const card = scene.add.graphics();
@@ -476,14 +428,14 @@ function createSymbolCard(scene, x, y, symbolUrl, lines) {
     };
 }
 
-function getPage2Content(scene, width, height) {
+function getPage2Content(scene, width, height, mul5x, mul4x, mul3x, symbols) {
     const container = scene.add.container(0, 0);
     const yStart = 70 * SCALE;
     const subtitle = createSubtitle(scene, 'Symbol Payouts', height, yStart);
     container.add(subtitle);
 
     const cardWidth = STYLE.SYMBOL_CARD_STYLE.width;
-    const cardHeight = STYLE.SYMBOL_CARD_STYLE.height ;
+    const cardHeight = STYLE.SYMBOL_CARD_STYLE.height;
     const rows = [3, 3, 4]; // Updated layout: 3 cards, 3 cards, 4 cards
     const marginY = 50 * SCALE;
     const spacingY = 30 * SCALE;
@@ -496,11 +448,13 @@ function getPage2Content(scene, width, height) {
         const spacingX = (width - cols * cardWidth) / (cols + 1);
 
         for (let c = 0; c < cols; c++) {
-            const x = spacingX -cardWidth/2 + c * (cardWidth + spacingX) - width / 2;
+            const x = spacingX + c * (cardWidth + spacingX) - width / 2;
             const y = yOffset;
-
-            const exampleLines = ["5: 100x", "4: 20x", "3: 3x"];
-            const symbolCard = createSymbolCard(scene, x, y, 'reel1', exampleLines);
+            const texts = []
+            texts.push(`5x: ${mul5x[cardIndex]}x`)
+            texts.push(`4x: ${mul4x[cardIndex]}x`)
+            texts.push(`3x: ${mul3x[cardIndex]}x`)
+            const symbolCard = createSymbolCard(scene, x, y, symbols[cardIndex], texts);
             container.add(symbolCard.container);
 
             cardIndex++;
@@ -518,11 +472,11 @@ function getPage3Content(scene, width, height) {
     const subtitle = createSubtitle(scene, 'Rules', height, yStart);
     container.add(subtitle);
 
-    const cardWidth = width * 0.85 ;
-    const cardPadding = 20* SCALE;
-    const sectionSpacing = 40* SCALE;
-    const cardCornerRadius = 16* SCALE;
-    const startY = -height/2 + yStart + sectionSpacing;
+    const cardWidth = width * 0.85;
+    const cardPadding = 20 * SCALE;
+    const sectionSpacing = 40 * SCALE;
+    const cardCornerRadius = 16 * SCALE;
+    const startY = -height / 2 + yStart + sectionSpacing;
 
     function createTextCard(y, title, content) {
         const card = scene.add.graphics();
@@ -555,7 +509,7 @@ function getPage3Content(scene, width, height) {
     }
 
     const aboutText = `This slot game features multiple paylines, engaging symbols, and big win potential. It is designed for quick play sessions with intuitive controls.\n\nThe game features up to 20 paylines. You can bet on a maximum of 20 lines per spin, allowing flexible betting strategies to maximize your chances of winning.`;
-    const about = createTextCard(startY, 'About the Game', aboutText); 
+    const about = createTextCard(startY, 'About the Game', aboutText);
     const howToPlay = createTextCard(startY + about.height, 'How to Play', '1. Choose your bet amount.\n2. Press the spin button to start.\n3. Match symbols on active paylines to win.\n4. Check the paytable for payout values.\n\nGood luck!');
 
     container.add([about.container, howToPlay.container]);

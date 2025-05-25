@@ -1,4 +1,4 @@
-const messages = require('./messages');
+import messages from './messages.js';import * as messages from './messages.js';
 
 function handleCLI(socket, line) {
   const map = {

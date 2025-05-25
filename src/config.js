@@ -1,5 +1,4 @@
 // config.js
-import MainScene from './MainScene.js'; // adjust the path if needed
 
 export const COLORS = {
   buttonBg: '#123456',
@@ -75,11 +74,11 @@ export const COLORS = {
     bottomRight: 0x843029, // muted dark red
   },
 
-  glass:{
-    topLeft:0xE0F7FA, 
-    topRight:0xB3E5FC,  
-    bottomLeft:0x81D4FA, 
-    bottomRight:0x4FC3F7, 
+  glass: {
+    topLeft: 0xE0F7FA,
+    topRight: 0xB3E5FC,
+    bottomLeft: 0x81D4FA,
+    bottomRight: 0x4FC3F7,
   }
 };
 
@@ -105,26 +104,30 @@ export const POP_WIDTH = GAME_WIDTH * 0.8;
 export const POP_HEIGHT = GAME_HEIGHT * 0.8;
 
 // Scale layout constants
-const spacingX = 150
+const spacingX = 140
 
 export const LAYOUT = {
-  SYMBOL_SIZE: 140 * SCALE,
-  reelSpacingX: spacingX * SCALE,
-  reelSpacingY: 150 * SCALE,
-  baseX: (BASE_WIDTH/2 - spacingX * 2) * SCALE,
-  baseY: 180 * SCALE,
+  SYMBOL_SIZE: 130 * SCALE,
+  REEL_SPACING_X: spacingX * SCALE,
+  REEL_SPACING_Y: 140 * SCALE,
+  BASE_X: (BASE_WIDTH / 2 - spacingX * 2) * SCALE,
+  BASE_Y: 180 * SCALE,
+  GAME_WIDTH: GAME_WIDTH,
+  GAME_HEIGHT: GAME_HEIGHT,
+  POP_WIDTH: POP_WIDTH,
+  POP_HEIGHT: POP_HEIGHT
 };
 
-export const REEL_COUNT = 5;
-export const ROW_COUNT = 3;
-export const symbols = ['reel1', 'reel2', 'reel3'];
+export const REEL_CONFIG = {
+  REEL_COUNT: 5,
+  ROW_COUNT: 3
+}
 
 export const config = {
   type: Phaser.AUTO,
-  width: GAME_WIDTH,
+  width: LAYOUT.GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: 0x886644,
-  scene: MainScene,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

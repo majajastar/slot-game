@@ -1,6 +1,6 @@
-const { sidUrl, launchUrl, testUuid, testUserId, authToken } = require('./config');
+import { sidUrl, launchUrl, testUuid, testUserId, authToken } from './config.js';
 
-async function getSid() {
+export async function getSid() {
   const body = JSON.stringify({ uuid: testUuid, userId: testUserId });
   const response = await fetch(`${sidUrl}?authToken=${authToken}`, {
     method: 'POST',
@@ -11,7 +11,7 @@ async function getSid() {
   return (await response.json()).sid;
 }
 
-async function callLaunchApi(sid) {
+export async function callLaunchApi(sid) {
   const body = JSON.stringify({
     operatorId: 'op001',
     gameTypeId: 'slot',
@@ -38,4 +38,3 @@ async function callLaunchApi(sid) {
   };
 }
 
-module.exports = { getSid, callLaunchApi };

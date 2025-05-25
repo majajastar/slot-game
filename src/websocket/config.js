@@ -1,13 +1,12 @@
+export const authToken = 's3cr3tV4lu3';
+export const testUuid = 'test_uuid';
+export const testUserId = 'demo_has_balance';
+// export const sidUrl = `https://gp3wrsuasd4vnlh4wiwuqbwqhi0lgilz.lambda-url.ap-southeast-1.on.aws/mock-wallet/sid`;
+export const sidUrl = '/api/getSid';
+//export const launchUrl = 'https://onboard.uat.buffalo888.com/launch';
+export const launchUrl = '/api/launch'
+export const WS_BASE_URL = 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat';
 
-module.exports = {
-  authToken: 's3cr3tV4lu3',
-  testUuid: 'test_uuid',
-  testUserId: 'demo_has_balance',
-  sidUrl: `https://gp3wrsuasd4vnlh4wiwuqbwqhi0lgilz.lambda-url.ap-southeast-1.on.aws/mock-wallet/sid`,
-  launchUrl: 'https://onboard.uat.buffalo888.com/launch',
-  WS_BASE_URL: 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat',
-
-  getWebSocketUrl: (token, lang) => {
-    return `${module.exports.WS_BASE_URL}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-  }
-};
+export function getWebSocketUrl(token, lang) {
+  return `${WS_BASE_URL}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+}

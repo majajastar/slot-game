@@ -15,7 +15,7 @@ export const STYLE = {
     align: 'center'
   },
   infoText: {
-    fontSize: `${16 * SCALE}px`,
+    fontSize: `${18 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.buttonText,
     fontStyle: 'bold',
@@ -25,14 +25,14 @@ export const STYLE = {
     align: 'center'
   },
   userInfoText: {
-    fontSize: `${20 * SCALE}px`,
+    fontSize: `${16 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.buttonText,
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2 * SCALE,
     padding: { x: 10 * SCALE, y: 0 * SCALE },
-    align: 'center'
+    align: 'left'
   },
   button: {
     fontSize: `${26 * SCALE}px`,
@@ -161,8 +161,8 @@ export const STYLE = {
     align: 'center'
   },
   INFO_CARD_STYLE: {
-    width: 80 * SCALE,
-    height: 50 * SCALE,
+    width: 140 * SCALE,
+    height: 90 * SCALE,
     cornerRadius: 8 * SCALE,
     borderColor: 0x333333,
     borderWidth: 2 * SCALE,
@@ -230,6 +230,11 @@ export const STYLE = {
   },
   cardText: {
     fontSize: 14 * SCALE,
+    color: '#ffffff',
+    fontFamily: FONT
+  },
+  smallCardText: {
+    fontSize: 12 * SCALE,
     color: '#ffffff',
     fontFamily: FONT
   }
