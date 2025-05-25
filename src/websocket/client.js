@@ -12,9 +12,9 @@ export class WebSocketClient {
 
   async connect() {
     const sid = await getSid();
-    //console.log(`sid: ${sid}`)
+    console.log(`sid: ${sid}`)
     const { token, lang } = await callLaunchApi(sid);
-    //console.log(`token = ${token}, lang = ${lang}`)
+    console.log(`token = ${token}, lang = ${lang}`)
     const wsUrl = getWebSocketUrl(token, lang); this.socket = new WebSocket(wsUrl);
     this.messageHandler = new MessageHandler(this.socket, this.onMessageCallback); // Use class instance
 
