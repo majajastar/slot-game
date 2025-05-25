@@ -62,17 +62,17 @@ export const STYLE = {
     strokeThickness: 2 * SCALE,
     padding: { x: 10 * SCALE, y: 4 * SCALE },
     align: 'center',
-    fixedWidth: 50 * SCALE
+    fixedWidth: 150 * SCALE
   },
   BigVlaueBox: {
-    fontSize: `${16 * SCALE}px`,
+    fontSize: `${18 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.valueBoxText,
     stroke: '#000000',
     strokeThickness: 2 * SCALE,
     padding: { x: 10 * SCALE, y: 4 * SCALE },
     align: 'center',
-    fixedWidth: 110 * SCALE
+    fixedWidth: 150 * SCALE
   },
   label: {
     fontSize: `${18 * SCALE}px`,

@@ -203,6 +203,15 @@ export class LineButtonsManager {
             }
         };
 
+        const singleLineEffect = () => {
+            const winningIndexes = [];
+            for (let col = 0; col < 5; col++) {
+                winningIndexes.push([col, this.winningPatterns[num][col]]);
+            }
+            const line = this.drawWinningLine(winningIndexes, STYLE.LINE_COLOR_HOVER_LIST[num - 1]);
+            if (line) winningLineGroup.push(line);
+        };
+
         const cancelLineEffect = () => {
             winningLineGroup.forEach(line => line.destroy());
             winningLineGroup.length = 0;
@@ -225,6 +234,7 @@ export class LineButtonsManager {
             noEffect,
             clickEffect,
             lineEffect,
+            singleLineEffect,
             cancelLineEffect,
             num,
         };
@@ -285,6 +295,9 @@ export class LineButtonsManager {
             zone.on('pointerdown', () => {
                 if (this.scene.isSpinning) {
                     return;
+                }
+                if (this.scene.settings.sfxEnabled) {
+                    this.scene.sound.play('click');
                 }
                 this.setClickedButtons(keyNum);
                 this.lineControls.updateText(keyNum);

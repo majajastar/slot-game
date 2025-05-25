@@ -16,6 +16,8 @@ export const COLORS = {
   spinButtonBg: '#0077b6', // example
   valueBoxText: '#ffffff',
   labelText: '#ffffff',
+  lightGreen: '#00cc66',
+  lightRed: '#cc3333',
 
   bgGradient: {
     topLeft: 0x70C1B3,     // lighter teal-ish blue
@@ -120,7 +122,12 @@ export const LAYOUT = {
 
 export const REEL_CONFIG = {
   REEL_COUNT: 5,
-  ROW_COUNT: 3
+  ROW_COUNT: 3,
+  SYMOBL_UPDATE_DELAY: 8,
+  HIGH_LIGHT_TIME: 350,
+  CALLBACK_DELAY: 350,
+  MIN_STEP: 15,
+  MAX_STEP: 20,
 }
 
 export const config = {

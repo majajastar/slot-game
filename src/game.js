@@ -3,7 +3,7 @@ import { REEL_CONFIG, LAYOUT, SCALE, COLORS } from './config.js';
 import { STYLE } from './style.js';
 import { LineButtonsManager } from './line-button-manager.js';
 import { SlotMachine, getSymbolName } from './slot-machine.js';
-import { Control, DisplayField, UserGameCard, GameTitle, InfoButton, LoadingCard } from './components.js';
+import { Control, DisplayField, UserGameCard, GameTitle, InfoButton, LoadingCard, OptionsButon } from './components.js';
 import { WebSocketClient } from './websocket/client.js';
 import { createCard } from './info.js'
 import * as messages from './websocket/messages.js';
@@ -32,26 +32,32 @@ export class SlotGameScene extends Phaser.Scene {
       bar.destroy();
       barBg.destroy();
     });
+
+    this.load.image('bg', 'assets/bg_ocean.png');
     this.load.image(getSymbolName(0), 'assets/symbol_0.png');
     this.load.image(getSymbolName(1), 'assets/symbol_1.png');
     this.load.image(getSymbolName(2), 'assets/symbol_2.png');
     this.load.image(getSymbolName(3), 'assets/symbol_3.png');
     this.load.image(getSymbolName(4), 'assets/symbol_4.png');
     this.load.image(getSymbolName(5), 'assets/symbol_5.png');
-    this.load.image(getSymbolName(6), 'assets/symbol_2.png');
-    this.load.image(getSymbolName(7), 'assets/symbol_3.png');
-    this.load.image(getSymbolName(8), 'assets/symbol_4.png');
-    this.load.image(getSymbolName(9), 'assets/symbol_5.png');
+    this.load.image(getSymbolName(6), 'assets/symbol_6.png');
+    this.load.image(getSymbolName(7), 'assets/symbol_7.png');
+    this.load.image(getSymbolName(8), 'assets/symbol_8.png');
+    this.load.image(getSymbolName(9), 'assets/symbol_9.png');
+    this.load.audio('bgm', 'assets/audio/sea-and-beach.mp3');
+    this.load.audio('click', 'assets/audio/click.mp3');
+    this.load.audio('coin', 'assets/audio/retro-coin.mp3');
+    this.load.audio('win', 'assets/audio/collect-points.mp3');
   }
 
   create() {
-    this.drawBackground();
+    this.prepareBackground();
 
     // Setup loading state
     this.isSpinning = false;
     this.symbols = [
-      getSymbolName(1), getSymbolName(2), getSymbolName(3), getSymbolName(4), getSymbolName(5),
-      getSymbolName(0), getSymbolName(4), getSymbolName(3), getSymbolName(1), getSymbolName(1)]
+      getSymbolName(0), getSymbolName(1), getSymbolName(2), getSymbolName(3), getSymbolName(4),
+      getSymbolName(5), getSymbolName(6), getSymbolName(7), getSymbolName(8), getSymbolName(9),]
     this.playerId = "Unknown";
     this.gameId = "Unknown";
     this.currencySymbol = "$";
@@ -68,7 +74,6 @@ export class SlotGameScene extends Phaser.Scene {
 
 
   handleMessage(type, message) {
-    //console.log(`Type = ${type}, Message received in Phaser:`, message);
     if (type === 'login') {
       this.playerId = message.playerId;
       this.loadingCard.setText('RECEIVING PLAYER INFORMATION...')
@@ -102,8 +107,6 @@ export class SlotGameScene extends Phaser.Scene {
 
       const winningPatterns = roomInfo.winningPatterns;  // Object of patternId -> array of positions
       const multipliers = roomInfo.multipliers;          // Array of arrays with multiplier values
-      console.log('Winning Patterns:', winningPatterns);
-      console.log('Multipliers:', multipliers);
       this.infoButton.updateInfoContent(winningPatterns, multipliers);
 
     } else if (type === 'SetBet') {
@@ -111,7 +114,6 @@ export class SlotGameScene extends Phaser.Scene {
       const result = info.gameResult;
       this.balance = info.balance.toFixed(2);
       this.winAmount = result.winAmount;
-      // console.log(`result.finalSymbols ${result.finalSymbols}, length = ${result.finalSymbols.length}`)
       const finalSymbols = result.finalSymbols.map(row =>
         row.map(num => `symbol${num}`)
       );
@@ -141,8 +143,8 @@ export class SlotGameScene extends Phaser.Scene {
     const titleY = margin_y + 30 * SCALE;
 
     // Calculate card size scaled to fit within popup with some spacing
-    let cardWidth = STYLE.INFO_CARD_STYLE.width * 0.6;
-    let cardHeight = STYLE.INFO_CARD_STYLE.height * 0.6;
+    let cardWidth = STYLE.INFO_CARD_STYLE.width * 0.7;
+    let cardHeight = STYLE.INFO_CARD_STYLE.height * 0.7;
 
     // Calculate horizontal and vertical spacing to fit all cards in grid inside popup
     const spacingX = (width - cardWidth * maxCol) / (maxCol + 1);
@@ -157,7 +159,7 @@ export class SlotGameScene extends Phaser.Scene {
       const totalSpacingY = 8 * (maxRow + 1);
       cardHeight = (height - totalSpacingY) / maxRow;
     }
-    
+
     // Background with rounded corners and semi-transparent black fill
     const bg = this.add.graphics();
     bg.fillStyle(0x000000, 0.7);
@@ -177,7 +179,7 @@ export class SlotGameScene extends Phaser.Scene {
     bg.setInteractive(new Phaser.Geom.Rectangle(margin_x, margin_y, width, height), Phaser.Geom.Rectangle.Contains);
 
     // Local helper to create symbol images row (keep inside or outside)
-    const createSymbolImagesRow = (scene, x, y, symbolKey, count, symbolSize = 18, spacing = 1) => {
+    const createSymbolImagesRow = (scene, x, y, symbolKey, count, symbolSize = 22, spacing = 1) => {
       const container = scene.add.container(x, y);
       for (let i = 0; i < count; i++) {
         const img = scene.add.image(i * (symbolSize * SCALE + spacing * SCALE), 0, symbolKey);
@@ -190,7 +192,6 @@ export class SlotGameScene extends Phaser.Scene {
 
     // Loop over all 20 matchDetails and layout cards + info containers
     for (let i = 0; i < matchDetails.length; i++) {
-      console.log(` i = ${i}`)
       const row = i % maxRow;
       const col = Math.floor(i / maxRow);
 
@@ -256,23 +257,25 @@ export class SlotGameScene extends Phaser.Scene {
     // Configurable values
     this.currentBet = 1;
     this.currentLines = 1;
+    this.settings = { sfxEnabled: true, musicEnabled: true };
 
-    this.totalBetDisplay = new DisplayField(this, 'TOTAL BET', this.currentBet * this.currentLines, STYLE.BigVlaueBox);
+    this.totalBetDisplay = new DisplayField(this, 'TOTAL BET', `$${this.currentBet * this.currentLines}`, STYLE.valueBox);
     this.winDisplay = new DisplayField(this, 'WIN', '$0', STYLE.valueBox);
 
-    this.betControls = new Control(this, 'BET', this.currentBet, (val) => {
+    this.betControls = new Control(this, 'BET', this.currentBet, true, (val) => {
       this.currentBet = val;
-      this.totalBetDisplay.valueText.setText(this.currentBet * this.currentLines);
+      this.totalBetDisplay.valueText.setText(`${this.currencySymbol}${this.currentBet * this.currentLines}`);
     }, 1, 50);
 
-    this.lineControls = new Control(this, 'LINES', this.currentLines, (val) => {
+    this.lineControls = new Control(this, 'LINES', this.currentLines, false,  (val) => {
       this.currentLines = val;
-      this.totalBetDisplay.valueText.setText(this.currentBet * this.currentLines);
+      this.totalBetDisplay.valueText.setText(`${this.currencySymbol}${this.currentBet * this.currentLines}`);
     });
     this.userGameCard = new UserGameCard(this, LAYOUT.GAME_WIDTH - 20 * SCALE, 20 * SCALE, this.playerId, this.gameId, this.balance);
     this.lineButtonsManager = new LineButtonsManager(this, this.lineControls);
     this.lineButtonsManager.lineButtonGroup[1].clickEffect(true);
     this.infoButton = new InfoButton(this, 40 * SCALE, 40 * SCALE);
+    this.optionButotn = new OptionsButon(this, 40 * SCALE, 90 * SCALE);
 
     this.positionControlsAndSpinButton();
   }
@@ -301,16 +304,16 @@ export class SlotGameScene extends Phaser.Scene {
     this.ws.connect();
   }
 
-  drawBackground() {
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(
-      COLORS.bgGradient.topLeft,
-      COLORS.bgGradient.topRight,
-      COLORS.bgGradient.bottomLeft,
-      COLORS.bgGradient.bottomRight,
-      1
-    );
-    bg.fillRect(0, 0, LAYOUT.GAME_WIDTH, LAYOUT.GAME_HEIGHT);
+  prepareBackground() {
+    const bg = this.add.image(0, 0, 'bg');
+    bg.setOrigin(0); // Top-left corner
+    bg.setDisplaySize(this.sys.game.config.width, this.sys.game.config.height); // Stretch to fit
+
+    this.bgm = this.sound.add('bgm', {
+      loop: true,
+      volume: 0.5, // Adjust volume from 0.0 to 1.0
+    });
+    this.bgm.play();
   }
 
   positionControlsAndSpinButton() {
@@ -392,7 +395,6 @@ export class SlotGameScene extends Phaser.Scene {
       1
     );
     bg.fillRoundedRect(-cardW / 2, cardY, cardW, cardH, radius);
-    container.add(bg);
 
     display.label
       .setPosition(0, cardY)
@@ -400,8 +402,7 @@ export class SlotGameScene extends Phaser.Scene {
       .setShadow(2, 2, '#000', 3, false, true);
 
     display.valueText.setPosition(0, yPos);
-    container.add([display.label, display.valueText]);
-
+    container.add([bg, display.label, display.valueText]);
     if (onClickCallback) {
       // Create info button (circle with "i") at top right corner of card
       const infoRadius = 10 * SCALE;
@@ -436,11 +437,18 @@ export class SlotGameScene extends Phaser.Scene {
       });
 
       infoButton.on('pointerup', () => {
+        if (this.isSpinning) {
+          return;
+        }
+        if (this.scene.settings.sfxEnabled) {
+          this.scene.sound.play('click');
+        }
         onClickCallback();
       });
 
       container.add([infoButton, infoText]);
     }
+    
 
     return container;
   }

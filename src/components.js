@@ -229,8 +229,9 @@ export class DisplayField {
 }
 
 export class Control {
-    constructor(scene, labelText, initialValue, onChange, minVal = 1, maxVal = 20) {
+    constructor(scene, labelText, initialValue, useSymbol, onChange, minVal = 1, maxVal = 20) {
         this.scene = scene;
+        this.useSymbol = useSymbol
         this.labelText = labelText;
         this.value = initialValue;
         this.onChange = onChange;
@@ -267,7 +268,12 @@ export class Control {
     }
 
     updateUI() {
-        this.valueText.setText(this.value);
+        if (this.useSymbol){
+            this.valueText.setText(`${this.scene.currencySymbol}${this.value}`);
+        } else {
+            this.valueText.setText(this.value);
+        }
+        
         this.onChange(this.value);
         this.updateLineButton();
     }
@@ -319,6 +325,12 @@ export class Control {
                 this.setScale(1.0);
             })
             .on('pointerdown', function () {
+                if (this.scene.isSpinning) {
+                    return;
+                }
+                if (this.scene.settings.sfxEnabled) {
+                    this.scene.sound.play('coin');
+                }
                 this.scene.tweens.add({
                     targets: this,
                     scale: 0.92,
@@ -329,6 +341,320 @@ export class Control {
                 if (onClick) onClick();
             });
         return btn;
+    }
+}
+
+export class OptionsPopup {
+    constructor(scene) {
+        this.scene = scene;
+
+        this.container = scene.add.container(LAYOUT.GAME_WIDTH / 2, LAYOUT.GAME_HEIGHT / 2.5);
+        this.createPopup();
+
+    }
+
+    createPopup() {
+        const width = LAYOUT.GAME_WIDTH * 0.3;
+        const height = LAYOUT.GAME_HEIGHT * 0.3;
+        const radius = 12 * SCALE;
+        const closeButton = new CloseButton(this.scene, width, height, () => this.destroy());
+        const bg = this.scene.add.graphics();
+        bg.fillStyle(0x000000, 0.75);
+        bg.fillRoundedRect(-width / 2, -height / 2, width, height, radius);
+        this.container.add(bg);
+
+        const title = this.scene.add.text(0, -height / 2 + 20 * SCALE, "Settings", STYLE.titleText).setOrigin(0.5);
+        this.container.add(title);
+
+        // Sound Effects Toggle
+        this.sfxToggle = this.createToggle(0, -10 * SCALE, "Sound Effects", "sfxEnabled");
+
+        // Music Toggle
+        this.musicToggle = this.createToggle(0, 40 * SCALE, "Background Music", "musicEnabled");
+        this.container.add(closeButton.container);
+    }
+
+    createToggle(x, y, labelText, settingKey) {
+        const label = this.scene.add.text(x - 100 * SCALE, y, labelText, STYLE.label).setOrigin(0, 0.5);
+
+        const toggle = this.scene.add.text(
+            x + 100 * SCALE,
+            y,
+            this.scene.settings[settingKey] ? "ON" : "OFF",
+            { ...STYLE.value }  // Clone to avoid mutation
+        )
+            .setOrigin(1, 0.5)
+            .setInteractive({ useHandCursor: true });
+
+        toggle.setColor(this.scene.settings[settingKey] ? COLORS.lightGreen : COLORS.lightRed);
+        // Hover effect
+        toggle.on('pointerover', () => {
+            this.scene.tweens.add({
+                targets: toggle,
+                scale: 1.1,
+                duration: 100,
+                ease: 'Power1'
+            });
+        });
+
+        toggle.on('pointerout', () => {
+            this.scene.tweens.add({
+                targets: toggle,
+                scale: 1.0,
+                duration: 100,
+                ease: 'Power1'
+            });
+        });
+
+        toggle.on('pointerdown', () => {
+            this.scene.settings[settingKey] = !this.scene.settings[settingKey];
+            const isEnabled = this.scene.settings[settingKey];
+
+            toggle.setText(isEnabled ? "ON" : "OFF");
+            toggle.setColor(isEnabled ? COLORS.lightGreen : COLORS.lightRed);
+
+            // Control volume
+            if (settingKey === "musicEnabled") {
+                this.scene.sound.get('bgm')?.setMute(!this.scene.settings.musicEnabled);
+            } else if (settingKey === "sfxEnabled") {
+                this.scene.sound.get('click')?.setMute(!this.scene.settings.sfxEnabled);
+                this.scene.sound.get('win')?.setMute(!this.scene.settings.sfxEnabled);
+                this.scene.sound.get('coin')?.setMute(!this.scene.settings.sfxEnabled);
+            }
+        });
+
+        this.container.add([label, toggle]);
+        return toggle;
+    }
+
+
+    destroy() {
+        this.container.destroy();
+    }
+}
+
+export class CloseButton {
+    constructor(scene, width, height, onClose) {
+        this.scene = scene;
+        this.radius = STYLE.BUTTON_CLOSE.radius;
+        this.colors = STYLE.BUTTON_CLOSE.colors;
+        this.textStyle = STYLE.BUTTON_CLOSE.text;
+        this.shadow = STYLE.BUTTON_CLOSE.shadow;
+        this.onClose = onClose;
+
+        const closeX = width / 2 - this.radius;
+        const closeY = -height / 2 + this.radius;
+
+        this.container = scene.add.container(closeX, closeY);
+        this.createButtonGraphics();
+        this.setupInteractivity();
+    }
+
+    createButtonGraphics() {
+        this.bg = this.scene.add.graphics();
+        this.drawMetalCircle(this.colors.base);
+
+        this.text = this.scene.add.text(0, 0, '✕', {
+            fontSize: this.textStyle.fontSize,
+            color: this.textStyle.color,
+            fontFamily: this.textStyle.fontFamily,
+            fontWeight: this.textStyle.fontWeight,
+            stroke: '#222',
+            strokeThickness: 2,
+            shadow: {
+                offsetX: this.shadow.offsetX,
+                offsetY: this.shadow.offsetY,
+                color: '#000',
+                blur: this.shadow.blur,
+                fill: true,
+            }
+        }).setOrigin(0.5);
+
+        this.container.add([this.bg, this.text]);
+    }
+
+    drawMetalCircle(color) {
+        this.bg.clear();
+        this.bg.fillStyle(0x666666, 1);
+        this.bg.fillCircle(0, 0, this.radius);
+        this.bg.fillStyle(color, 1);
+        this.bg.fillCircle(0, 0, this.radius * 0.85);
+        this.bg.fillStyle(0xdddddd, 0.4);
+        this.bg.fillCircle(-this.radius / 3, -this.radius / 3, this.radius / 4);
+    }
+
+    setupInteractivity() {
+        this.bg.setInteractive(
+            new Phaser.Geom.Circle(0, 0, this.radius),
+            Phaser.Geom.Circle.Contains,
+            { useHandCursor: true }
+        );
+
+        this.bg.on('pointerover', () => {
+            this.drawMetalCircle(this.colors.hover);
+            this.scene.tweens.add({
+                targets: this.container,
+                scale: 1.1,
+                duration: 100,
+                ease: 'Power1'
+            });
+        });
+
+        this.bg.on('pointerout', () => {
+            this.drawMetalCircle(this.colors.base);
+            this.scene.tweens.add({
+                targets: this.container,
+                scale: 1,
+                duration: 100,
+                ease: 'Power1'
+            });
+        });
+
+        this.bg.on('pointerdown', () => {
+            if (this.scene.settings?.sfxEnabled) {
+                this.scene.sound.play('click');
+            }
+
+            this.drawMetalCircle(this.colors.click);
+            this.scene.tweens.add({
+                targets: this.container,
+                scale: 0.9,
+                yoyo: true,
+                duration: 100,
+                ease: 'Power1',
+                onComplete: () => {
+                    this.drawMetalCircle(this.colors.base);
+                    this.onClose?.();
+                }
+            });
+        });
+    }
+
+    setPosition(x, y) {
+        this.container.setPosition(x, y);
+    }
+
+    destroy() {
+        this.container.destroy();
+    }
+
+    get displayObject() {
+        return this.container;
+    }
+}
+
+export class OptionsButon {
+    constructor(scene, x, y, lineWidth = 14 * SCALE, lineHeight = 2 * SCALE, spacing = 6 * SCALE) {
+        this.scene = scene;
+        this.x = x;
+        this.y = y;
+        this.lineWidth = lineWidth;
+        this.lineHeight = lineHeight;
+        this.spacing = spacing;
+        this.circleRadius = 20 * SCALE;
+
+        this.createIcon();
+        this.addInteractivity();
+    }
+
+    createIcon() {
+        const { scene, x, y, circleRadius } = this;
+
+        // Draw icon graphics
+        this.icon = scene.add.graphics({ x, y });
+
+        const outerRadius = circleRadius;
+        const innerRadius = circleRadius - 3 * SCALE;
+
+        // Outer border (darker ocean)
+        this.icon.fillStyle(STYLE.OCEAN_STYLE.outer.color, STYLE.OCEAN_STYLE.outer.alpha);
+        this.icon.fillCircle(0, 0, outerRadius);
+
+        // Inner fill (lighter ocean)
+        this.icon.fillStyle(STYLE.OCEAN_STYLE.inner.color, STYLE.OCEAN_STYLE.inner.alpha);
+        this.icon.fillCircle(0, 0, innerRadius);
+
+        // Glossy highlight
+        this.icon.fillStyle(STYLE.OCEAN_STYLE.highlight.color, STYLE.OCEAN_STYLE.highlight.alpha);
+        this.icon.fillCircle(
+            0,
+            innerRadius * STYLE.OCEAN_STYLE.highlight.offsetYFactor,
+            innerRadius * STYLE.OCEAN_STYLE.highlight.radiusFactor
+        );
+
+        // Draw menu lines
+        this.icon.fillStyle(0xffffff, 1);
+        for (let i = -1; i <= 1; i++) {
+            this.icon.fillRect(
+                -this.lineWidth / 2,
+                i * this.spacing - this.lineHeight / 2,
+                this.lineWidth,
+                this.lineHeight
+            );
+        }
+
+        // Add interactive zone
+        this.interactiveZone = scene.add.zone(x, y, circleRadius * 2, circleRadius * 2).setInteractive();
+        this.interactiveZone.setOrigin(0.5);
+    }
+
+    addInteractivity() {
+        this.interactiveZone.on('pointerover', () => {
+            this.scene.tweens.add({
+                targets: [this.icon],
+                scale: 1.1,
+                duration: 150,
+                ease: 'Quad.easeOut'
+            });
+        });
+
+        this.interactiveZone.on('pointerout', () => {
+            this.scene.tweens.add({
+                targets: [this.icon],
+                scale: 1.0,
+                duration: 150,
+                ease: 'Quad.easeOut'
+            });
+        });
+
+        this.interactiveZone.on('pointerdown', () => {
+            if (this.scene.isSpinning) return;
+
+            if (!this.scene.settings) this.scene.settings = { sfxEnabled: true, musicEnabled: true };
+
+            if (this.scene.settings.sfxEnabled) {
+                this.scene.sound.play('click');
+            }
+
+            this.scene.tweens.add({
+                targets: [this.icon],
+                scale: 0.9,
+                duration: 80,
+                ease: 'Quad.easeIn',
+                yoyo: true,
+                onComplete: () => {
+                    if (this.popupInstance) this.popupInstance.destroy();
+                    this.popupInstance = new OptionsPopup(this.scene);
+                }
+            });
+        });
+    }
+
+
+    setPosition(x, y) {
+        this.x = x;
+        this.y = y;
+        this.icon.setPosition(x, y);
+        this.interactiveZone.setPosition(x, y);
+    }
+
+    on(event, callback) {
+        this.interactiveZone.on(event, callback);
+    }
+
+    destroy() {
+        this.icon.destroy();
+        this.interactiveZone.destroy();
     }
 }
 
@@ -355,8 +681,8 @@ export class InfoButton {
         this.mul4x = MUL4X;
         this.mul3x = MUL3X;
         this.symbols = [
-            getSymbolName(0), getSymbolName(1), getSymbolName(2), getSymbolName(3), getSymbolName(4), 
-            getSymbolName(5),getSymbolName(6), getSymbolName(7), getSymbolName(8), getSymbolName(9), ]
+            getSymbolName(0), getSymbolName(1), getSymbolName(2), getSymbolName(3), getSymbolName(4),
+            getSymbolName(5), getSymbolName(6), getSymbolName(7), getSymbolName(8), getSymbolName(9),]
     }
 
     updateInfoContent(winningPatterns, multipliers) {
@@ -406,7 +732,12 @@ export class InfoButton {
         });
 
         this.interactiveZone.on('pointerdown', () => {
-            this.scene.tweens.add({
+            if (this.scene.isSpinning) {
+                return;
+            }
+            if (this.scene.settings.sfxEnabled) {
+                this.scene.sound.play('click');
+            }            this.scene.tweens.add({
                 targets: [this.graphics, this.label],
                 scale: 0.9,
                 duration: 80,

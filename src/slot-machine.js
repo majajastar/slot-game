@@ -81,6 +81,7 @@ export class SlotMachine {
   spin(finalSymbols, matchDetails, onComplete) {
     const MAX_SPEED = 50;
     const MIN_SPEED = 8;
+    // reel by reel
     const winSymbols = [
       [false, false, false],
       [false, false, false],
@@ -88,11 +89,14 @@ export class SlotMachine {
       [false, false, false],
       [false, false, false]
     ];
-
+    const winLines = []
     for (const detail of matchDetails) {
       detail.pattern.forEach((row, col) => {
-        winSymbols[col][row] = true;
+        if (finalSymbols[row][col] == getSymbolName(detail.symbol)) {
+          winSymbols[col][row] = true;
+        }
       });
+      winLines.push(detail.line);
     }
 
     const finalShiftArray = Array.from({ length: 5 }, () => Phaser.Utils.Array.GetRandom([0, 1]));
@@ -103,13 +107,13 @@ export class SlotMachine {
       finalSymbolsInReels.push(column);
     }
     this.reels.forEach((reel, colIndex) => {
-      const totalSteps = Phaser.Math.Between(15, 30) + 3;
+      const totalSteps = Phaser.Math.Between(REEL_CONFIG.MIN_STEP, REEL_CONFIG.MAX_STEP) + 3;
       const finalShift = finalShiftArray[colIndex];
       const finalSymbolsInReel = finalSymbolsInReels[colIndex];
       let stepsDone = 0;
 
       const spinInterval = this.scene.time.addEvent({
-        delay: 8,
+        delay: REEL_CONFIG.SYMOBL_UPDATE_DELAY,
         callback: () => {
           const stepsLeft = totalSteps - stepsDone - 1;
           const t = Phaser.Math.Clamp(stepsLeft / totalSteps, 0, 1);
@@ -160,7 +164,7 @@ export class SlotMachine {
                         this.scene.isSpinning = false;
                       }, 350);
                       this.scene.updateWinDisplay()
-                      this.highlightWins(finalShiftArray, winSymbols, onComplete);
+                      this.highlightWins(finalShiftArray, winSymbols, winLines, onComplete);
                       //if (onComplete) onComplete();
                     }
                   }
@@ -174,8 +178,17 @@ export class SlotMachine {
     });
   }
 
-  highlightWins(finalShiftArray, winSymbols, onCompleteCallcack) {
+  highlightWins(finalShiftArray, winSymbols, winLines, onCompleteCallcack) {
     let callbackTriggered = false;
+    for (const line of winLines) {
+      this.scene.lineButtonsManager.lineButtonGroup[line].singleLineEffect();
+    }
+
+    this.scene.time.delayedCall(REEL_CONFIG.HIGH_LIGHT_TIME * 2, () => {
+      for (const line of winLines) {
+        this.scene.lineButtonsManager.lineButtonGroup[line].cancelLineEffect();
+      }
+    });
     for (let col = 0; col < this.reels.length; col++) {
       const shift = finalShiftArray[col];
       for (let row = 0; row < 3; row++) {
@@ -187,17 +200,20 @@ export class SlotMachine {
           targets: symbol,
           scaleX: symbol.scaleX * 1.3,
           scaleY: symbol.scaleY * 1.3,
-          duration: 80,
+          duration: REEL_CONFIG.HIGH_LIGHT_TIME,
           yoyo: true,
           repeat: 2,
           ease: 'Quad.easeInOut',
           onComplete: () => {
             symbol.clearTint();
             if (!callbackTriggered) {
+            if (this.scene.settings.sfxEnabled) {
+                this.scene.sound.play('win');
+            }
               callbackTriggered = true;
               setTimeout(() => {
                 onCompleteCallcack();
-              }, 200);
+              }, REEL_CONFIG.CALLBACK_DELAY);
             }
           }
         });
@@ -236,6 +252,9 @@ export class SlotMachine {
       })
       .on('pointerdown', () => {
         if (this.isSpinning) return;
+        if (this.scene.settings.sfxEnabled) {
+          this.scene.sound.play('click');
+        }
         this.isSpinning = true;
         this.scene.isSpinning = true;
         this.scene.sendSpinRequest()

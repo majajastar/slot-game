@@ -1,43 +1,6 @@
 import { SCALE, COLORS } from './config.js';
 import { STYLE, FONT } from './style.js'
-
-function createOptionsIcon(scene, x, y, lineWidth = 14 * SCALE, lineHeight = 2 * SCALE, spacing = 6 * SCALE) {
-    const g = scene.add.graphics({ x, y });
-
-    const circleRadius = 20 * SCALE;
-
-    // Ocean color gradient simulation (manual layer approach)
-    const outerRadius = circleRadius;
-    const innerRadius = circleRadius - 3 * SCALE;
-    // Outer border (darker ocean)
-    g.fillStyle(STYLE.OCEAN_STYLE.outer.color, STYLE.OCEAN_STYLE.outer.alpha);
-    g.fillCircle(0, 0, outerRadius);
-
-    // Inner fill (lighter ocean)
-    g.fillStyle(STYLE.OCEAN_STYLE.inner.color, STYLE.OCEAN_STYLE.inner.alpha);
-    g.fillCircle(0, 0, innerRadius);
-
-    // Optional glossy top highlight
-    g.fillStyle(STYLE.OCEAN_STYLE.highlight.color, STYLE.OCEAN_STYLE.highlight.alpha);
-    g.fillCircle(
-        0,
-        innerRadius * STYLE.OCEAN_STYLE.highlight.offsetYFactor,
-        innerRadius * STYLE.OCEAN_STYLE.highlight.radiusFactor
-    );
-
-    // Draw three horizontal lines (menu-style)
-    g.fillStyle(0xffffff, 1);
-    for (let i = -1; i <= 1; i++) {
-        g.fillRect(-lineWidth / 2, i * spacing - lineHeight / 2, lineWidth, lineHeight);
-    }
-
-    // Create interactive zone
-    const zone = scene.add.zone(x, y, circleRadius * 2, circleRadius * 2).setInteractive();
-    zone.setOrigin(0.5);
-
-    return { icon: g, interactiveZone: zone };
-}
-
+import { CloseButton } from './components.js'
 
 function createTitleBar(scene, width, height, title = '-- PAY TABLE --') {
     const titleBarHeight = 40 * SCALE;
@@ -64,93 +27,6 @@ function createTitleBar(scene, width, height, title = '-- PAY TABLE --') {
     const titleText = scene.add.text(0, -height / 2 + titleBarHeight / 2, title, STYLE.titleText).setOrigin(0.5);
 
     return { titleBg, titleText };
-}
-
-function createCloseButton(scene, width, height, onClose) {
-    const { radius, colors, text, shadow } = STYLE.BUTTON_CLOSE;
-    const closeX = width / 2 - radius;
-    const closeY = -height / 2 + radius;
-
-    // Create container for grouping but container itself not interactive
-    const container = scene.add.container(closeX, closeY);
-
-    const closeBg = scene.add.graphics();
-
-    function drawMetalCircle(color) {
-        closeBg.clear();
-        closeBg.fillStyle(0x666666, 1);
-        closeBg.fillCircle(0, 0, radius);
-        closeBg.fillStyle(color, 1);
-        closeBg.fillCircle(0, 0, radius * 0.85);
-        closeBg.fillStyle(0xdddddd, 0.4);
-        closeBg.fillCircle(-radius / 3, -radius / 3, radius / 4);
-    }
-
-    drawMetalCircle(colors.base);
-
-    const closeText = scene.add.text(0, 0, '✕', {
-        fontSize: text.fontSize,
-        color: text.color,
-        fontFamily: text.fontFamily,
-        fontWeight: text.fontWeight,
-        stroke: '#222',
-        strokeThickness: 2,
-        shadow: {
-            offsetX: shadow.offsetX,
-            offsetY: shadow.offsetY,
-            color: '#000',
-            blur: shadow.blur,
-            fill: true,
-        }
-    }).setOrigin(0.5);
-
-    container.add([closeBg, closeText]);
-
-    // Make closeBg interactive with circular hit area
-    closeBg.setInteractive(
-        new Phaser.Geom.Circle(0, 0, radius),
-        Phaser.Geom.Circle.Contains,
-        { useHandCursor: true }
-    );
-
-    // Now use closeBg as interactive target for events
-
-    closeBg.on('pointerover', () => {
-        drawMetalCircle(colors.hover);
-        scene.tweens.add({
-            targets: container,
-            scale: 1.1,
-            duration: 100,
-            ease: 'Power1'
-        });
-    });
-
-    closeBg.on('pointerout', () => {
-        drawMetalCircle(colors.base);
-        scene.tweens.add({
-            targets: container,
-            scale: 1,
-            duration: 100,
-            ease: 'Power1'
-        });
-    });
-
-    closeBg.on('pointerdown', () => {
-        drawMetalCircle(colors.click);
-        scene.tweens.add({
-            targets: container,
-            scale: 0.9,
-            yoyo: true,
-            duration: 100,
-            ease: 'Power1',
-            onComplete: () => {
-                drawMetalCircle(colors.base);
-                onClose?.();
-            }
-        });
-    });
-
-    return container;
 }
 
 export class PopupWindow {
@@ -198,7 +74,7 @@ export class PopupWindow {
         const { titleBg, titleText } = createTitleBar(scene, width, height, '-- PAY TABLE --');
 
         // Close
-        const closeButton = createCloseButton(scene, width, height, () => this.destroy());
+        const closeButton = new CloseButton(scene, width, height, () => this.destroy());
 
         // Page text fallback
         this.contentText = scene.add.text(0, 0, '', {
@@ -219,7 +95,7 @@ export class PopupWindow {
         this.prevButton = this.createNavButton('Prev Page', () => this.prevPage());
         this.nextButton = this.createNavButton('Next Page', () => this.nextPage());
 
-        this.popupContainer.add([bg, titleBg, titleText, closeButton, this.contentText, this.prevButton, this.nextButton]);
+        this.popupContainer.add([bg, titleBg, titleText, closeButton.container, this.contentText, this.prevButton, this.nextButton]);
     }
 
     createNavButton(text, callback) {
