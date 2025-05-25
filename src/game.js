@@ -14,6 +14,17 @@ export class SlotGameScene extends Phaser.Scene {
   }
 
   preload() {
+    // Loading text above the bar
+    this.add.text(
+      LAYOUT.GAME_WIDTH / 2,
+      LAYOUT.GAME_HEIGHT / 2 - 50,
+      'Loading game modules...',
+      {
+        fontSize: '24px',
+        color: '#ffffff',
+      }
+    ).setOrigin(0.5);
+
     // Background for the loading bar
     const barBg = this.add.graphics();
     barBg.fillStyle(0x222222, 1);
@@ -267,7 +278,7 @@ export class SlotGameScene extends Phaser.Scene {
       this.totalBetDisplay.valueText.setText(`${this.currencySymbol}${this.currentBet * this.currentLines}`);
     }, 1, 50);
 
-    this.lineControls = new Control(this, 'LINES', this.currentLines, false,  (val) => {
+    this.lineControls = new Control(this, 'LINES', this.currentLines, false, (val) => {
       this.currentLines = val;
       this.totalBetDisplay.valueText.setText(`${this.currencySymbol}${this.currentBet * this.currentLines}`);
     });
@@ -448,7 +459,7 @@ export class SlotGameScene extends Phaser.Scene {
 
       container.add([infoButton, infoText]);
     }
-    
+
 
     return container;
   }
