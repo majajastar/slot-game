@@ -141,11 +141,6 @@ export class SlotGameScene extends Phaser.Scene {
 
   showWinPopup(matchDetails) {
     const popup = this.add.container(0, 0).setDepth(Number.MAX_SAFE_INTEGER);
-    if (matchDetails.length) {
-      while (matchDetails.length < 20) {
-        matchDetails.push(matchDetails[0]);
-      }
-    }
     const maxRow = 7;
     const maxCol = Math.ceil(matchDetails.length / maxRow); // 5 columns for 20 items with 4 rows
 
