@@ -145,7 +145,7 @@ export class SlotGameScene extends Phaser.Scene {
     const maxCol = Math.ceil(matchDetails.length / maxRow); // 5 columns for 20 items with 4 rows
 
     // Popup size - adjust if needed (max 80% screen size)
-    const width = LAYOUT.GAME_WIDTH ;
+    const width = LAYOUT.GAME_WIDTH;
     const height = LAYOUT.GAME_HEIGHT * 0.8;
     const margin_x = (LAYOUT.GAME_WIDTH - width) / 2;
     const margin_y = (LAYOUT.GAME_HEIGHT - height) / 2;
@@ -198,7 +198,7 @@ export class SlotGameScene extends Phaser.Scene {
       container.add(img);
 
       // Create and add the multiplier text
-      const text = scene.add.text(symbolSize * 1.2, symbolSize * 0.6 , `x ${count}`, STYLE.smallCardText);
+      const text = scene.add.text(symbolSize * 1.2, symbolSize * 0.6, `x ${count}`, STYLE.smallCardText);
       text.setOrigin(0, 0.5); // Vertically center it next to the symbol
       container.add(text);
 
@@ -289,8 +289,8 @@ export class SlotGameScene extends Phaser.Scene {
     this.userGameCard = new UserGameCard(this, LAYOUT.GAME_WIDTH, 0, this.playerId, this.gameId, this.balance);
     this.lineButtonsManager = new LineButtonsManager(this, this.lineControls);
     this.lineButtonsManager.lineButtonGroup[1].clickEffect(true);
-    this.infoButton = new InfoButton(this, 40 * SCALE, 40 * SCALE);
-    this.optionButotn = new OptionsButon(this, 40 * SCALE, 90 * SCALE);
+    this.infoButton = new InfoButton(this, 30 * SCALE, 30 * SCALE, 26 * SCALE);
+    this.optionButotn = new OptionsButon(this, 30 * SCALE, 90 * SCALE, 26 * SCALE);
 
     this.positionControlsAndSpinButton();
   }

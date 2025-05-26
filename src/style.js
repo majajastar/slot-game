@@ -41,7 +41,7 @@ export const STYLE = {
     fontStyle: 'bold',
     stroke: '#000000',
     strokeThickness: 2 * SCALE,
-    padding: { x: 0  * SCALE, y: -15 * SCALE },
+    padding: { x: 0 * SCALE, y: -15 * SCALE },
     align: 'center'
   },
   spinButton: {
@@ -104,6 +104,17 @@ export const STYLE = {
       radiusFactor: 0.6
     }
   },
+  METAL_STYLE: {
+    outer: { color: 0x6e7f80, alpha: 1 },       // steel gray, slightly muted
+    inner: { color: 0xc0c0c0, alpha: 1 },       // shiny silver
+    highlight: {
+      color: 0xffffff,
+      alpha: 0.15,
+      offsetYFactor: -0.5,
+      radiusFactor: 0.6
+    }
+  },
+
   OCEAN_STYLE_CLICKED: {
     outer: { color: 0x370617, alpha: 1 },
     inner: { color: 0xff6f61, alpha: 1 },
@@ -141,7 +152,7 @@ export const STYLE = {
     align: 'center'
   },
   iconText: {
-    fontSize: `${16 * SCALE}px`,
+    fontSize: `${26 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.buttonText,
     fontStyle: 'bold',

@@ -142,3 +142,4 @@ export const config = {
     parent: 'game-container',  // Optional: if you have a div container in HTML
   }
 };
+  

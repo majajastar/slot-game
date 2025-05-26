@@ -546,14 +546,14 @@ export class CloseButton {
 }
 
 export class OptionsButon {
-    constructor(scene, x, y, lineWidth = 14 * SCALE, lineHeight = 2 * SCALE, spacing = 6 * SCALE) {
+    constructor(scene, x, y, radius = 26 * SCALE, lineWidth = 14 * SCALE, lineHeight = 2 * SCALE, spacing = 6 * SCALE) {
         this.scene = scene;
         this.x = x;
         this.y = y;
         this.lineWidth = lineWidth;
         this.lineHeight = lineHeight;
         this.spacing = spacing;
-        this.circleRadius = 20 * SCALE;
+        this.circleRadius = radius;
 
         this.createIcon();
         this.addInteractivity();
@@ -567,21 +567,21 @@ export class OptionsButon {
 
         const outerRadius = circleRadius;
         const innerRadius = circleRadius - 3 * SCALE;
-
+        const style = STYLE.METAL_STYLE;
         // Outer border (darker ocean)
-        this.icon.fillStyle(STYLE.OCEAN_STYLE.outer.color, STYLE.OCEAN_STYLE.outer.alpha);
+        this.icon.fillStyle(style.outer.color, style.outer.alpha);
         this.icon.fillCircle(0, 0, outerRadius);
 
         // Inner fill (lighter ocean)
-        this.icon.fillStyle(STYLE.OCEAN_STYLE.inner.color, STYLE.OCEAN_STYLE.inner.alpha);
+        this.icon.fillStyle(style.inner.color, style.inner.alpha);
         this.icon.fillCircle(0, 0, innerRadius);
 
         // Glossy highlight
-        this.icon.fillStyle(STYLE.OCEAN_STYLE.highlight.color, STYLE.OCEAN_STYLE.highlight.alpha);
+        this.icon.fillStyle(style.highlight.color, style.highlight.alpha);
         this.icon.fillCircle(
             0,
-            innerRadius * STYLE.OCEAN_STYLE.highlight.offsetYFactor,
-            innerRadius * STYLE.OCEAN_STYLE.highlight.radiusFactor
+            innerRadius * style.highlight.offsetYFactor,
+            innerRadius * style.highlight.radiusFactor
         );
 
         // Draw menu lines
@@ -661,7 +661,7 @@ export class OptionsButon {
 }
 
 export class InfoButton {
-    constructor(scene, x, y, radius = 20 * SCALE, winningPatterns = WINNING_PATTERNS) {
+    constructor(scene, x, y, radius = 26 * SCALE, winningPatterns = WINNING_PATTERNS) {
         this.scene = scene;
         this.x = x;
         this.y = y;
@@ -697,7 +697,7 @@ export class InfoButton {
     drawButton() {
         const outerRadius = this.radius;
         const innerRadius = this.radius - 3 * SCALE;
-        const style = STYLE.OCEAN_STYLE;
+        const style = STYLE.METAL_STYLE;
 
         this.graphics.clear();
         this.graphics.fillStyle(style.outer.color, style.outer.alpha);
