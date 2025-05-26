@@ -1,7 +1,7 @@
 // style.js
 import { COLORS, LAYOUT, SCALE } from './config.js';
 
-export const FONT = 'Comic Sans MS'
+export const FONT = `'Comic Neue', cursive`;
 
 export const STYLE = {
   titleText: {
@@ -65,7 +65,7 @@ export const STYLE = {
     fixedWidth: LAYOUT.CONTROL_WIDTH
   },
   label: {
-    fontSize: `${34 * SCALE}px`,
+    fontSize: `${32 * SCALE}px`,
     fontFamily: FONT,
     fill: COLORS.labelText,
     fontStyle: 'bold',

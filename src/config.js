@@ -133,7 +133,7 @@ export const REEL_CONFIG = {
 
 export const config = {
   type: Phaser.AUTO,
-  width: LAYOUT.GAME_WIDTH,
+  width: GAME_WIDTH,
   height: GAME_HEIGHT,
   backgroundColor: 0x886644,
   scale: {

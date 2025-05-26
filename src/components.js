@@ -354,7 +354,7 @@ export class OptionsPopup {
     }
 
     createPopup() {
-        const width = LAYOUT.GAME_WIDTH * 0.3;
+        const width = LAYOUT.GAME_WIDTH * 0.8;
         const height = LAYOUT.GAME_HEIGHT * 0.3;
         const radius = 12 * SCALE;
         const closeButton = new CloseButton(this.scene, width, height, () => this.destroy());
@@ -363,25 +363,27 @@ export class OptionsPopup {
         bg.fillRoundedRect(-width / 2, -height / 2, width, height, radius);
         this.container.add(bg);
 
-        const title = this.scene.add.text(0, -height / 2 + 20 * SCALE, "Settings", STYLE.titleText).setOrigin(0.5);
+        const title = this.scene.add.text(0, -height / 2 + height/10, "Settings", STYLE.titleText).setOrigin(0.5);
         this.container.add(title);
 
+        const spacingY = height / 10
         // Sound Effects Toggle
-        this.sfxToggle = this.createToggle(0, -10 * SCALE, "Sound Effects", "sfxEnabled");
+        this.sfxToggle = this.createToggle(0, spacingY * 2 , "Sound Effects", "sfxEnabled");
 
         // Music Toggle
-        this.musicToggle = this.createToggle(0, 40 * SCALE, "Background Music", "musicEnabled");
+        this.musicToggle = this.createToggle(0, spacingY * 3, "Background Music", "musicEnabled");
         this.container.add(closeButton.container);
     }
 
     createToggle(x, y, labelText, settingKey) {
-        const label = this.scene.add.text(x - 100 * SCALE, y, labelText, STYLE.label).setOrigin(0, 0.5);
+        const width = LAYOUT.GAME_WIDTH * 0.8;
+        const label = this.scene.add.text(x - width/2.5, y, labelText, STYLE.label).setOrigin(0, 0.5);
 
         const toggle = this.scene.add.text(
-            x + 100 * SCALE,
+            x + width/4,
             y,
             this.scene.settings[settingKey] ? "ON" : "OFF",
-            { ...STYLE.value }  // Clone to avoid mutation
+            STYLE.label
         )
             .setOrigin(1, 0.5)
             .setInteractive({ useHandCursor: true });
