@@ -1,27 +1,5 @@
 /**
  * TheLuxe Slot Game - Direct WebSocket Client
-<<<<<<< HEAD
- * Simple approach: connect → handle messages → render UI
- */
-
-// Symbol emojis
-const SYMBOLS = {
-    'WILD': '💎', 'SCATTER': '⭐',
-    'SYM_1': '👑', 'SYM_2': '💍', 'SYM_3': '🏆', 'SYM_4': '💵',
-    'SYM_5': '🎲', 'SYM_6': '🎯', 'SYM_7': '🎰', 'SYM_8': '🪙', 'SYM_9': '💠'
-};
-
-const SYMBOL_NAMES = {
-    'WILD': 'Wild', 'SCATTER': 'Scatter',
-    'SYM_1': 'Crown', 'SYM_2': 'Ring', 'SYM_3': 'Trophy', 'SYM_4': 'Cash',
-    'SYM_5': 'Dice', 'SYM_6': 'Dart', 'SYM_7': 'Slot', 'SYM_8': 'Coin', 'SYM_9': 'Gem'
-};
-
-// Game state
-let socket = null;
-let isSpinning = false;
-let pingInterval = null;
-=======
  * Uses fake data for fields not available from server
  */
 
@@ -72,33 +50,17 @@ let socket = null;
 let isSpinning = false;
 let pingInterval = null;
 let currentBalance = 0;
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initGrid();
-<<<<<<< HEAD
-    bindControls();
-=======
     renderPaytable();
     renderPaylines();
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     connect();
 });
 
 // Create 4x5 grid
 function initGrid() {
-<<<<<<< HEAD
-    const reels = document.getElementById('reels');
-    reels.innerHTML = '';
-    for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 5; c++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.id = `cell-${r}-${c}`;
-            cell.textContent = '❓';
-            reels.appendChild(cell);
-=======
     const grid = document.getElementById('reelGrid');
     grid.innerHTML = '';
     for (let r = 0; r < 4; r++) {
@@ -108,27 +70,10 @@ function initGrid() {
             cell.id = `cell-${r}-${c}`;
             cell.textContent = '◯';
             grid.appendChild(cell);
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
         }
     }
 }
 
-<<<<<<< HEAD
-// Bind controls
-function bindControls() {
-    document.getElementById('spin-btn').addEventListener('click', spin);
-    document.getElementById('bet-select').addEventListener('change', updateTotalBet);
-    document.getElementById('lines-select').addEventListener('change', updateTotalBet);
-    document.getElementById('clear-logs').addEventListener('click', () => {
-        document.getElementById('logs').innerHTML = '';
-    });
-}
-
-function updateTotalBet() {
-    const bet = parseInt(document.getElementById('bet-select').value);
-    const lines = parseInt(document.getElementById('lines-select').value);
-    document.getElementById('total-bet').textContent = bet * lines;
-=======
 // Render paytable using fake data
 function renderPaytable() {
     const container = document.getElementById('paytable');
@@ -175,17 +120,12 @@ function renderPaylines() {
             </div>
         </div>
     `).join('');
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
 }
 
 // ==================== CONNECTION ====================
 
 async function connect() {
-<<<<<<< HEAD
-    updateStatus('Fetching token...', 'connecting');
-=======
     updateLoading('Fetching token...');
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     
     try {
         // Step 1: Get SID
@@ -198,17 +138,10 @@ async function connect() {
         log('SID fetched');
         
         // Step 2: Launch API
-<<<<<<< HEAD
-        updateStatus('Launching game...', 'connecting');
-=======
         updateLoading('Launching game...');
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
         const launchRes = await fetch(CONFIG.launchUrl, {
             method: 'POST',
-<<<<<<< HEAD
-=======
             // use 'text/plain'
->>>>>>> 11f1d63 (Use text/plain for launch)
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 operatorId: CONFIG.operatorId,
@@ -231,11 +164,7 @@ async function connect() {
         log('Token received');
         
         // Step 3: WebSocket
-<<<<<<< HEAD
-        updateStatus('Connecting...', 'connecting');
-=======
         updateLoading('Connecting to game...');
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
         const wsUrl = `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
         
         socket = new WebSocket(wsUrl);
@@ -252,30 +181,18 @@ async function connect() {
         
         socket.onerror = (err) => {
             log('WebSocket error', 'error');
-<<<<<<< HEAD
-            updateStatus('Error', 'disconnected');
-=======
             updateLoading('Connection failed - retry?', true);
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
         };
         
         socket.onclose = () => {
             log('WebSocket closed');
-<<<<<<< HEAD
-            updateStatus('Disconnected', 'disconnected');
-=======
             updateLoading('Disconnected', true);
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
             clearInterval(pingInterval);
         };
         
     } catch (err) {
         log('Connection failed: ' + err.message, 'error');
-<<<<<<< HEAD
-        updateStatus('Failed - Retry?', 'disconnected');
-=======
         updateLoading('Failed - Click to retry', true);
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     }
 }
 
@@ -295,115 +212,6 @@ function handleMessage(msg) {
     }
     
     log('← ' + JSON.stringify(msg).substring(0, 150));
-<<<<<<< HEAD
-    
-    const { type, data } = msg.vals;
-    
-    switch (type) {
-        case 1: // Login
-            handleLogin(data);
-            break;
-        case 3: // Lobby
-            handleLobby(data);
-            break;
-        case 100000: // Game messages
-            handleGameMessage(data);
-            break;
-    }
-}
-
-function handleLogin(data) {
-    log(`Logged in: ${data.sessionId}`);
-    send({ type: '2', data: [{ subType: 0 }] }); // Lobby
-}
-
-function handleLobby(data) {
-    log(`Lobby: ${data.gameId}, Balance: ${data.balance}`);
-    updateBalance(data.balance);
-    
-    // Join room
-    send({ type: '100000', data: [{ subType: 100004 }] });
-    
-    // Sync room info
-    send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
-    
-    // Start ping
-    pingInterval = setInterval(() => {
-        send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
-    }, 20000);
-}
-
-function handleGameMessage(data) {
-    const subType = data.subType;
-    const subData = data.subData?.[0];
-    console.log(`data = ${JSON.stringify(data)}`)
-    switch (subType) {
-        case 100005: // Join room
-            handleJoinRoom(subData);
-            break;
-        case 100071: // Sub data
-            handleSubData(subData);
-            break;
-    }
-}
-
-function handleJoinRoom(data) {
-    log(`Joined room: ${data.roomId}`);
-    updateStatus('Connected', 'connected');
-    
-    // Show game panel
-    document.getElementById('game-panel').classList.remove('hidden');
-    
-    // Update UI
-    document.getElementById('game-name').textContent = data.gameType;
-    document.getElementById('room-id').textContent = data.roomId;
-    updateBalance(data.balance);
-    
-    if (data.betInfo?.[0]) {
-        document.getElementById('min-bet').textContent = data.betInfo[0].minBet;
-        document.getElementById('max-bet').textContent = data.betInfo[0].maxBet;
-    }
-}
-
-function handleSubData(subData) {
-    if (!subData?.opCode) return;
-    
-    switch (subData.opCode) {
-        case 'SyncRoomInfo':
-            if (subData.roomInfo) {
-                document.getElementById('min-bet').textContent = subData.roomInfo.minBet;
-                document.getElementById('max-bet').textContent = subData.roomInfo.maxBet;
-            }
-            break;
-            
-        case 'SetBet':
-            handleSpinResult(subData);
-            break;
-    }
-}
-
-// ==================== SPIN & RENDER ====================
-
-function spin() {
-    if (isSpinning) return;
-    
-    const bet = parseInt(document.getElementById('bet-select').value);
-    const line = parseInt(document.getElementById('lines-select').value);
-    
-    isSpinning = true;
-    document.getElementById('spin-btn').disabled = true;
-    document.getElementById('spin-btn').textContent = 'Spinning...';
-    
-    // Clear wins
-    document.querySelectorAll('.cell').forEach(c => c.classList.remove('winner'));
-    document.querySelectorAll('.payline').forEach(p => p.classList.remove('winner'));
-    hideWinDisplay();
-    
-    // Animate
-    document.querySelectorAll('.cell').forEach(c => c.classList.add('spinning'));
-    
-    // Send spin
-=======
     
     const { type, data } = msg.vals;
     
@@ -521,7 +329,6 @@ function spin() {
     }, 60);
     
     // Send spin request
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     send({
         type: '100000',
         data: [{
@@ -532,12 +339,6 @@ function spin() {
 }
 
 function handleSpinResult(data) {
-<<<<<<< HEAD
-    // Stop animation
-    document.querySelectorAll('.cell').forEach(c => c.classList.remove('spinning'));
-    
-=======
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     const betInfo = data.betInfo?.[0];
     if (!betInfo) {
         resetSpin();
@@ -545,13 +346,6 @@ function handleSpinResult(data) {
     }
     
     const result = betInfo.gameResult;
-<<<<<<< HEAD
-    
-    // Update balance
-    updateBalance(betInfo.finalBalance);
-    document.getElementById('last-win').textContent = result.totalWinAmount || 0;
-    
-=======
     const winAmount = result.totalWinAmount || 0;
     
     // Update server data
@@ -564,21 +358,10 @@ function handleSpinResult(data) {
     document.getElementById('spinCount').textContent = fakeState.spinCount;
     document.getElementById('totalWin').textContent = '$' + fakeState.totalWin.toLocaleString();
     
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     // Render grid
     renderGrid(result.grid);
     
     // Show wins
-<<<<<<< HEAD
-    if (result.totalWinAmount > 0 && result.lineWins?.length > 0) {
-        showWins(result.lineWins, result.totalWinAmount);
-    }
-    
-    // Show details
-    showDetails(result, betInfo);
-    
-    log(`Win: ${result.totalWinAmount}, Balance: ${betInfo.finalBalance}`);
-=======
     if (winAmount > 0 && result.lineWins?.length > 0) {
         showWins(result.lineWins, winAmount);
     } else {
@@ -589,7 +372,6 @@ function handleSpinResult(data) {
     addToHistory(betInfo.bet, winAmount);
     
     log(`Win: ${winAmount}, Balance: ${betInfo.finalBalance}`);
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     resetSpin();
 }
 
@@ -598,62 +380,13 @@ function renderGrid(grid) {
         for (let c = 0; c < 5; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
             const symbol = grid[r][c];
-<<<<<<< HEAD
-            cell.textContent = SYMBOLS[symbol] || symbol;
-            cell.className = `cell symbol-${symbol}`;
-=======
             cell.textContent = SYMBOLS[symbol]?.display || symbol;
             cell.className = `reel-cell symbol-${symbol}`;
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
         }
     }
 }
 
 function showWins(lineWins, totalWin) {
-<<<<<<< HEAD
-    // Highlight cells and paylines
-    lineWins.forEach(lw => {
-        const lineIdx = lw.info[0];
-        const positions = lw.positions;
-        
-        // Payline indicator
-        const indicator = document.querySelector(`.payline[data-line="${lineIdx}"]`);
-        if (indicator) indicator.classList.add('winner');
-        
-        // Cells
-        positions.forEach(([r, c]) => {
-            const cell = document.getElementById(`cell-${r}-${c}`);
-            if (cell) cell.classList.add('winner');
-        });
-    });
-    
-    // Show popup
-    const popup = document.getElementById('win-display');
-    document.getElementById('win-amount').textContent = totalWin;
-    document.getElementById('win-lines').textContent = lineWins.length + ' lines won';
-    popup.classList.remove('hidden');
-    
-    setTimeout(() => popup.classList.add('hidden'), 3000);
-}
-
-function hideWinDisplay() {
-    document.getElementById('win-display').classList.add('hidden');
-}
-
-function showDetails(result, betInfo) {
-    const container = document.getElementById('last-spin-info');
-    const details = document.getElementById('spin-details');
-    
-    let html = `<div>Bet: ${betInfo.bet} × ${betInfo.line} = ${betInfo.bet * betInfo.line}</div>`;
-    html += `<div>Win: ${result.totalWinAmount || 0}</div>`;
-    
-    if (result.lineWins?.length > 0) {
-        html += `<div style="margin-top:8px">Winning Lines:</div>`;
-        result.lineWins.forEach(lw => {
-            const [line, sym, count, win] = lw.info;
-            html += `<div>Line ${line+1}: ${SYMBOL_NAMES[sym]} ×${count} = ${win}</div>`;
-        });
-=======
     // Highlight winning cells
     lineWins.forEach(lw => {
         const positions = lw.positions;
@@ -708,14 +441,11 @@ function addToHistory(bet, win) {
     // Keep last 10
     while (container.children.length > 10) {
         container.removeChild(container.lastChild);
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
     }
 }
 
 function resetSpin() {
     isSpinning = false;
-<<<<<<< HEAD
-<<<<<<< HEAD
     const btn = document.getElementById('spin-btn');
     btn.disabled = false;
     btn.textContent = '🎰 SPIN';
@@ -731,13 +461,8 @@ function updateStatus(text, type) {
     const status = document.getElementById('connection-status');
     status.textContent = text;
     status.className = `status ${type}`;
-}
 
-=======
-    const btn = document.getElementById('spinBtn');
-=======
     const btn = document.getElementById('spinSpin');
->>>>>>> 11f1d63 (Use text/plain for launch)
     if (btn) {
         btn.disabled = false;
         btn.textContent = '🎰 SPIN';
@@ -780,7 +505,6 @@ function updateLoading(text, showRetry = false) {
     }
 }
 
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
 function log(msg, type = 'info') {
     const logs = document.getElementById('logs');
     const entry = document.createElement('div');
@@ -788,11 +512,8 @@ function log(msg, type = 'info') {
     entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
     logs.insertBefore(entry, logs.firstChild);
     while (logs.children.length > 100) logs.removeChild(logs.lastChild);
-<<<<<<< HEAD
-=======
 }
 
 function clearLogs() {
     document.getElementById('logs').innerHTML = '';
->>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
 }
