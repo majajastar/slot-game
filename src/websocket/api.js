@@ -20,7 +20,7 @@ export async function getSid() {
 export async function callLaunchApi(sid) {
   const body = JSON.stringify({
     operatorId: 'op001',
-    gameTypeId: 'slot',
+    gameTypeId: 'theluxe',
     player: {
       userId: testUserId,
       currency: 'USD',

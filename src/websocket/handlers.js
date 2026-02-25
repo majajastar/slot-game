@@ -119,20 +119,10 @@ export class MessageHandler {
         break;
       case 'SetBet':
         const info = subData.betInfo[0];
-        const result = info.gameResult;
+        console.log(`Info = ${info}`)
+        
         console.log("===[Parsed Bet Info] ===");
-        //console.log(`Error Code: ${subData.errCode}`);
-        //console.log(`Operation Code: ${subData.opCode}`);
-        //console.log(`Bet Amount: ${info.bet}`);
-        //console.log(`Line: ${info.line}`);
-        //console.log(`Round ID: ${info.roundId}`);
-        //console.log(`Balance: ${info.balance.toFixed(2)}`);
         console.log(`Final Balance: ${info.finalBalance.toFixed(2)}`);
-        //console.log("Award Base:", result.awardBase);
-        //console.log("Win Amount:", result.winAmount);
-        //console.log("Final Symbols:");
-        result.finalSymbols.forEach(row => console.log("  ", row.join(", ")));
-        console.log("Match Details:", result.matchDetails.length ? result.matchDetails : "[]");
         this.onMessageCallback('SetBet', subData);
         break;
       default:
