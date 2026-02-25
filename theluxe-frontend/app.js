@@ -1,105 +1,84 @@
 /**
- * TheLuxe Slot Game - Main Application
+ * TheLuxe Slot Game - Direct WebSocket Client
+ * Simple approach: connect → handle messages → render UI
  */
 
-// Global client instance
-let wsClient = null;
-let isSpinning = false;
-
-// Symbol display names
-const SYMBOL_NAMES = {
-    'WILD': 'Wild',
-    'SCATTER': 'Scatter',
-    'SYM_1': 'Crown',
-    'SYM_2': 'Ring',
-    'SYM_3': 'Trophy',
-    'SYM_4': 'Cash',
-    'SYM_5': 'Dice',
-    'SYM_6': 'Dart',
-    'SYM_7': 'Slot',
-    'SYM_8': 'Coin',
-    'SYM_9': 'Gem'
+// Symbol emojis
+const SYMBOLS = {
+    'WILD': '💎', 'SCATTER': '⭐',
+    'SYM_1': '👑', 'SYM_2': '💍', 'SYM_3': '🏆', 'SYM_4': '💵',
+    'SYM_5': '🎲', 'SYM_6': '🎯', 'SYM_7': '🎰', 'SYM_8': '🪙', 'SYM_9': '💠'
 };
 
-// Initialize the application
+const SYMBOL_NAMES = {
+    'WILD': 'Wild', 'SCATTER': 'Scatter',
+    'SYM_1': 'Crown', 'SYM_2': 'Ring', 'SYM_3': 'Trophy', 'SYM_4': 'Cash',
+    'SYM_5': 'Dice', 'SYM_6': 'Dart', 'SYM_7': 'Slot', 'SYM_8': 'Coin', 'SYM_9': 'Gem'
+};
+
+// Game state
+let socket = null;
+let isSpinning = false;
+let pingInterval = null;
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    initializeGrid();
-    bindEvents();
-    updateTotalBet();
-    
-    // Auto-connect on page load
-    autoConnect();
+    initGrid();
+    bindControls();
+    connect();
 });
 
-// Initialize the 4x5 grid
-function initializeGrid() {
+// Create 4x5 grid
+function initGrid() {
     const reels = document.getElementById('reels');
     reels.innerHTML = '';
-    
-    for (let row = 0; row < CONFIG.rows; row++) {
-        for (let col = 0; col < CONFIG.cols; col++) {
+    for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 5; c++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            cell.id = `cell-${row}-${col}`;
-            cell.dataset.row = row;
-            cell.dataset.col = col;
+            cell.id = `cell-${r}-${c}`;
             cell.textContent = '❓';
             reels.appendChild(cell);
         }
     }
 }
 
-// Bind UI events
-function bindEvents() {
-    // Connection
-    document.getElementById('connect-btn').addEventListener('click', handleConnect);
-    
-    // Game controls
-    document.getElementById('spin-btn').addEventListener('click', handleSpin);
+// Bind controls
+function bindControls() {
+    document.getElementById('spin-btn').addEventListener('click', spin);
     document.getElementById('bet-select').addEventListener('change', updateTotalBet);
     document.getElementById('lines-select').addEventListener('change', updateTotalBet);
-    
-    // Logs
-    document.getElementById('clear-logs').addEventListener('click', clearLogs);
+    document.getElementById('clear-logs').addEventListener('click', () => {
+        document.getElementById('logs').innerHTML = '';
+    });
 }
 
-// Update total bet display
 function updateTotalBet() {
     const bet = parseInt(document.getElementById('bet-select').value);
     const lines = parseInt(document.getElementById('lines-select').value);
     document.getElementById('total-bet').textContent = bet * lines;
 }
 
-// Auto-connect function - same flow as client.js
-async function autoConnect() {
-    const btn = document.getElementById('connect-btn');
-    const status = document.getElementById('connection-status');
-    
-    btn.disabled = true;
-    status.textContent = 'Fetching token...';
-    status.className = 'status connecting';
+// ==================== CONNECTION ====================
+
+async function connect() {
+    updateStatus('Fetching token...', 'connecting');
     
     try {
-        log('Fetching SID...', 'info');
-        
-        // Step 1: Get SID (same as client.js)
-        const sidResponse = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
+        // Step 1: Get SID
+        const sidRes = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ uuid: CONFIG.testUuid, userId: CONFIG.testUserId })
         });
+        const { sid } = await sidRes.json();
+        log('SID fetched');
         
-        if (!sidResponse.ok) throw new Error('SID request failed: ' + sidResponse.status);
-        const sidData = await sidResponse.json();
-        log(`SID received: ${sidData.sid.substring(0, 20)}...`, 'info');
-        
-        // Step 2: Call launch API (same as client.js)
-        status.textContent = 'Launching game...';
-        log('Calling launch API...', 'info');
-        
-        const launchResponse = await fetch(CONFIG.launchUrl, {
+        // Step 2: Launch API
+        updateStatus('Launching game...', 'connecting');
+        const launchRes = await fetch(CONFIG.launchUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 operatorId: CONFIG.operatorId,
                 gameTypeId: CONFIG.gameTypeId,
@@ -107,347 +86,268 @@ async function autoConnect() {
                     userId: CONFIG.testUserId,
                     currency: CONFIG.currency,
                     language: 'en',
-                    sid: sidData.sid,
+                    sid,
                     name: 'testUser'
                 },
                 apiSecret: CONFIG.apiSecret
             })
         });
-        
-        if (!launchResponse.ok) throw new Error('Launch API failed: ' + launchResponse.status);
-        const launchData = await launchResponse.json();
-        
-        // Extract token from redirect URL
+        const launchData = await launchRes.json();
         const redirectUrl = launchData.vals?.data?.redirectUrl;
-        if (!redirectUrl) throw new Error('No redirect URL in response');
-        
         const url = new URL(redirectUrl);
         const token = url.searchParams.get('token');
         const lang = url.searchParams.get('lang') || 'en';
+        log('Token received');
         
-        if (!token) throw new Error('No token in redirect URL');
+        // Step 3: WebSocket
+        updateStatus('Connecting...', 'connecting');
+        const wsUrl = `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
         
-        log('Token fetched successfully', 'info');
+        socket = new WebSocket(wsUrl);
         
-        // Step 3: Connect WebSocket (same as client.js)
-        status.textContent = 'Connecting to game...';
-        await connectWithToken(token, lang);
+        socket.onopen = () => {
+            log('WebSocket connected');
+            send({ type: '0', data: [{ subType: 0 }] }); // Login
+        };
         
-    } catch (error) {
-        log('Auto-connect failed: ' + error.message, 'error');
-        console.error('Auto-connect error:', error);
-        status.textContent = 'Failed - Click to retry';
-        status.className = 'status disconnected';
-        btn.disabled = false;
-        btn.textContent = 'Retry Connection';
+        socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            handleMessage(msg);
+        };
+        
+        socket.onerror = (err) => {
+            log('WebSocket error', 'error');
+            updateStatus('Error', 'disconnected');
+        };
+        
+        socket.onclose = () => {
+            log('WebSocket closed');
+            updateStatus('Disconnected', 'disconnected');
+            clearInterval(pingInterval);
+        };
+        
+    } catch (err) {
+        log('Connection failed: ' + err.message, 'error');
+        updateStatus('Failed - Retry?', 'disconnected');
     }
 }
 
-// Connect with token (extracted from handleConnect)
-async function connectWithToken(token, lang) {
-    const btn = document.getElementById('connect-btn');
-    const status = document.getElementById('connection-status');
-    
-    // Create and connect WebSocket client
-    wsClient = new TheLuxeWSClient();
-    
-    // Set up callbacks
-    wsClient.on('Connect', () => {
-        status.textContent = 'Connected';
-        status.className = 'status connected';
-        btn.textContent = 'Disconnect';
-        btn.disabled = false;
-        btn.onclick = handleDisconnect;
-        
-        // Show game panel
-        document.getElementById('game-panel').classList.remove('hidden');
-        
-        // Send login
-        wsClient.sendLogin();
-    });
-    
-    wsClient.on('Disconnect', () => {
-        status.textContent = 'Disconnected';
-        status.className = 'status disconnected';
-        btn.textContent = 'Connect';
-        btn.disabled = false;
-        btn.onclick = handleConnect;
-        
-        // Hide game panel
-        document.getElementById('game-panel').classList.add('hidden');
-    });
-    
-    wsClient.on('Error', (error) => {
-        log('Connection error: ' + JSON.stringify(error), 'error');
-        status.textContent = 'Error';
-        status.className = 'status disconnected';
-        btn.disabled = false;
-    });
-    
-    wsClient.on('Message', (direction, msg) => {
-        const type = direction === 'send' ? 'SEND' : 'RECV';
-        const className = direction === 'send' ? 'send' : 'receive';
-        const shortMsg = JSON.stringify(msg).substring(0, 200);
-        log(`[${type}] ${shortMsg}...`, className);
-    });
-    
-    wsClient.on('Login', (data) => {
-        log(`Logged in - Session: ${data.sessionId}`, 'info');
-    });
-    
-    wsClient.on('Lobby', (data) => {
-        updateBalance(data.balance);
-        log(`Lobby - Game: ${data.gameId}, Balance: ${data.balance}`, 'info');
-    });
-    
-    wsClient.on('JoinRoom', (data) => {
-        document.getElementById('game-name').textContent = data.gameType;
-        document.getElementById('room-id').textContent = data.roomId;
-        updateBalance(data.balance);
-        
-        // Update bet info
-        if (data.betInfo && data.betInfo[0]) {
-            const betInfo = data.betInfo[0];
-            document.getElementById('min-bet').textContent = betInfo.minBet;
-            document.getElementById('max-bet').textContent = betInfo.maxBet;
-        }
-        
-        log(`Joined room ${data.roomId}`, 'info');
-    });
-    
-    wsClient.on('SyncRoom', (data) => {
-        if (data.roomInfo) {
-            document.getElementById('min-bet').textContent = data.roomInfo.minBet;
-            document.getElementById('max-bet').textContent = data.roomInfo.maxBet;
-        }
-    });
-    
-    wsClient.on('SetBet', (data) => {
-        handleSpinResult(data);
-    });
-    
-    await wsClient.connect(token, lang);
+function send(msg) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(msg));
+        log('→ ' + JSON.stringify(msg).substring(0, 100));
+    }
 }
 
-// Handle connect button (for manual reconnection)
-async function handleConnect() {
-    // Disconnect if already connected
-    if (wsClient && wsClient.isConnected) {
-        handleDisconnect();
+// ==================== MESSAGE HANDLER ====================
+
+function handleMessage(msg) {
+    if (msg.errCode !== 0) {
+        log('Server error: ' + msg.errCode, 'error');
         return;
     }
     
-    // Start auto-connect flow
-    await autoConnect();
-}
-
-// Handle disconnect
-function handleDisconnect() {
-    if (wsClient) {
-        wsClient.disconnect();
-        wsClient = null;
+    log('← ' + JSON.stringify(msg).substring(0, 150));
+    
+    const { type, data } = msg.vals;
+    
+    switch (type) {
+        case 1: // Login
+            handleLogin(data);
+            break;
+        case 3: // Lobby
+            handleLobby(data);
+            break;
+        case 100000: // Game messages
+            handleGameMessage(data);
+            break;
     }
 }
 
-// Fetch token from API
-async function fetchToken() {
-    try {
-        // Step 1: Get SID
-        const sidResponse = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uuid: CONFIG.testUuid, userId: CONFIG.testUserId })
-        });
-        
-        if (!sidResponse.ok) throw new Error('SID request failed');
-        const sidData = await sidResponse.json();
-        
-        // Step 2: Call launch API
-        const launchResponse = await fetch(CONFIG.launchUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                operatorId: CONFIG.operatorId,
-                gameTypeId: CONFIG.gameTypeId,
-                player: {
-                    userId: CONFIG.testUserId,
-                    currency: CONFIG.currency,
-                    language: 'en',
-                    sid: sidData.sid,
-                    name: 'testUser'
-                },
-                apiSecret: CONFIG.apiSecret
-            })
-        });
-        
-        if (!launchResponse.ok) throw new Error('Launch API failed');
-        const launchData = await launchResponse.json();
-        
-        // Extract token from redirect URL
-        const redirectUrl = launchData.vals?.data?.redirectUrl;
-        if (!redirectUrl) throw new Error('No redirect URL in response');
-        
-        const url = new URL(redirectUrl);
-        const token = url.searchParams.get('token');
-        
-        if (!token) throw new Error('No token in redirect URL');
-        
-        log('Token fetched successfully', 'info');
-        return token;
-        
-    } catch (error) {
-        log('Failed to fetch token: ' + error.message, 'error');
-        throw error;
+function handleLogin(data) {
+    log(`Logged in: ${data.sessionId}`);
+    send({ type: '2', data: [{ subType: 0 }] }); // Lobby
+}
+
+function handleLobby(data) {
+    log(`Lobby: ${data.gameId}, Balance: ${data.balance}`);
+    updateBalance(data.balance);
+    
+    // Join room
+    send({ type: '100000', data: [{ subType: 100004 }] });
+    
+    // Sync room info
+    send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
+    
+    // Start ping
+    pingInterval = setInterval(() => {
+        send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
+    }, 20000);
+}
+
+function handleGameMessage(data) {
+    const subType = data.subType;
+    const subData = data.subData?.[0];
+    console.log(`data = ${JSON.stringify(data)}`)
+    switch (subType) {
+        case 100005: // Join room
+            handleJoinRoom(subData);
+            break;
+        case 100071: // Sub data
+            handleSubData(subData);
+            break;
     }
 }
 
-// Handle spin button
-async function handleSpin() {
-    if (isSpinning || !wsClient || !wsClient.isConnected) return;
+function handleJoinRoom(data) {
+    log(`Joined room: ${data.roomId}`);
+    updateStatus('Connected', 'connected');
+    
+    // Show game panel
+    document.getElementById('game-panel').classList.remove('hidden');
+    
+    // Update UI
+    document.getElementById('game-name').textContent = data.gameType;
+    document.getElementById('room-id').textContent = data.roomId;
+    updateBalance(data.balance);
+    
+    if (data.betInfo?.[0]) {
+        document.getElementById('min-bet').textContent = data.betInfo[0].minBet;
+        document.getElementById('max-bet').textContent = data.betInfo[0].maxBet;
+    }
+}
+
+function handleSubData(subData) {
+    if (!subData?.opCode) return;
+    
+    switch (subData.opCode) {
+        case 'SyncRoomInfo':
+            if (subData.roomInfo) {
+                document.getElementById('min-bet').textContent = subData.roomInfo.minBet;
+                document.getElementById('max-bet').textContent = subData.roomInfo.maxBet;
+            }
+            break;
+            
+        case 'SetBet':
+            handleSpinResult(subData);
+            break;
+    }
+}
+
+// ==================== SPIN & RENDER ====================
+
+function spin() {
+    if (isSpinning) return;
     
     const bet = parseInt(document.getElementById('bet-select').value);
-    const lines = parseInt(document.getElementById('lines-select').value);
+    const line = parseInt(document.getElementById('lines-select').value);
     
     isSpinning = true;
-    const btn = document.getElementById('spin-btn');
-    btn.disabled = true;
-    btn.textContent = 'Spinning...';
+    document.getElementById('spin-btn').disabled = true;
+    document.getElementById('spin-btn').textContent = 'Spinning...';
     
-    // Clear previous wins
-    clearWinners();
+    // Clear wins
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('winner'));
+    document.querySelectorAll('.payline').forEach(p => p.classList.remove('winner'));
     hideWinDisplay();
     
-    // Start spin animation
-    startSpinAnimation();
+    // Animate
+    document.querySelectorAll('.cell').forEach(c => c.classList.add('spinning'));
     
-    // Send spin request
-    wsClient.sendSetBet(bet, lines);
+    // Send spin
+    send({
+        type: '100000',
+        data: [{
+            subType: 100070,
+            subData: [{ opCode: 'SetBet', message: { bet, line } }]
+        }]
+    });
 }
 
-// Start cell spin animation
-function startSpinAnimation() {
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => cell.classList.add('spinning'));
-}
-
-// Stop cell spin animation
-function stopSpinAnimation() {
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => cell.classList.remove('spinning'));
-}
-
-// Handle spin result
 function handleSpinResult(data) {
-    stopSpinAnimation();
+    // Stop animation
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('spinning'));
     
-    if (!data.betInfo || !data.betInfo[0]) {
-        log('Invalid spin result', 'error');
-        isSpinning = false;
-        resetSpinButton();
+    const betInfo = data.betInfo?.[0];
+    if (!betInfo) {
+        resetSpin();
         return;
     }
     
-    const betInfo = data.betInfo[0];
-    const gameResult = betInfo.gameResult;
+    const result = betInfo.gameResult;
     
     // Update balance
     updateBalance(betInfo.finalBalance);
+    document.getElementById('last-win').textContent = result.totalWinAmount || 0;
     
-    // Update grid with symbols
-    if (gameResult.grid) {
-        updateGrid(gameResult.grid);
+    // Render grid
+    renderGrid(result.grid);
+    
+    // Show wins
+    if (result.totalWinAmount > 0 && result.lineWins?.length > 0) {
+        showWins(result.lineWins, result.totalWinAmount);
     }
     
-    // Show win if any
-    const totalWin = gameResult.totalWinAmount || 0;
-    if (totalWin > 0 && gameResult.lineWins && gameResult.lineWins.length > 0) {
-        highlightWinners(gameResult.lineWins);
-        showWinDisplay(totalWin, gameResult.lineWins);
-    }
+    // Show details
+    showDetails(result, betInfo);
     
-    // Show last spin details
-    showLastSpinDetails(gameResult, betInfo);
-    
-    log(`Spin complete - Win: ${totalWin}, Balance: ${betInfo.finalBalance}`, 'info');
-    
-    isSpinning = false;
-    resetSpinButton();
+    log(`Win: ${result.totalWinAmount}, Balance: ${betInfo.finalBalance}`);
+    resetSpin();
 }
 
-// Update grid display
-function updateGrid(grid) {
-    for (let row = 0; row < CONFIG.rows; row++) {
-        for (let col = 0; col < CONFIG.cols; col++) {
-            const cell = document.getElementById(`cell-${row}-${col}`);
-            const symbol = grid[row][col];
-            cell.textContent = CONFIG.symbols[symbol] || symbol;
+function renderGrid(grid) {
+    for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 5; c++) {
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            const symbol = grid[r][c];
+            cell.textContent = SYMBOLS[symbol] || symbol;
             cell.className = `cell symbol-${symbol}`;
         }
     }
 }
 
-// Highlight winning cells
-function highlightWinners(lineWins) {
-    // Reset all payline indicators
-    document.querySelectorAll('.payline').forEach(p => p.classList.remove('winner', 'active'));
-    
-    lineWins.forEach((lineWin, index) => {
-        const lineIndex = lineWin.info[0]; // payline number
-        const positions = lineWin.positions;
+function showWins(lineWins, totalWin) {
+    // Highlight cells and paylines
+    lineWins.forEach(lw => {
+        const lineIdx = lw.info[0];
+        const positions = lw.positions;
         
-        // Highlight payline indicator
-        const indicator = document.querySelector(`.payline[data-line="${lineIndex}"]`);
+        // Payline indicator
+        const indicator = document.querySelector(`.payline[data-line="${lineIdx}"]`);
         if (indicator) indicator.classList.add('winner');
         
-        // Highlight cells
-        positions.forEach(pos => {
-            const [row, col] = pos;
-            const cell = document.getElementById(`cell-${row}-${col}`);
+        // Cells
+        positions.forEach(([r, c]) => {
+            const cell = document.getElementById(`cell-${r}-${c}`);
             if (cell) cell.classList.add('winner');
         });
     });
+    
+    // Show popup
+    const popup = document.getElementById('win-display');
+    document.getElementById('win-amount').textContent = totalWin;
+    document.getElementById('win-lines').textContent = lineWins.length + ' lines won';
+    popup.classList.remove('hidden');
+    
+    setTimeout(() => popup.classList.add('hidden'), 3000);
 }
 
-// Clear winner highlights
-function clearWinners() {
-    document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('winner'));
-    document.querySelectorAll('.payline').forEach(p => p.classList.remove('winner'));
-}
-
-// Show win display popup
-function showWinDisplay(amount, lineWins) {
-    const display = document.getElementById('win-display');
-    document.getElementById('win-amount').textContent = amount.toLocaleString();
-    
-    const linesText = lineWins.map(lw => `Line ${lw.info[0] + 1}: ${SYMBOL_NAMES[lw.info[1]] || lw.info[1]} x${lw.info[2]}`).join(', ');
-    document.getElementById('win-lines').textContent = linesText;
-    
-    display.classList.remove('hidden');
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        hideWinDisplay();
-    }, 3000);
-}
-
-// Hide win display
 function hideWinDisplay() {
     document.getElementById('win-display').classList.add('hidden');
 }
 
-// Show last spin details
-function showLastSpinDetails(gameResult, betInfo) {
+function showDetails(result, betInfo) {
     const container = document.getElementById('last-spin-info');
     const details = document.getElementById('spin-details');
     
-    let html = `<div>Bet: ${betInfo.bet} × ${betInfo.line} lines = ${betInfo.bet * betInfo.line}</div>`;
-    html += `<div>Win: ${gameResult.totalWinAmount || 0}</div>`;
+    let html = `<div>Bet: ${betInfo.bet} × ${betInfo.line} = ${betInfo.bet * betInfo.line}</div>`;
+    html += `<div>Win: ${result.totalWinAmount || 0}</div>`;
     
-    if (gameResult.lineWins && gameResult.lineWins.length > 0) {
-        html += `<div style="margin-top: 8px;">Winning Lines:</div>`;
-        gameResult.lineWins.forEach(lw => {
-            const [line, symbol, count, win] = lw.info;
-            html += `<div>• Line ${line + 1}: ${SYMBOL_NAMES[symbol] || symbol} ×${count} = ${win}</div>`;
+    if (result.lineWins?.length > 0) {
+        html += `<div style="margin-top:8px">Winning Lines:</div>`;
+        result.lineWins.forEach(lw => {
+            const [line, sym, count, win] = lw.info;
+            html += `<div>Line ${line+1}: ${SYMBOL_NAMES[sym]} ×${count} = ${win}</div>`;
         });
     }
     
@@ -455,33 +355,30 @@ function showLastSpinDetails(gameResult, betInfo) {
     container.classList.remove('hidden');
 }
 
-// Update balance display
-function updateBalance(balance) {
-    document.getElementById('balance').textContent = balance.toLocaleString();
-}
-
-// Reset spin button
-function resetSpinButton() {
+function resetSpin() {
+    isSpinning = false;
     const btn = document.getElementById('spin-btn');
     btn.disabled = false;
     btn.textContent = '🎰 SPIN';
 }
 
-// Logging
-function log(message, type = 'info') {
+// ==================== UI HELPERS ====================
+
+function updateBalance(balance) {
+    document.getElementById('balance').textContent = balance?.toLocaleString() || '0';
+}
+
+function updateStatus(text, type) {
+    const status = document.getElementById('connection-status');
+    status.textContent = text;
+    status.className = `status ${type}`;
+}
+
+function log(msg, type = 'info') {
     const logs = document.getElementById('logs');
     const entry = document.createElement('div');
     entry.className = `log-entry ${type}`;
-    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
     logs.insertBefore(entry, logs.firstChild);
-    
-    // Keep only last 100 entries
-    while (logs.children.length > 100) {
-        logs.removeChild(logs.lastChild);
-    }
-}
-
-// Clear logs
-function clearLogs() {
-    document.getElementById('logs').innerHTML = '';
+    while (logs.children.length > 100) logs.removeChild(logs.lastChild);
 }

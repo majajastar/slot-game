@@ -10,10 +10,8 @@
     <div id="app">
         <!-- Connection Panel -->
         <div id="connection-panel" class="panel">
-            <h2>🔌 TheLuxe Slot Game</h2>
-            <p style="color: #888; margin-bottom: 15px;">Auto-connecting to game server...</p>
-            <div id="connection-status" class="status connecting">Initializing...</div>
-            <button id="connect-btn" class="btn-primary" style="display: none;">Connect</button>
+            <h2>💎 TheLuxe Slot Game</h2>
+            <div id="connection-status" class="status connecting">Connecting...</div>
         </div>
 
         <!-- Game Panel (hidden until connected) -->
@@ -23,6 +21,10 @@
                 <div class="info-box">
                     <span class="label">Balance</span>
                     <span id="balance" class="value">0</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Last Win</span>
+                    <span id="last-win" class="value" style="color: #28a745;">0</span>
                 </div>
                 <div class="info-box">
                     <span class="label">Game</span>
@@ -126,7 +128,6 @@
     </div>
 
     <script src="config.js"></script>
-    <script src="ws-client.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
