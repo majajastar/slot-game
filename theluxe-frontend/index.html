@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TheLuxe Slot Game</title>
+    <title>TheLuxe - Slot Game</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<<<<<<< HEAD
     <div id="app">
         <!-- Connection Panel -->
         <div id="connection-panel" class="panel">
@@ -41,87 +42,164 @@
                 <div class="reels-container">
                     <div id="reels" class="reels">
                         <!-- 4x5 grid will be generated here -->
+=======
+    <div class="game-container" id="gameContainer">
+        <!-- Header -->
+        <div class="header">
+            <h1>💎 TheLuxe</h1>
+            <div class="subtitle">4x5 Grid | 14 Paylines | RTP 96%</div>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loading" class="loading">Connecting to game server...</div>
+        
+        <!-- Game Content -->
+        <div id="gameContent" class="hidden">
+            <div class="main-layout">
+                <!-- LEFT: Win Rules -->
+                <div class="left-panel">
+                    <div class="info-section">
+                        <div class="info-title">💡 Win Rules</div>
+                        <div id="winRulesPanel">
+                            <div class="rule-item">
+                                <div class="rule-header">
+                                    <span class="rule-icon">💎</span>
+                                    <span class="rule-name">Diamond Wild</span>
+                                </div>
+                                <div class="rule-desc">Substitutes for all symbols. 5 Wilds = 100x payout!</div>
+                            </div>
+                            <div class="rule-item">
+                                <div class="rule-header">
+                                    <span class="rule-icon">⭐</span>
+                                    <span class="rule-name">Star Scatter</span>
+                                </div>
+                                <div class="rule-desc">3 Scatters = Black & Gold Bonus<br>4 Scatters = Golden Hit Bonus</div>
+                            </div>
+                        </div>
+>>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
                     </div>
                 </div>
                 
-                <!-- Win Display -->
-                <div id="win-display" class="win-display hidden">
-                    <div class="win-amount">WIN: <span id="win-amount">0</span></div>
-                    <div id="win-lines" class="win-lines"></div>
-                </div>
-            </div>
-
-            <!-- Payline Indicators -->
-            <div class="payline-indicators">
-                <div class="payline left" data-line="0">1</div>
-                <div class="payline left" data-line="1">2</div>
-                <div class="payline left" data-line="2">3</div>
-                <div class="payline left" data-line="3">4</div>
-                <div class="payline left" data-line="4">5</div>
-                <div class="payline left" data-line="5">6</div>
-                <div class="payline left" data-line="6">7</div>
-                <div class="payline right" data-line="7">8</div>
-                <div class="payline right" data-line="8">9</div>
-                <div class="payline right" data-line="9">10</div>
-                <div class="payline right" data-line="10">11</div>
-                <div class="payline right" data-line="11">12</div>
-                <div class="payline right" data-line="12">13</div>
-                <div class="payline right" data-line="13">14</div>
-            </div>
-
-            <!-- Controls -->
-            <div class="controls">
-                <div class="control-group">
-                    <label>Bet</label>
-                    <select id="bet-select">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="5">5</option>
-                        <option value="10" selected>10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
+                <!-- LEFT-CENTER: Paytable & Bonus -->
+                <div class="left-center-panel">
+                    <div class="info-section">
+                        <div class="info-title">Paytable</div>
+                        <div id="paytable"></div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-title">Bonus Games</div>
+                        <div id="bonusInfo">
+                            <div class="bonus-item">
+                                <div class="bonus-name">Black and Gold</div>
+                                <div class="bonus-desc">10 free spins with sticky golden frames</div>
+                                <div class="bonus-meta">3 scatters • 80x buy</div>
+                            </div>
+                            <div class="bonus-item">
+                                <div class="bonus-name">Golden Hit</div>
+                                <div class="bonus-desc">Enhanced bonus with doubled multipliers</div>
+                                <div class="bonus-meta">4 scatters • 250x buy</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-title">Recent Spins</div>
+                        <div id="spinHistory" class="spin-history"></div>
+                    </div>
                 </div>
                 
-                <div class="control-group">
-                    <label>Lines</label>
-                    <select id="lines-select">
-                        <option value="1">1</option>
-                        <option value="5">5</option>
-                        <option value="10">10</option>
-                        <option value="14" selected>14 (All)</option>
-                    </select>
+                <!-- CENTER: Main Game Area -->
+                <div class="center-panel">
+                    <!-- Jackpot Display -->
+                    <div class="jackpot-display">
+                        <div class="jackpot-item mini">🔷<br>MINI<br>25x</div>
+                        <div class="jackpot-item major">🔶<br>MAJOR<br>100x</div>
+                        <div class="jackpot-item mega">💎<br>MEGA<br>500x</div>
+                        <div class="jackpot-item max">👑<br>MAX<br>20000x</div>
+                    </div>
+                    
+                    <!-- Bonus Banner (hidden by default) -->
+                    <div id="bonusBanner" class="bonus-banner hidden">
+                        <strong id="bonusName">BONUS ACTIVE!</strong>
+                        <div id="bonusDesc" class="bonus-desc-text"></div>
+                        <div>Spins Left: <span id="spinsLeft">0</span></div>
+                    </div>
+                    
+                    <!-- Reel Container -->
+                    <div class="reel-container" id="reelContainer">
+                        <div id="reelGrid" class="reel-grid"></div>
+                    </div>
+                    
+                    <!-- Win Display -->
+                    <div class="win-section">
+                        <div id="winAmount" class="win-amount hidden">+$0</div>
+                        <div id="winDetails" class="win-details"></div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="controls">
+                        <div class="bet-controls">
+                            <button class="bet-btn" id="betMinus" onclick="changeBet(-1)">-</button>
+                            <span id="betDisplay" class="bet-display">$10</span>
+                            <button class="bet-btn" id="betPlus" onclick="changeBet(1)">+</button>
+                        </div>
+                        <button id="spinBtn" class="btn-spin" onclick="spin()">🎰 SPIN</button>
+                    </div>
+                    
+                    <!-- Buy Bonus -->
+                    <div class="buy-bonus-section">
+                        <div class="buy-bonus-title">🎁 BUY BONUS</div>
+                        <div class="bonus-buttons">
+                            <button class="btn-bonus" onclick="buyBonus('blackAndGold')">
+                                <div>Black & Gold</div>
+                                <small>3 scatters • 80x</small>
+                            </button>
+                            <button class="btn-bonus" onclick="buyBonus('goldenHit')">
+                                <div>Golden Hit</div>
+                                <small>4 scatters • 250x</small>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Bar -->
+                    <div class="stats-bar">
+                        <div class="stat">
+                            <div class="stat-label">Balance</div>
+                            <div class="stat-value" id="balance">$0</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Win</div>
+                            <div class="stat-value" id="totalWin">$0</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Spins</div>
+                            <div class="stat-value" id="spinCount">0</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Paylines -->
+                    <div class="paylines-section">
+                        <div class="info-title">14 PAYLINES</div>
+                        <div id="paylinesDisplay" class="paylines-grid"></div>
+                    </div>
                 </div>
-
-                <div class="control-group">
-                    <label>Total Bet</label>
-                    <div id="total-bet" class="total-bet">140</div>
+                
+                <!-- RIGHT: Win Ways -->
+                <div class="right-panel">
+                    <div class="info-section">
+                        <div class="info-title">Win Ways</div>
+                        <div id="winWays">
+                            <div class="no-win">Spin to see wins...</div>
+                        </div>
+                    </div>
                 </div>
-
-                <button id="spin-btn" class="btn-spin">🎰 SPIN</button>
-            </div>
-
-            <!-- Game Info -->
-            <div class="game-info">
-                <div class="info-row">
-                    <span>Min Bet: <span id="min-bet">-</span></span>
-                    <span>Max Bet: <span id="max-bet">-</span></span>
-                </div>
-            </div>
-
-            <!-- Last Spin Info -->
-            <div id="last-spin-info" class="last-spin hidden">
-                <h4>Last Spin Result</h4>
-                <div id="spin-details"></div>
             </div>
         </div>
-
+        
         <!-- Logs Panel -->
         <div class="logs-panel">
             <div class="logs-header">
                 <h4>📋 Message Logs</h4>
-                <button id="clear-logs" class="btn-small">Clear</button>
+                <button onclick="clearLogs()" class="btn-small">Clear</button>
             </div>
             <div id="logs" class="logs"></div>
         </div>
