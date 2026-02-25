@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheLuxe Slot Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login/Connection Panel -->
+        <div id="connection-panel" class="panel">
+            <h2>🔌 Connect to Game</h2>
+            <div class="form-group">
+                <label>WebSocket URL:</label>
+                <input type="text" id="ws-url" value="wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat">
+            </div>
+            <div class="form-group">
+                <label>Token:</label>
+                <input type="text" id="token" placeholder="Leave empty to auto-fetch">
+            </div>
+            <div class="form-group">
+                <label>Language:</label>
+                <select id="lang">
+                    <option value="en">English</option>
+                    <option value="zh">Chinese</option>
+                </select>
+            </div>
+            <button id="connect-btn" class="btn-primary">Connect</button>
+            <div id="connection-status" class="status disconnected">Disconnected</div>
+        </div>
+
+        <!-- Game Panel (hidden until connected) -->
+        <div id="game-panel" class="hidden">
+            <!-- Header Info -->
+            <div class="header-info">
+                <div class="info-box">
+                    <span class="label">Balance</span>
+                    <span id="balance" class="value">0</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Game</span>
+                    <span id="game-name" class="value">-</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">Room</span>
+                    <span id="room-id" class="value">-</span>
+                </div>
+            </div>
+
+            <!-- Slot Machine -->
+            <div class="slot-machine">
+                <div class="reels-container">
+                    <div id="reels" class="reels">
+                        <!-- 4x5 grid will be generated here -->
+                    </div>
+                </div>
+                
+                <!-- Win Display -->
+                <div id="win-display" class="win-display hidden">
+                    <div class="win-amount">WIN: <span id="win-amount">0</span></div>
+                    <div id="win-lines" class="win-lines"></div>
+                </div>
+            </div>
+
+            <!-- Payline Indicators -->
+            <div class="payline-indicators">
+                <div class="payline left" data-line="0">1</div>
+                <div class="payline left" data-line="1">2</div>
+                <div class="payline left" data-line="2">3</div>
+                <div class="payline left" data-line="3">4</div>
+                <div class="payline left" data-line="4">5</div>
+                <div class="payline left" data-line="5">6</div>
+                <div class="payline left" data-line="6">7</div>
+                <div class="payline right" data-line="7">8</div>
+                <div class="payline right" data-line="8">9</div>
+                <div class="payline right" data-line="9">10</div>
+                <div class="payline right" data-line="10">11</div>
+                <div class="payline right" data-line="11">12</div>
+                <div class="payline right" data-line="12">13</div>
+                <div class="payline right" data-line="13">14</div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="control-group">
+                    <label>Bet</label>
+                    <select id="bet-select">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Lines</label>
+                    <select id="lines-select">
+                        <option value="1">1</option>
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="14" selected>14 (All)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Total Bet</label>
+                    <div id="total-bet" class="total-bet">140</div>
+                </div>
+
+                <button id="spin-btn" class="btn-spin">🎰 SPIN</button>
+            </div>
+
+            <!-- Game Info -->
+            <div class="game-info">
+                <div class="info-row">
+                    <span>Min Bet: <span id="min-bet">-</span></span>
+                    <span>Max Bet: <span id="max-bet">-</span></span>
+                </div>
+            </div>
+
+            <!-- Last Spin Info -->
+            <div id="last-spin-info" class="last-spin hidden">
+                <h4>Last Spin Result</h4>
+                <div id="spin-details"></div>
+            </div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div class="logs-panel">
+            <div class="logs-header">
+                <h4>📋 Message Logs</h4>
+                <button id="clear-logs" class="btn-small">Clear</button>
+            </div>
+            <div id="logs" class="logs"></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="ws-client.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

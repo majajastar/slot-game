@@ -1,0 +1,16 @@
+{
+  "name": "theluxe-frontend",
+  "version": "1.0.0",
+  "description": "TheLuxe Slot Game - Modern HTML5 Frontend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npx http-server -p 3000 -c-1"
+  },
+  "keywords": ["slot", "game", "theluxe", "frontend"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
