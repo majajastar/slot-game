@@ -8,26 +8,12 @@
 </head>
 <body>
     <div id="app">
-        <!-- Login/Connection Panel -->
+        <!-- Connection Panel -->
         <div id="connection-panel" class="panel">
-            <h2>🔌 Connect to Game</h2>
-            <div class="form-group">
-                <label>WebSocket URL:</label>
-                <input type="text" id="ws-url" value="wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat">
-            </div>
-            <div class="form-group">
-                <label>Token:</label>
-                <input type="text" id="token" placeholder="Leave empty to auto-fetch">
-            </div>
-            <div class="form-group">
-                <label>Language:</label>
-                <select id="lang">
-                    <option value="en">English</option>
-                    <option value="zh">Chinese</option>
-                </select>
-            </div>
-            <button id="connect-btn" class="btn-primary">Connect</button>
-            <div id="connection-status" class="status disconnected">Disconnected</div>
+            <h2>🔌 TheLuxe Slot Game</h2>
+            <p style="color: #888; margin-bottom: 15px;">Auto-connecting to game server...</p>
+            <div id="connection-status" class="status connecting">Initializing...</div>
+            <button id="connect-btn" class="btn-primary" style="display: none;">Connect</button>
         </div>
 
         <!-- Game Panel (hidden until connected) -->

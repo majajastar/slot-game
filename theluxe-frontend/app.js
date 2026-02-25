@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeGrid();
     bindEvents();
     updateTotalBet();
+    
+    // Auto-connect on page load
+    autoConnect();
 });
 
 // Initialize the 4x5 grid
@@ -67,111 +70,175 @@ function updateTotalBet() {
     document.getElementById('total-bet').textContent = bet * lines;
 }
 
-// Handle connect button
-async function handleConnect() {
+// Auto-connect function - same flow as client.js
+async function autoConnect() {
     const btn = document.getElementById('connect-btn');
     const status = document.getElementById('connection-status');
     
     btn.disabled = true;
-    status.textContent = 'Connecting...';
+    status.textContent = 'Fetching token...';
     status.className = 'status connecting';
     
     try {
-        let token = document.getElementById('token').value;
-        const lang = document.getElementById('lang').value;
+        log('Fetching SID...', 'info');
         
-        // If no token provided, fetch one
-        if (!token) {
-            log('Fetching token...', 'info');
-            token = await fetchToken();
-        }
-        
-        // Create and connect WebSocket client
-        wsClient = new TheLuxeWSClient();
-        
-        // Set up callbacks
-        wsClient.on('Connect', () => {
-            status.textContent = 'Connected';
-            status.className = 'status connected';
-            btn.textContent = 'Disconnect';
-            btn.disabled = false;
-            btn.onclick = handleDisconnect;
-            
-            // Show game panel
-            document.getElementById('game-panel').classList.remove('hidden');
-            
-            // Send login
-            wsClient.sendLogin();
+        // Step 1: Get SID (same as client.js)
+        const sidResponse = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid: CONFIG.testUuid, userId: CONFIG.testUserId })
         });
         
-        wsClient.on('Disconnect', () => {
-            status.textContent = 'Disconnected';
-            status.className = 'status disconnected';
-            btn.textContent = 'Connect';
-            btn.disabled = false;
-            btn.onclick = handleConnect;
-            
-            // Hide game panel
-            document.getElementById('game-panel').classList.add('hidden');
+        if (!sidResponse.ok) throw new Error('SID request failed: ' + sidResponse.status);
+        const sidData = await sidResponse.json();
+        log(`SID received: ${sidData.sid.substring(0, 20)}...`, 'info');
+        
+        // Step 2: Call launch API (same as client.js)
+        status.textContent = 'Launching game...';
+        log('Calling launch API...', 'info');
+        
+        const launchResponse = await fetch(CONFIG.launchUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                operatorId: CONFIG.operatorId,
+                gameTypeId: CONFIG.gameTypeId,
+                player: {
+                    userId: CONFIG.testUserId,
+                    currency: CONFIG.currency,
+                    language: 'en',
+                    sid: sidData.sid,
+                    name: 'testUser'
+                },
+                apiSecret: CONFIG.apiSecret
+            })
         });
         
-        wsClient.on('Error', (error) => {
-            log('Connection error: ' + JSON.stringify(error), 'error');
-            status.textContent = 'Error';
-            status.className = 'status disconnected';
-            btn.disabled = false;
-        });
+        if (!launchResponse.ok) throw new Error('Launch API failed: ' + launchResponse.status);
+        const launchData = await launchResponse.json();
         
-        wsClient.on('Message', (direction, msg) => {
-            const type = direction === 'send' ? 'SEND' : 'RECV';
-            const className = direction === 'send' ? 'send' : 'receive';
-            const shortMsg = JSON.stringify(msg).substring(0, 200);
-            log(`[${type}] ${shortMsg}...`, className);
-        });
+        // Extract token from redirect URL
+        const redirectUrl = launchData.vals?.data?.redirectUrl;
+        if (!redirectUrl) throw new Error('No redirect URL in response');
         
-        wsClient.on('Login', (data) => {
-            log(`Logged in - Session: ${data.sessionId}`, 'info');
-        });
+        const url = new URL(redirectUrl);
+        const token = url.searchParams.get('token');
+        const lang = url.searchParams.get('lang') || 'en';
         
-        wsClient.on('Lobby', (data) => {
-            updateBalance(data.balance);
-            log(`Lobby - Game: ${data.gameId}, Balance: ${data.balance}`, 'info');
-        });
+        if (!token) throw new Error('No token in redirect URL');
         
-        wsClient.on('JoinRoom', (data) => {
-            document.getElementById('game-name').textContent = data.gameType;
-            document.getElementById('room-id').textContent = data.roomId;
-            updateBalance(data.balance);
-            
-            // Update bet info
-            if (data.betInfo && data.betInfo[0]) {
-                const betInfo = data.betInfo[0];
-                document.getElementById('min-bet').textContent = betInfo.minBet;
-                document.getElementById('max-bet').textContent = betInfo.maxBet;
-            }
-            
-            log(`Joined room ${data.roomId}`, 'info');
-        });
+        log('Token fetched successfully', 'info');
         
-        wsClient.on('SyncRoom', (data) => {
-            if (data.roomInfo) {
-                document.getElementById('min-bet').textContent = data.roomInfo.minBet;
-                document.getElementById('max-bet').textContent = data.roomInfo.maxBet;
-            }
-        });
-        
-        wsClient.on('SetBet', (data) => {
-            handleSpinResult(data);
-        });
-        
-        await wsClient.connect(token, lang);
+        // Step 3: Connect WebSocket (same as client.js)
+        status.textContent = 'Connecting to game...';
+        await connectWithToken(token, lang);
         
     } catch (error) {
-        log('Failed to connect: ' + error.message, 'error');
-        status.textContent = 'Failed';
+        log('Auto-connect failed: ' + error.message, 'error');
+        console.error('Auto-connect error:', error);
+        status.textContent = 'Failed - Click to retry';
         status.className = 'status disconnected';
         btn.disabled = false;
+        btn.textContent = 'Retry Connection';
     }
+}
+
+// Connect with token (extracted from handleConnect)
+async function connectWithToken(token, lang) {
+    const btn = document.getElementById('connect-btn');
+    const status = document.getElementById('connection-status');
+    
+    // Create and connect WebSocket client
+    wsClient = new TheLuxeWSClient();
+    
+    // Set up callbacks
+    wsClient.on('Connect', () => {
+        status.textContent = 'Connected';
+        status.className = 'status connected';
+        btn.textContent = 'Disconnect';
+        btn.disabled = false;
+        btn.onclick = handleDisconnect;
+        
+        // Show game panel
+        document.getElementById('game-panel').classList.remove('hidden');
+        
+        // Send login
+        wsClient.sendLogin();
+    });
+    
+    wsClient.on('Disconnect', () => {
+        status.textContent = 'Disconnected';
+        status.className = 'status disconnected';
+        btn.textContent = 'Connect';
+        btn.disabled = false;
+        btn.onclick = handleConnect;
+        
+        // Hide game panel
+        document.getElementById('game-panel').classList.add('hidden');
+    });
+    
+    wsClient.on('Error', (error) => {
+        log('Connection error: ' + JSON.stringify(error), 'error');
+        status.textContent = 'Error';
+        status.className = 'status disconnected';
+        btn.disabled = false;
+    });
+    
+    wsClient.on('Message', (direction, msg) => {
+        const type = direction === 'send' ? 'SEND' : 'RECV';
+        const className = direction === 'send' ? 'send' : 'receive';
+        const shortMsg = JSON.stringify(msg).substring(0, 200);
+        log(`[${type}] ${shortMsg}...`, className);
+    });
+    
+    wsClient.on('Login', (data) => {
+        log(`Logged in - Session: ${data.sessionId}`, 'info');
+    });
+    
+    wsClient.on('Lobby', (data) => {
+        updateBalance(data.balance);
+        log(`Lobby - Game: ${data.gameId}, Balance: ${data.balance}`, 'info');
+    });
+    
+    wsClient.on('JoinRoom', (data) => {
+        document.getElementById('game-name').textContent = data.gameType;
+        document.getElementById('room-id').textContent = data.roomId;
+        updateBalance(data.balance);
+        
+        // Update bet info
+        if (data.betInfo && data.betInfo[0]) {
+            const betInfo = data.betInfo[0];
+            document.getElementById('min-bet').textContent = betInfo.minBet;
+            document.getElementById('max-bet').textContent = betInfo.maxBet;
+        }
+        
+        log(`Joined room ${data.roomId}`, 'info');
+    });
+    
+    wsClient.on('SyncRoom', (data) => {
+        if (data.roomInfo) {
+            document.getElementById('min-bet').textContent = data.roomInfo.minBet;
+            document.getElementById('max-bet').textContent = data.roomInfo.maxBet;
+        }
+    });
+    
+    wsClient.on('SetBet', (data) => {
+        handleSpinResult(data);
+    });
+    
+    await wsClient.connect(token, lang);
+}
+
+// Handle connect button (for manual reconnection)
+async function handleConnect() {
+    // Disconnect if already connected
+    if (wsClient && wsClient.isConnected) {
+        handleDisconnect();
+        return;
+    }
+    
+    // Start auto-connect flow
+    await autoConnect();
 }
 
 // Handle disconnect
