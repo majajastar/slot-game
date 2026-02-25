@@ -205,6 +205,10 @@ async function connect() {
 >>>>>>> 80d8182 (Simplified direct WebSocket approach - auto-connect and render)
         const launchRes = await fetch(CONFIG.launchUrl, {
             method: 'POST',
+<<<<<<< HEAD
+=======
+            // use 'text/plain'
+>>>>>>> 11f1d63 (Use text/plain for launch)
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 operatorId: CONFIG.operatorId,
@@ -711,6 +715,7 @@ function addToHistory(bet, win) {
 function resetSpin() {
     isSpinning = false;
 <<<<<<< HEAD
+<<<<<<< HEAD
     const btn = document.getElementById('spin-btn');
     btn.disabled = false;
     btn.textContent = '🎰 SPIN';
@@ -730,6 +735,9 @@ function updateStatus(text, type) {
 
 =======
     const btn = document.getElementById('spinBtn');
+=======
+    const btn = document.getElementById('spinSpin');
+>>>>>>> 11f1d63 (Use text/plain for launch)
     if (btn) {
         btn.disabled = false;
         btn.textContent = '🎰 SPIN';
