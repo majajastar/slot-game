@@ -1,0 +1,13 @@
+{
+  "name": "theluxe-slot-frontend",
+  "version": "1.0.0",
+  "description": "TheLuxe Slot Game Frontend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node src/websocket/cli.js"
+  },
+  "keywords": ["slot", "game", "theluxe"],
+  "author": "",
+  "license": "ISC"
+}
