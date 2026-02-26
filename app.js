@@ -424,11 +424,18 @@ function spin() {
     }
 
     const betDisplay = document.getElementById('betDisplay');
-    let bet = parseInt(betDisplay?.textContent?.replace('$', '')) || 10;
+    const betText = betDisplay?.textContent || '';
+    const betNumber = parseInt(betText.replace('$', ''));
+    
+    console.log('[BET DEBUG] Bet display text:', betText);
+    console.log('[BET DEBUG] Parsed bet number:', betNumber);
+    console.log('[BET DEBUG] BET_SIZE_LIST:', BET_SIZE_LIST);
+    
+    let bet = betNumber || 10;
 
     // Validate bet is in allowed list, auto-correct if not
     if (!BET_SIZE_LIST.includes(bet)) {
-        console.log('Bet ' + bet + ' not in list, auto-correcting');
+        console.log('[BET DEBUG] Bet ' + bet + ' not in list, auto-correcting');
         bet = getClosestBetSize(bet);
         // Update display to corrected value
         if (betDisplay) {
@@ -436,7 +443,7 @@ function spin() {
         }
     }
     
-    console.log('Starting spin with bet:', bet);
+    console.log('[BET DEBUG] Final bet to send:', bet);
 
     isSpinning = true;
     const btn = document.getElementById('spinBtn');
