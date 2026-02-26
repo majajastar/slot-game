@@ -147,6 +147,22 @@ function renderFrameInfo() {
     if (normalChance) normalChance.textContent = (FRAME_CONFIG.frameChanceNormal * 100).toFixed(0) + '%';
     if (bonusChance) bonusChance.textContent = (FRAME_CONFIG.frameChanceBonus * 100).toFixed(0) + '%';
 
+    // Update max values from config
+    const maxMultiplierEl = document.getElementById('maxMultiplier');
+    const maxMultiplierFinalEl = document.getElementById('maxMultiplierFinal');
+    const maxJackpotEl = document.getElementById('maxJackpot');
+    
+    if (maxMultiplierEl && FRAME_CONFIG.goldenHitMaxMultiplier) {
+        maxMultiplierEl.textContent = FRAME_CONFIG.goldenHitMaxMultiplier;
+    }
+    if (maxMultiplierFinalEl && FRAME_CONFIG.maxFinalMultiplier) {
+        maxMultiplierFinalEl.textContent = FRAME_CONFIG.maxFinalMultiplier;
+    }
+    if (maxJackpotEl && JACKPOTS.values) {
+        const maxJackpot = Math.max(...JACKPOTS.values);
+        maxJackpotEl.textContent = maxJackpot;
+    }
+
     // Render multiplier values only (weights kept secret in backend)
     const container = document.getElementById('multiplierTable');
     if (!container) return;
