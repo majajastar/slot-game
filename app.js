@@ -9,6 +9,7 @@ let PAYLINES = [];
 let JACKPOTS = {};
 let BONUSES = {};
 let GAME_CONFIG = {};
+let FRAME_CONFIG = {};
 let BET_SIZE_LIST = [1, 2, 5, 10, 20, 50, 100]; // Default fallback
 let CURRENT_BET_INDEX = 0; // Track current bet index directly (avoids float comparison issues)
 
@@ -132,15 +133,36 @@ function renderJackpots() {
 
 // Render bonus info using server data (in rules panel)
 function renderBonusInfo() {
-    const container = document.getElementById('bonusInfo');
-    if (!container || Object.keys(BONUSES).length === 0) return;
+    // Bonus rules are now hardcoded in HTML with detailed examples
+    // This function kept for compatibility but no longer updates DOM
+}
 
-    container.innerHTML = Object.entries(BONUSES).map(([key, bonus]) => `
-        <div class="bonus-item">
-            <div class="bonus-name">${bonus.name}</div>
-            <div class="bonus-desc">${bonus.scatterCount} Scatters • ${bonus.description}</div>
-        </div>
-    `).join('');
+// Render frame configuration info from server
+function renderFrameInfo() {
+    if (!FRAME_CONFIG.frameChanceNormal) return;
+
+    // Update frame chance info (chances are ok to show, weights are secret)
+    const normalChance = document.getElementById('frameChanceNormal');
+    const bonusChance = document.getElementById('frameChanceBonus');
+    if (normalChance) normalChance.textContent = (FRAME_CONFIG.frameChanceNormal * 100).toFixed(0) + '%';
+    if (bonusChance) bonusChance.textContent = (FRAME_CONFIG.frameChanceBonus * 100).toFixed(0) + '%';
+
+    // Render multiplier values only (weights kept secret in backend)
+    const container = document.getElementById('multiplierTable');
+    if (!container || !FRAME_CONFIG.multiplierValues) return;
+
+    const values = FRAME_CONFIG.multiplierValues;
+
+    let html = '<div class="multiplier-grid">';
+    for (let i = 0; i < values.length; i++) {
+        html += `
+            <div class="multiplier-item">
+                <span class="multiplier-value">${values[i]}x</span>
+            </div>
+        `;
+    }
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 // Update game info from server config
@@ -278,16 +300,16 @@ function handleLobby(data) {
     log(`Lobby: ${data.gameId}, Balance: ${data.balance}`);
     currentBalance = data.balance;
     updateBalance(data.balance);
-    
+
     // Join room
     send({ type: '100000', data: [{ subType: 100004 }] });
-    
-    // Sync room info
+
+    // Sync room info - only called once on initial connection (page refresh)
     send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
-    
-    // Start ping
+
+    // Start ping - simple keepalive, not SyncRoomInfo
     pingInterval = setInterval(() => {
-        send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
+        send({ type: '100000', data: [{ subType: 100072 }] }); // Heartbeat only
     }, 20000);
 }
 
@@ -328,6 +350,9 @@ function handleJoinRoom(data) {
             GAME_CONFIG = betInfo.gameConfig;
             updateGameInfo();
         }
+        if (betInfo.frameConfig) {
+            FRAME_CONFIG = betInfo.frameConfig;
+        }
     }
 
     // Show game panel
@@ -335,7 +360,7 @@ function handleJoinRoom(data) {
     document.getElementById('gameContent').classList.remove('hidden');
 
     // Update UI with server data
-    document.getElementById('balance').textContent = '$' + data.balance.toLocaleString();
+    document.getElementById('balance').textContent = '$' + data.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
     // Update betSizeList from server if available
     if (betInfo?.betSizeList) {
@@ -343,14 +368,14 @@ function handleJoinRoom(data) {
         // Only set default bet if current bet is not in the valid list
         const display = document.getElementById('betDisplay');
         if (display) {
-            const currentBet = parseInt(display.textContent.replace('$', '')) || 0;
+            const currentBet = parseFloat(display.textContent.replace('$', '')) || 0;
             // If current bet is not in the new list, set to default
             const currentIdx = BET_SIZE_LIST.indexOf(currentBet);
             if (currentIdx === -1) {
                 const defaultBet = betInfo.defaultBet || BET_SIZE_LIST[0] || 10;
                 CURRENT_BET_INDEX = BET_SIZE_LIST.indexOf(defaultBet);
                 if (CURRENT_BET_INDEX === -1) CURRENT_BET_INDEX = 0;
-                display.textContent = '$' + defaultBet;
+                display.textContent = '$' + formatBet(defaultBet);
             } else {
                 CURRENT_BET_INDEX = currentIdx;
             }
@@ -365,6 +390,9 @@ function handleJoinRoom(data) {
     if (PAYLINES.length > 0) {
         renderPaylines();
     }
+    if (FRAME_CONFIG.frameChanceNormal) {
+        renderFrameInfo();
+    }
 }
 
 // Render bet display with current value (fallback if needed)
@@ -375,7 +403,7 @@ function renderBetSelector() {
     // Use first bet from list as default, set index
     CURRENT_BET_INDEX = 0;
     const defaultBet = BET_SIZE_LIST[0] || 10;
-    display.textContent = '$' + defaultBet;
+    display.textContent = '$' + formatBet(defaultBet);
 }
 
 function updateBetSizeListDisplay() {
@@ -419,7 +447,7 @@ function handleSubData(subData) {
                     // Update display to ensure it matches the tracked index
                     const display = document.getElementById('betDisplay');
                     if (display && BET_SIZE_LIST.length > 0) {
-                        display.textContent = '$' + BET_SIZE_LIST[CURRENT_BET_INDEX];
+                        display.textContent = '$' + formatBet(BET_SIZE_LIST[CURRENT_BET_INDEX]);
                     }
                     updateBetSizeListDisplay();
                 }
@@ -462,12 +490,12 @@ function spin() {
 
     const betDisplay = document.getElementById('betDisplay');
     const betText = betDisplay?.textContent || '';
-    const betNumber = parseInt(betText.replace('$', ''));
-    
+    const betNumber = parseFloat(betText.replace('$', ''));
+
     console.log('[BET DEBUG] Bet display text:', betText);
     console.log('[BET DEBUG] Parsed bet number:', betNumber);
     console.log('[BET DEBUG] BET_SIZE_LIST:', BET_SIZE_LIST);
-    
+
     let bet = betNumber || 10;
 
     // Validate bet is in allowed list, auto-correct if not
@@ -476,7 +504,7 @@ function spin() {
         bet = getClosestBetSize(bet);
         // Update display to corrected value
         if (betDisplay) {
-            betDisplay.textContent = '$' + bet;
+            betDisplay.textContent = '$' + formatBet(bet);
         }
     }
     
@@ -484,10 +512,10 @@ function spin() {
 
     // Deduct bet from balance immediately for UX
     const balanceEl = document.getElementById('balance');
-    const currentBalance = parseInt(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
+    const currentBalance = parseFloat(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
     const newBalance = Math.max(0, currentBalance - bet);
     if (balanceEl) {
-        balanceEl.textContent = '$' + newBalance.toLocaleString();
+        balanceEl.textContent = '$' + newBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
     log('Spin: -$' + bet + ' (Balance: $' + newBalance + ')');
 
@@ -593,7 +621,7 @@ function handleSpinResult(data) {
         currentBalance = betInfo.finalBalance;
         const balanceEl = document.getElementById('balance');
         if (balanceEl) {
-            balanceEl.textContent = '$' + (betInfo.finalBalance || 0).toLocaleString();
+            balanceEl.textContent = '$' + (betInfo.finalBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
         // Log win if applicable
@@ -638,7 +666,7 @@ function handleSpinResult(data) {
             // Continue bonus
             fakeState.bonusSpinsLeft = spinsLeft;
             updateBonusBanner(spinsLeft);
-            
+
             if (result.lastFreeSpin || spinsLeft <= 0) {
                 hideBonusBanner();
                 fakeState.inBonus = false;
@@ -647,6 +675,13 @@ function handleSpinResult(data) {
                 log('Bonus completed!', 'info');
             }
         }
+    } else if (fakeState.inBonus && (!result.isBonus || spinsLeft === 0)) {
+        // Bonus ended (server no longer reports bonus or spinsLeft is 0)
+        hideBonusBanner();
+        fakeState.inBonus = false;
+        fakeState.bonusType = null;
+        fakeState.bonusSpinsLeft = 0;
+        log('Bonus completed!', 'info');
     }
     
         // Add to history
@@ -831,6 +866,12 @@ function showBonusBanner(bonusType, spinsLeft) {
 
     banner.classList.remove('hidden');
     document.getElementById('gameContainer').classList.add('bonus-mode');
+
+    // Trigger bonus entry animation
+    banner.style.animation = 'none';
+    setTimeout(() => {
+        banner.style.animation = '';
+    }, 10);
 }
 
 function updateBonusBanner(spinsLeft) {
@@ -862,13 +903,19 @@ function resetSpin() {
 // ==================== UI HELPERS ====================
 
 function updateBalance(balance) {
-    document.getElementById('balance').textContent = balance?.toLocaleString() || '0';
+    document.getElementById('balance').textContent = '$' + (balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 function updateStatus(text, type) {
     const status = document.getElementById('connection-status');
     status.textContent = text;
     status.className = `status ${type}`;
+}
+
+// ==================== BET FORMATTING ====================
+
+function formatBet(bet) {
+    return Number.isInteger(bet) ? bet : bet.toFixed(2);
 }
 
 // ==================== CONTROLS ====================
@@ -883,12 +930,16 @@ function changeBet(dir) {
 
     CURRENT_BET_INDEX = newIdx;
     const newBet = BET_SIZE_LIST[newIdx];
-    display.textContent = '$' + newBet;
-    log('Bet changed to $' + newBet + ' [index=' + newIdx + ']');
+    display.textContent = '$' + formatBet(newBet);
+    log('Bet changed to $' + formatBet(newBet) + ' [index=' + newIdx + ']');
 }
 
 function buyBonus(key) {
     if (isSpinning) return;
+    if (fakeState.inBonus) {
+        log('Cannot buy bonus during bonus game!', 'error');
+        return;
+    }
 
     // Convert key to bonus type
     const bonusTypeMap = {
@@ -904,17 +955,17 @@ function buyBonus(key) {
     // Get current bet and calculate cost
     const betDisplay = document.getElementById('betDisplay');
     const betText = betDisplay?.textContent || '';
-    const bet = parseInt(betText.replace('$', '')) || 10;
+    const bet = parseFloat(betText.replace('$', '')) || 10;
 
     const bonus = BONUSES[key];
     const cost = bonus?.buyPriceMultiplier ? bet * bonus.buyPriceMultiplier : 0;
 
     // Deduct bonus cost from balance immediately
     const balanceEl = document.getElementById('balance');
-    const currentBalance = parseInt(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
+    const currentBalance = parseFloat(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
     const newBalance = Math.max(0, currentBalance - cost);
     if (balanceEl) {
-        balanceEl.textContent = '$' + newBalance.toLocaleString();
+        balanceEl.textContent = '$' + newBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     log('Buying bonus: ' + bonus?.name + ' for $' + cost + ' (Balance: $' + newBalance + ')');
@@ -955,10 +1006,6 @@ function buyBonus(key) {
 }
 
 // ==================== UI HELPERS ====================
-
-function updateBalance(balance) {
-    document.getElementById('balance').textContent = '$' + (balance || 0).toLocaleString();
-}
 
 function updateLoading(text, showRetry = false) {
     const el = document.getElementById('loading');

@@ -37,6 +37,12 @@ body {
 .game-container.bonus-mode {
     border-color: var(--gold);
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    animation: bonusBorderFlash 1.5s ease;
+}
+
+@keyframes bonusBorderFlash {
+    0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); }
+    50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.6); }
 }
 
 /* Header */
@@ -70,8 +76,8 @@ body {
 /* Main Layout */
 .main-layout {
     display: grid;
-    grid-template-columns: 280px 200px 1fr 240px;
-    gap: 15px;
+    grid-template-columns: 260px 240px 1fr 220px;
+    gap: 12px;
 }
 
 .left-panel, .left-center-panel, .right-panel {
@@ -155,15 +161,186 @@ body {
     line-height: 1.4;
 }
 
+/* Detailed Rule Sections */
+.rule-detail {
+    font-size: 0.7rem;
+    color: #bbb;
+    line-height: 1.5;
+    margin-top: 6px;
+}
+
+.rule-detail p {
+    margin-bottom: 6px;
+}
+
+.rule-detail ul {
+    margin: 6px 0;
+    padding-left: 16px;
+}
+
+.rule-detail li {
+    margin: 4px 0;
+}
+
+/* Frame Chances Display */
+.frame-chances {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 8px 0;
+}
+
+.chance-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 0.7rem;
+}
+
+.chance-value {
+    color: var(--gold);
+    font-weight: bold;
+}
+
+/* Multiplier Table */
+.multiplier-section {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.multiplier-title {
+    font-size: 0.7rem;
+    color: #888;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.multiplier-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+
+.multiplier-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    font-size: 0.65rem;
+}
+
+.multiplier-value {
+    color: var(--gold);
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.loading-text {
+    text-align: center;
+    color: #666;
+    font-size: 0.7rem;
+    padding: 10px;
+}
+
+/* Example Win Display */
+.example-win {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.example-grid {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+}
+
+.example-grid span {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.example-grid span.wild {
+    background: rgba(233, 69, 96, 0.3);
+    border: 1px solid var(--primary);
+    box-shadow: 0 0 8px rgba(233, 69, 96, 0.4);
+}
+
+.example-grid span.frame {
+    position: relative;
+    border: 2px solid var(--gold);
+}
+
+.example-grid span.frame small {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    font-size: 0.5rem;
+    background: var(--gold);
+    color: #000;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.example-grid span.frame-double {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+    border: 1px solid var(--gold);
+    font-size: 0.65rem;
+    color: var(--gold);
+    font-weight: bold;
+}
+
+.example-text {
+    text-align: center;
+    font-size: 0.65rem;
+    color: #888;
+    font-style: italic;
+}
+
+.example-text.sticky-example {
+    text-align: left;
+    padding: 3px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    font-style: normal;
+}
+
+.example-text.sticky-example:last-child {
+    border-bottom: none;
+}
+
+.payout-highlight {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), transparent);
+    padding: 4px 8px;
+    border-left: 3px solid var(--gold);
+    margin-top: 6px;
+    font-weight: bold;
+    color: var(--gold);
+    font-size: 0.75rem;
+}
+
 /* Paytable */
 .paytable-header {
     display: grid;
-    grid-template-columns: 32px 1fr 40px 40px 40px;
-    gap: 6px;
-    padding: 6px 4px;
+    grid-template-columns: 28px 1fr 35px 35px 35px;
+    gap: 4px;
+    padding: 5px 3px;
     border-bottom: 2px solid var(--primary);
-    margin-bottom: 6px;
-    font-size: 0.65rem;
+    margin-bottom: 4px;
+    font-size: 0.6rem;
     color: #888;
     font-weight: bold;
 }
@@ -178,11 +355,11 @@ body {
 
 .paytable-row {
     display: grid;
-    grid-template-columns: 32px 1fr 40px 40px 40px;
-    gap: 6px;
-    padding: 6px 4px;
+    grid-template-columns: 28px 1fr 35px 35px 35px;
+    gap: 4px;
+    padding: 4px 3px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     align-items: center;
 }
 
@@ -193,12 +370,12 @@ body {
 .paytable-row.wild {
     background: rgba(233,69,96,0.1);
     border-left: 3px solid var(--primary);
-    padding-left: 4px;
+    padding-left: 2px;
     border-radius: 0 4px 4px 0;
 }
 
 .paytable-icon {
-    font-size: 1.1rem;
+    font-size: 1rem;
     text-align: center;
     display: flex;
     align-items: center;
@@ -206,7 +383,7 @@ body {
 }
 
 .paytable-name {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -217,11 +394,18 @@ body {
     text-align: center;
     color: var(--gold);
     font-variant-numeric: tabular-nums;
+    font-size: 0.65rem;
 }
 
 .paytable-payout.high {
     font-weight: bold;
     color: #ffd700;
+}
+
+/* Paytable Container */
+#paytable {
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 /* Bonus Info (in Rules Panel) */
@@ -298,7 +482,9 @@ body {
     border-radius: 8px;
     text-align: center;
     margin: 10px 0;
-    animation: slideIn 0.5s ease;
+    animation: bonusEntry 0.8s ease;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    border: 2px solid #fff;
 }
 
 .bonus-banner.hidden { display: none; }
@@ -308,9 +494,39 @@ body {
     margin-top: 5px;
 }
 
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+.bonus-banner #bonusName {
+    font-size: 1.3rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    animation: bonusPulse 1.5s infinite;
+}
+
+.bonus-banner #spinsLeft {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #d35400;
+}
+
+@keyframes bonusEntry {
+    0% { 
+        opacity: 0; 
+        transform: translateY(-30px) scale(0.8);
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+    }
+    50% {
+        transform: translateY(0) scale(1.05);
+        box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0) scale(1);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+}
+
+@keyframes bonusPulse {
+    0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(0,0,0,0.3); }
+    50% { transform: scale(1.02); text-shadow: 0 0 20px rgba(0,0,0,0.5); }
 }
 
 /* Reel Container */
@@ -326,6 +542,12 @@ body {
 
 .reel-container.bonus-mode {
     border-color: var(--gold);
+    animation: bonusContainerFlash 1s ease;
+}
+
+@keyframes bonusContainerFlash {
+    0%, 100% { box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
+    50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
 }
 
 .reel-grid {
@@ -555,6 +777,12 @@ body {
 .btn-bonus:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Hide buy bonus section during bonus game */
+.game-container.bonus-mode .buy-bonus-section {
+    opacity: 0.3;
+    pointer-events: none;
 }
 
 /* Stats Bar */

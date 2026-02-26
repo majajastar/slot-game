@@ -25,34 +25,111 @@
                     <div class="info-section">
                         <div class="info-title">💡 Game Rules</div>
                         <div id="rulesPanel">
-                            <!-- Win Rules -->
+                            <!-- Basic Rules -->
                             <div class="rules-subsection">
-                                <div class="rule-item">
-                                    <div class="rule-header">
-                                        <span class="rule-icon">💎</span>
-                                        <span class="rule-name">Diamond Wild</span>
+                                <div class="info-subtitle">📋 How to Win</div>
+                                <div class="rule-detail">
+                                    <p>Match 3+ symbols on any of 14 paylines (left to right)</p>
+                                    <div class="example-win">
+                                        <div class="example-grid">
+                                            <span>👑</span><span>👑</span><span>👑</span><span>💍</span><span>🏆</span>
+                                        </div>
+                                        <div class="example-text">3x Crown = Win!</div>
                                     </div>
-                                    <div class="rule-desc">Substitutes for all symbols. 5 Wilds = 100x payout!</div>
-                                </div>
-                                <div class="rule-item">
-                                    <div class="rule-header">
-                                        <span class="rule-icon">⭐</span>
-                                        <span class="rule-name">Star Scatter</span>
-                                    </div>
-                                    <div class="rule-desc">3+ Scatters trigger bonus games</div>
                                 </div>
                             </div>
+
+                            <!-- Wild Rules -->
+                            <div class="rules-subsection">
+                                <div class="info-subtitle">💎 Wild Symbol</div>
+                                <div class="rule-detail">
+                                    <p>Substitutes for ALL symbols (except Scatter)</p>
+                                    <div class="example-win">
+                                        <div class="example-grid">
+                                            <span>👑</span><span class="wild">💎</span><span>👑</span><span>👑</span><span>💍</span>
+                                        </div>
+                                        <div class="example-text">Wild helps make 4x Crown!</div>
+                                    </div>
+                                    <div class="payout-highlight">5x Wild = 100x payout</div>
+                                </div>
+                            </div>
+
+                            <!-- Frame Rules -->
+                            <div class="rules-subsection">
+                                <div class="info-subtitle">🖼️ Golden Frames</div>
+                                <div class="rule-detail">
+                                    <p>Random frames appear on reels with multipliers or jackpots</p>
+                                    <div class="frame-chances">
+                                        <div class="chance-row">
+                                            <span>Normal Spins:</span>
+                                            <span class="chance-value" id="frameChanceNormal">5%</span>
+                                        </div>
+                                        <div class="chance-row">
+                                            <span>Bonus Spins:</span>
+                                            <span class="chance-value" id="frameChanceBonus">10%</span>
+                                        </div>
+                                    </div>
+                                    <ul>
+                                        <li><strong>Multiplier Frame:</strong> Boosts win (values below)</li>
+                                        <li><strong>Jackpot Frame:</strong> Instant win (25x-20000x)</li>
+                                    </ul>
+                                    <div class="multiplier-section">
+                                        <div class="multiplier-title">📊 Possible Multiplier Values</div>
+                                        <div id="multiplierTable" class="multiplier-table">
+                                            <div class="loading-text">Loading...</div>
+                                        </div>
+                                    </div>
+                                    <div class="example-win">
+                                        <div class="example-grid">
+                                            <span>👑</span><span class="frame">👑<small>5x</small></span><span>👑</span><span>👑</span><span>👑</span>
+                                        </div>
+                                        <div class="example-text">5x Crown + 5x frame = 250x total!</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Scatter & Bonus Rules -->
+                            <div class="rules-subsection bonus-rules">
+                                <div class="info-subtitle">⭐ Star Scatter</div>
+                                <div class="rule-detail">
+                                    <p>Land 3+ Scatters anywhere to trigger bonus games:</p>
+                                    <ul>
+                                        <li><strong>3 Scatters:</strong> Black & Gold Bonus</li>
+                                        <li><strong>4 Scatters:</strong> Golden Hit Bonus</li>
+                                    </ul>
+                                </div>
+                            </div>
+
                             <!-- Bonus Games -->
                             <div class="rules-subsection bonus-rules">
-                                <div class="info-subtitle">🎁 Bonus Games</div>
-                                <div id="bonusInfo">
-                                    <div class="bonus-item">
-                                        <div class="bonus-name">Black & Gold</div>
-                                        <div class="bonus-desc">3 Scatters • 10 free spins with sticky frames</div>
+                                <div class="info-subtitle">🎁 Black & Gold Bonus</div>
+                                <div class="rule-detail">
+                                    <ul>
+                                        <li>10 Free Spins</li>
+                                        <li>Golden frames are <strong>STICKY</strong> (stay for all spins)</li>
+                                        <li>More frames = bigger wins!</li>
+                                    </ul>
+                                    <div class="example-win">
+                                        <div class="example-text sticky-example">Spin 1: Frame appears → Stays</div>
+                                        <div class="example-text sticky-example">Spin 2: Another frame → Both stay</div>
+                                        <div class="example-text sticky-example">Spin 3-10: All frames accumulate!</div>
                                     </div>
-                                    <div class="bonus-item">
-                                        <div class="bonus-name">Golden Hit</div>
-                                        <div class="bonus-desc">4 Scatters • Enhanced with doubled multipliers</div>
+                                </div>
+                            </div>
+
+                            <div class="rules-subsection bonus-rules">
+                                <div class="info-subtitle">⚡ Golden Hit Bonus</div>
+                                <div class="rule-detail">
+                                    <ul>
+                                        <li>10 Free Spins</li>
+                                        <li>All multipliers <strong>DOUBLED</strong> (2x→4x, 5x→10x, etc.)</li>
+                                        <li>Jackpot frames refill after win</li>
+                                    </ul>
+                                    <div class="example-win">
+                                        <div class="example-grid">
+                                            <span class="frame-double">2x</span><span class="frame-double">4x</span><span class="frame-double">10x</span>
+                                        </div>
+                                        <div class="example-text">Normal: 2x,4x,10x → Golden Hit: 4x,8x,20x!</div>
                                     </div>
                                 </div>
                             </div>
