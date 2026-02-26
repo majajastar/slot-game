@@ -55,7 +55,13 @@ function initGrid() {
 // Render paytable using server data
 function renderPaytable() {
     const container = document.getElementById('paytable');
-    if (!container || Object.keys(SYMBOLS).length === 0) return;
+    if (!container) return;
+    
+    const symbolCount = Object.keys(SYMBOLS).length;
+    if (symbolCount === 0) {
+        container.innerHTML = '<div style="color:#888;padding:10px;">Loading paytable...</div>';
+        return;
+    }
     
     const symbols = Object.entries(SYMBOLS).filter(([id]) => id !== 'SCATTER');
     
@@ -87,7 +93,12 @@ function renderPaytable() {
 // Render paylines using server data
 function renderPaylines() {
     const container = document.getElementById('paylinesDisplay');
-    if (!container || PAYLINES.length === 0) return;
+    if (!container) return;
+    
+    if (PAYLINES.length === 0) {
+        container.innerHTML = '<div style="color:#888;padding:10px;">Loading paylines...</div>';
+        return;
+    }
     
     container.innerHTML = PAYLINES.map((line, idx) => `
         <div class="payline-item">
