@@ -64,12 +64,12 @@ const GAME_DATA = {
         { name: 'Line 14', pattern: [3, 3, 2, 3, 3] }
     ],
     jackpots: {
-        values: [25, 100, 500, 20000],
+        values: [25, 100, 500, 1000],
         display: {
             25: { name: 'MINI', icon: '🔷', multiplier: '25x' },
             100: { name: 'MAJOR', icon: '🔶', multiplier: '100x' },
             500: { name: 'MEGA', icon: '💎', multiplier: '500x' },
-            20000: { name: 'MAX', icon: '👑', multiplier: '20000x' }
+            1000: { name: 'MAX', icon: '👑', multiplier: '1000x' }
         }
     },
     bonuses: {
@@ -224,7 +224,7 @@ function generateFrames(isGoldenHit = false) {
             if (Math.random() < frameChance) {
                 const isJackpot = Math.random() < 0.30;
                 if (isJackpot) {
-                    const jackpots = [25, 100, 500, 20000];
+                    const jackpots = [25, 100, 500, 1000];
                     const weights = [50, 30, 15, 5];
                     const totalWeight = weights.reduce((a, b) => a + b, 0);
                     let random = Math.random() * totalWeight;
