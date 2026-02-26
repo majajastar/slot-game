@@ -486,27 +486,44 @@ body {
 .jackpot-item.mega { border-color: #ff69b4; color: #ff69b4; }
 .jackpot-item.max { border-color: var(--gold); color: var(--gold); }
 
-/* Bonus Banner - Fixed position overlay with transparency */
+/* Bonus/Normal Mode Banner - Fixed area */
 .bonus-banner {
     position: absolute;
     top: 10px;
     right: 10px;
-    width: auto;
-    min-width: 200px;
-    max-width: 280px;
-    background: linear-gradient(45deg, rgba(255, 215, 0, 0.85), rgba(255, 237, 78, 0.85));
-    color: #1a1a2e;
+    width: 200px;
+    min-height: 60px;
+    background: linear-gradient(45deg, rgba(100, 100, 100, 0.3), rgba(150, 150, 150, 0.2));
+    color: #aaa;
     padding: 10px 15px;
     border-radius: 8px;
     text-align: center;
-    animation: bonusEntry 0.8s ease;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-    border: 2px solid rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     z-index: 100;
-    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.bonus-banner.hidden {
+.bonus-banner.bonus-active {
+    background: linear-gradient(45deg, rgba(255, 215, 0, 0.85), rgba(255, 237, 78, 0.85));
+    color: #1a1a2e;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    animation: bonusEntry 0.8s ease;
+}
+
+.mode-text {
+    font-size: 0.9rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.bonus-content {
+    width: 100%;
+}
+
+.bonus-content.hidden {
     display: none;
 }
 

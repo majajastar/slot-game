@@ -162,13 +162,16 @@
                         <div class="loading-text">Loading jackpots...</div>
                     </div>
                     
-                    <!-- Bonus Banner (hidden by default) -->
-                    <div id="bonusBanner" class="bonus-banner hidden">
-                        <strong id="bonusName">BONUS ACTIVE!</strong>
-                        <div id="bonusDesc" class="bonus-desc-text"></div>
-                        <div class="bonus-stats">
-                            <span>Spins: <strong id="spinsLeft">0</strong></span>
-                            <span class="bonus-total">Win: <strong id="bonusTotalWin">$0</strong></span>
+                    <!-- Bonus/Normal Mode Banner (always visible) -->
+                    <div id="bonusBanner" class="bonus-banner">
+                        <div id="normalModeText" class="mode-text">🎰 NORMAL MODE</div>
+                        <div id="bonusModeContent" class="bonus-content hidden">
+                            <strong id="bonusName">BONUS ACTIVE!</strong>
+                            <div id="bonusDesc" class="bonus-desc-text"></div>
+                            <div class="bonus-stats">
+                                <span>Spins: <strong id="spinsLeft">0</strong></span>
+                                <span class="bonus-total">Win: <strong id="bonusTotalWin">$0</strong></span>
+                            </div>
                         </div>
                     </div>
                     

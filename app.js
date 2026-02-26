@@ -966,7 +966,13 @@ function showBonusBanner(bonusType, spinsLeft, totalWin = 0) {
     spinsEl.textContent = spinsLeft;
     if (winEl) winEl.textContent = '$' + totalWin.toLocaleString();
 
-    banner.classList.remove('hidden');
+    // Show bonus mode content, hide normal mode text
+    const normalModeText = document.getElementById('normalModeText');
+    const bonusContent = document.getElementById('bonusModeContent');
+    if (normalModeText) normalModeText.classList.add('hidden');
+    if (bonusContent) bonusContent.classList.remove('hidden');
+
+    banner.classList.add('bonus-active');
     document.getElementById('gameContainer').classList.add('bonus-mode');
 
     // Trigger bonus entry animation
@@ -989,7 +995,14 @@ function updateBonusBanner(spinsLeft, totalWin) {
 
 function hideBonusBanner() {
     const banner = document.getElementById('bonusBanner');
-    banner.classList.add('hidden');
+    const normalModeText = document.getElementById('normalModeText');
+    const bonusContent = document.getElementById('bonusModeContent');
+
+    // Show normal mode text, hide bonus content
+    if (normalModeText) normalModeText.classList.remove('hidden');
+    if (bonusContent) bonusContent.classList.add('hidden');
+
+    banner.classList.remove('bonus-active');
     document.getElementById('gameContainer').classList.remove('bonus-mode');
 }
 
