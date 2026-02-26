@@ -26,6 +26,9 @@ let fakeState = {
     bonusSpinsLeft: 0
 };
 
+// Current sticky frames (for bonus game persistence during spins)
+let currentStickyFrames = null;
+
 // Real game state from server
 let socket = null;
 let isSpinning = false;
@@ -558,8 +561,28 @@ function spin() {
     const displays = Object.keys(SYMBOLS).length > 0 ? Object.values(SYMBOLS).map(s => s.display) : ['💎', '👑', '💍', '🏆', '💵'];
     let spins = 0;
     const animInterval = setInterval(() => {
-        document.querySelectorAll('.reel-cell').forEach(c => {
+        document.querySelectorAll('.reel-cell').forEach((c, idx) => {
+            const r = Math.floor(idx / 5);
+            const col = idx % 5;
             c.textContent = displays[Math.floor(Math.random() * displays.length)];
+            
+            // During bonus game, keep showing sticky frames
+            if (fakeState.inBonus && currentStickyFrames && currentStickyFrames[r] && currentStickyFrames[r][col] && currentStickyFrames[r][col].value > 0) {
+                const frame = currentStickyFrames[r][col];
+                const isJackpot = frame.type === 'jackpot';
+                let label, color;
+                
+                if (isJackpot) {
+                    label = frame.value === 25 ? 'M' : frame.value === 100 ? 'J' : frame.value === 500 ? 'E' : 'X';
+                    color = frame.value === 25 ? '#87ceeb' : frame.value === 100 ? '#ffa500' : frame.value === 500 ? '#ff69b4' : '#ffd700';
+                } else {
+                    label = frame.value >= 100 ? '99' : frame.value.toString();
+                    color = '#ffd700';
+                }
+                
+                const fontSize = isJackpot ? '0.6rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
+                c.innerHTML += `<div class="frame-overlay" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
+            }
         });
         spins++;
         if (spins >= 10) clearInterval(animInterval);
@@ -660,6 +683,10 @@ function handleSpinResult(data) {
         
         // Render grid with frames (golden/jackpot frames can appear in any spin)
         if (result.grid) {
+            // Store sticky frames for bonus game persistence
+            if (result.stickyFrames) {
+                currentStickyFrames = result.stickyFrames;
+            }
             renderGrid(result.grid, result.stickyFrames);
         }
         
@@ -691,6 +718,7 @@ function handleSpinResult(data) {
                 fakeState.inBonus = false;
                 fakeState.bonusType = null;
                 fakeState.bonusSpinsLeft = 0;
+                currentStickyFrames = null; // Clear sticky frames when bonus ends
                 log('Bonus completed!', 'info');
             }
         }
@@ -700,6 +728,7 @@ function handleSpinResult(data) {
         fakeState.inBonus = false;
         fakeState.bonusType = null;
         fakeState.bonusSpinsLeft = 0;
+        currentStickyFrames = null; // Clear sticky frames when bonus ends
         log('Bonus completed!', 'info');
     }
     
