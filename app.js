@@ -50,6 +50,12 @@ function initGrid() {
             grid.appendChild(cell);
         }
     }
+    // Draw paylines after grid is created
+    setTimeout(() => {
+        if (PAYLINES.length > 0) {
+            drawPaylinesOnGrid();
+        }
+    }, 100);
 }
 
 // Render paytable using server data
@@ -111,20 +117,83 @@ function renderPaylines() {
         return;
     }
     
+    // Draw SVG paylines on the grid
+    drawPaylinesOnGrid();
+    
+    // Also show payline list
     container.innerHTML = PAYLINES.map((line, idx) => `
-        <div class="payline-item">
+        <div class="payline-item" onclick="highlightPayline(${idx})" style="cursor:pointer;">
             <div class="payline-name">${line.name}</div>
-            <div class="payline-mini">
-                ${Array.from({length: 20}).map((_, i) => {
-                    const r = Math.floor(i / 5);
-                    const c = i % 5;
-                    const isActive = line.pattern[c] === r;
-                    return `<div class="payline-mini-cell ${isActive ? 'active' : ''}"></div>`;
-                }).join('')}
-            </div>
         </div>
     `).join('');
     console.log('[DEBUG] Paylines rendered successfully with', PAYLINES.length, 'lines');
+}
+
+// Draw paylines as SVG lines on the grid
+function drawPaylinesOnGrid() {
+    const svg = document.getElementById('paylineOverlay');
+    const grid = document.getElementById('reelGrid');
+    if (!svg || !grid) return;
+    
+    // Clear existing lines
+    svg.innerHTML = '';
+    
+    // Get cell dimensions
+    const cells = grid.querySelectorAll('.reel-cell');
+    if (cells.length === 0) return;
+    
+    const cellWidth = cells[0].offsetWidth;
+    const cellHeight = cells[0].offsetHeight;
+    const gap = 10; // match CSS gap
+    
+    // Colors for different paylines
+    const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181', '#aa96da', '#fcbad3', '#ffffd2', '#a8e6cf', '#fdffb6', '#ffd3b6', '#ffaaa5', '#ff8b94', '#c7ceea'];
+    
+    PAYLINES.forEach((line, idx) => {
+        const pattern = line.pattern;
+        let path = '';
+        
+        // Calculate points for the payline
+        const points = pattern.map((row, col) => {
+            const x = col * (cellWidth + gap) + cellWidth / 2;
+            const y = row * (cellHeight + gap) + cellHeight / 2;
+            return `${x},${y}`;
+        });
+        
+        // Create polyline
+        const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        polyline.setAttribute('points', points.join(' '));
+        polyline.setAttribute('fill', 'none');
+        polyline.setAttribute('stroke', colors[idx % colors.length]);
+        polyline.setAttribute('stroke-width', '3');
+        polyline.setAttribute('stroke-linecap', 'round');
+        polyline.setAttribute('stroke-linejoin', 'round');
+        polyline.setAttribute('opacity', '0.6');
+        polyline.setAttribute('id', `payline-${idx}`);
+        polyline.style.display = 'none'; // Hidden by default
+        
+        svg.appendChild(polyline);
+    });
+    
+    console.log('[DEBUG] Drew', PAYLINES.length, 'paylines on grid');
+}
+
+// Highlight a specific payline
+function highlightPayline(idx) {
+    // Hide all paylines
+    document.querySelectorAll('#paylineOverlay polyline').forEach(line => {
+        line.style.display = 'none';
+    });
+    
+    // Show selected payline
+    const line = document.getElementById(`payline-${idx}`);
+    if (line) {
+        line.style.display = 'block';
+        // Auto-hide after 2 seconds
+        setTimeout(() => {
+            line.style.display = 'none';
+        }, 2000);
+    }
 }
 
 // Render jackpots using server data

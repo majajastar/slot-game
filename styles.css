@@ -262,6 +262,7 @@ body {
     margin: 10px 0;
     border: 2px solid #333;
     transition: all 0.5s;
+    position: relative;
 }
 
 .reel-container.bonus-mode {
@@ -536,43 +537,32 @@ body {
 }
 
 .paylines-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
     gap: 8px;
 }
 
 .payline-item {
     background: rgba(0, 0, 0, 0.3);
-    padding: 6px;
+    padding: 8px 4px;
     border-radius: 6px;
     text-align: center;
+    border: 1px solid #444;
+    transition: all 0.2s;
+}
+
+.payline-item:hover {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: var(--gold);
 }
 
 .payline-name {
-    font-size: 0.6rem;
-    color: #888;
-    margin-bottom: 4px;
+    font-size: 0.7rem;
+    color: #aaa;
 }
 
-.payline-mini {
-    display: grid;
-    grid-template-columns: repeat(5, 10px);
-    grid-template-rows: repeat(4, 10px);
-    gap: 1px;
-    margin: 0 auto;
-    width: 54px;
-}
-
-.payline-mini-cell {
-    width: 10px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-}
-
-.payline-mini-cell.active {
-    background: var(--success);
+.payline-item:hover .payline-name {
+    color: var(--gold);
 }
 
 /* Win Ways */
