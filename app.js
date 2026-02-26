@@ -34,14 +34,6 @@ let currentBalance = 0;
 document.addEventListener('DOMContentLoaded', () => {
     initGrid();
     connect();
-    
-    // Debug: Check if containers exist after a delay
-    setTimeout(() => {
-        console.log('[INIT] Checking DOM elements:');
-        console.log('[INIT] paytable:', document.getElementById('paytable'));
-        console.log('[INIT] paylinesDisplay:', document.getElementById('paylinesDisplay'));
-        console.log('[INIT] gameContent hidden:', document.getElementById('gameContent')?.classList.contains('hidden'));
-    }, 1000);
 });
 
 // Create 4x5 grid
@@ -57,42 +49,14 @@ function initGrid() {
             grid.appendChild(cell);
         }
     }
-    // Draw paylines after grid is created
-    setTimeout(() => {
-        if (PAYLINES.length > 0) {
-            drawPaylinesOnGrid();
-        }
-    }, 100);
 }
-
-// Manual render for debugging
-window.debugRender = function() {
-    console.log('[MANUAL] debugRender called');
-    console.log('[MANUAL] SYMBOLS:', Object.keys(SYMBOLS));
-    console.log('[MANUAL] PAYLINES:', PAYLINES.length);
-    renderPaytable();
-    renderPaylines();
-};
 
 // Render paytable using server data
 function renderPaytable() {
-    console.log('[DEBUG] renderPaytable called');
     const container = document.getElementById('paytable');
-    if (!container) {
-        console.error('[DEBUG] paytable container NOT FOUND in DOM!');
-        return;
-    }
-    
-    console.log('[DEBUG] paytable container:', container);
-    console.log('[DEBUG] paytable parent:', container.parentElement);
-    console.log('[DEBUG] paytable display:', getComputedStyle(container).display);
-    console.log('[DEBUG] paytable visibility:', getComputedStyle(container).visibility);
-    
-    // TEMP: Add border to see container
-    container.style.border = '2px solid red';
+    if (!container) return;
     
     const symbolCount = Object.keys(SYMBOLS).length;
-    console.log('[DEBUG] symbolCount:', symbolCount);
     if (symbolCount === 0) {
         container.innerHTML = '<div style="color:#888;padding:10px;">Loading paytable...</div>';
         return;
@@ -112,10 +76,7 @@ function renderPaytable() {
     `;
     
     // Data rows
-    console.log('[DEBUG] Rendering paytable rows for:', symbols.map(([id]) => id).join(', '));
-    html += symbols.map(([id, s]) => {
-        console.log(`[DEBUG] Rendering row: ${id} = ${s.display} ${s.name}`);
-        return `
+    html += symbols.map(([id, s]) => `
         <div class="paytable-row" style="${id === 'WILD' ? 'background:rgba(233,69,96,0.1);border-left:3px solid #e94560;padding-left:4px;' : ''}">
             <span class="paytable-icon">${s.display || '?'}</span>
             <span class="paytable-name">${s.name || id}${id === 'WILD' ? ' ⭐' : ''}</span>
@@ -123,105 +84,35 @@ function renderPaytable() {
             <span class="paytable-payout">${s.payout?.[4] || 0}x</span>
             <span class="paytable-payout">${s.payout?.[3] || 0}x</span>
         </div>
-    `}).join('');
+    `).join('');
     
     container.innerHTML = html;
-    console.log('[DEBUG] Paytable HTML inserted into container');
-    console.log('[DEBUG] Container innerHTML length:', container.innerHTML.length);
 }
 
-// Render paylines using server data
+// Render paylines using server data - OpenClawAutoGen style with mini grids
 function renderPaylines() {
-    console.log('[DEBUG] renderPaylines called');
     const container = document.getElementById('paylinesDisplay');
-    if (!container) {
-        console.error('[DEBUG] paylinesDisplay container NOT FOUND in DOM!');
-        return;
-    }
+    if (!container) return;
     
-    console.log('[DEBUG] PAYLINES count:', PAYLINES.length);
     if (PAYLINES.length === 0) {
         container.innerHTML = '<div style="color:#888;padding:10px;">Loading paylines...</div>';
         return;
     }
     
-    // Draw SVG paylines on the grid
-    drawPaylinesOnGrid();
-    
-    // Also show payline list
+    // Render paylines as mini grids showing the pattern
     container.innerHTML = PAYLINES.map((line, idx) => `
-        <div class="payline-item" onclick="highlightPayline(${idx})" style="cursor:pointer;">
-            <div class="payline-name">${line.name}</div>
+        <div class="payline-item" style="background:rgba(0,0,0,0.3);padding:6px;border-radius:6px;text-align:center;">
+            <div style="font-size:0.6rem;color:#888;margin-bottom:4px;">${line.name}</div>
+            <div style="display:grid;grid-template-columns:repeat(5,10px);grid-template-rows:repeat(4,10px);gap:1px;margin:0 auto;width:54px;">
+                ${Array.from({length: 20}).map((_, i) => {
+                    const r = Math.floor(i / 5);
+                    const c = i % 5;
+                    const isActive = line.pattern[c] === r;
+                    return `<div style="width:10px;height:10px;background:${isActive ? '#2ecc71' : 'rgba(255,255,255,0.1)'};border-radius:2px;"></div>`;
+                }).join('')}
+            </div>
         </div>
     `).join('');
-    console.log('[DEBUG] Paylines rendered successfully with', PAYLINES.length, 'lines');
-}
-
-// Draw paylines as SVG lines on the grid
-function drawPaylinesOnGrid() {
-    const svg = document.getElementById('paylineOverlay');
-    const grid = document.getElementById('reelGrid');
-    if (!svg || !grid) return;
-    
-    // Clear existing lines
-    svg.innerHTML = '';
-    
-    // Get cell dimensions
-    const cells = grid.querySelectorAll('.reel-cell');
-    if (cells.length === 0) return;
-    
-    const cellWidth = cells[0].offsetWidth;
-    const cellHeight = cells[0].offsetHeight;
-    const gap = 10; // match CSS gap
-    
-    // Colors for different paylines
-    const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181', '#aa96da', '#fcbad3', '#ffffd2', '#a8e6cf', '#fdffb6', '#ffd3b6', '#ffaaa5', '#ff8b94', '#c7ceea'];
-    
-    PAYLINES.forEach((line, idx) => {
-        const pattern = line.pattern;
-        let path = '';
-        
-        // Calculate points for the payline
-        const points = pattern.map((row, col) => {
-            const x = col * (cellWidth + gap) + cellWidth / 2;
-            const y = row * (cellHeight + gap) + cellHeight / 2;
-            return `${x},${y}`;
-        });
-        
-        // Create polyline
-        const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-        polyline.setAttribute('points', points.join(' '));
-        polyline.setAttribute('fill', 'none');
-        polyline.setAttribute('stroke', colors[idx % colors.length]);
-        polyline.setAttribute('stroke-width', '3');
-        polyline.setAttribute('stroke-linecap', 'round');
-        polyline.setAttribute('stroke-linejoin', 'round');
-        polyline.setAttribute('opacity', '0.6');
-        polyline.setAttribute('id', `payline-${idx}`);
-        polyline.style.display = 'none'; // Hidden by default
-        
-        svg.appendChild(polyline);
-    });
-    
-    console.log('[DEBUG] Drew', PAYLINES.length, 'paylines on grid');
-}
-
-// Highlight a specific payline
-function highlightPayline(idx) {
-    // Hide all paylines
-    document.querySelectorAll('#paylineOverlay polyline').forEach(line => {
-        line.style.display = 'none';
-    });
-    
-    // Show selected payline
-    const line = document.getElementById(`payline-${idx}`);
-    if (line) {
-        line.style.display = 'block';
-        // Auto-hide after 2 seconds
-        setTimeout(() => {
-            line.style.display = 'none';
-        }, 2000);
-    }
 }
 
 // Render jackpots using server data
@@ -329,7 +220,6 @@ async function connect() {
         
         socket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-            console.log('[SERVER →]', JSON.parse(JSON.stringify(msg)));
             handleMessage(msg);
         };
         
@@ -351,7 +241,6 @@ async function connect() {
 }
 
 function send(msg) {
-    console.log('[→ SERVER]', JSON.parse(JSON.stringify(msg)));
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(msg));
     }
@@ -364,9 +253,9 @@ function handleMessage(msg) {
         log('Server error: ' + msg.errCode, 'error');
         return;
     }
-    
+
     const { type, data } = msg.vals;
-    
+
     switch (type) {
         case 1: // Login
             handleLogin(data);
@@ -419,23 +308,14 @@ function handleGameMessage(data) {
 function handleJoinRoom(data) {
     log(`Joined room: ${data.roomId}`);
     currentBalance = data.balance;
-    
-    console.log('[DEBUG] Join room data:', data);
-    console.log('[DEBUG] betInfo:', data.betInfo?.[0]);
 
     // Get game data from Join Room response (moved from SyncRoomInfo)
     const betInfo = data.betInfo?.[0];
     if (betInfo) {
-        console.log('[DEBUG] Loading game data from Join Room');
-        console.log('[DEBUG] betInfo has symbols:', !!betInfo.symbols);
-        console.log('[DEBUG] betInfo has paylines:', !!betInfo.paylines);
-        
         if (betInfo.symbols) {
-            console.log('[DEBUG] Setting SYMBOLS from Join Room, count:', Object.keys(betInfo.symbols).length);
             SYMBOLS = betInfo.symbols;
         }
         if (betInfo.paylines) {
-            console.log('[DEBUG] Setting PAYLINES from Join Room, count:', betInfo.paylines.length);
             PAYLINES = betInfo.paylines;
         }
         if (betInfo.jackpots) {
@@ -449,8 +329,6 @@ function handleJoinRoom(data) {
     // Show game panel
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('gameContent').classList.remove('hidden');
-    
-    console.log('[DEBUG] Game panel now visible');
 
     // Update UI with server data
     document.getElementById('balance').textContent = '$' + data.balance.toLocaleString();
@@ -463,13 +341,10 @@ function handleJoinRoom(data) {
     }
     
     // Render paytable/paylines now that we have data and DOM is visible
-    console.log('[DEBUG] Checking data after Join Room - symbols:', Object.keys(SYMBOLS).length, 'paylines:', PAYLINES.length);
     if (Object.keys(SYMBOLS).length > 0) {
-        console.log('[DEBUG] Calling renderPaytable from handleJoinRoom');
         renderPaytable();
     }
     if (PAYLINES.length > 0) {
-        console.log('[DEBUG] Calling renderPaylines from handleJoinRoom');
         renderPaylines();
     }
 }
@@ -496,34 +371,15 @@ function handleSubData(subData) {
 
     switch (subData.opCode) {
         case 'SyncRoomInfo':
-            console.log('[DEBUG] SyncRoomInfo received');
-            console.log('[DEBUG] Full subData:', JSON.parse(JSON.stringify(subData)));
             if (subData.roomInfo) {
-                console.log('[DEBUG] roomInfo keys:', Object.keys(subData.roomInfo));
-                console.log('[DEBUG] has symbols:', !!subData.roomInfo.symbols, 'count:', subData.roomInfo.symbols ? Object.keys(subData.roomInfo.symbols).length : 0);
-                console.log('[DEBUG] has paylines:', !!subData.roomInfo.paylines, 'count:', subData.roomInfo.paylines ? subData.roomInfo.paylines.length : 0);
-                console.log('[DEBUG] roomInfo.symbols type:', typeof subData.roomInfo.symbols);
-                console.log('[DEBUG] roomInfo.paylines type:', typeof subData.roomInfo.paylines);
-                
                 // Load game data from server
                 if (subData.roomInfo.symbols) {
-                    console.log('[DEBUG] RECEIVED PAYTABLE FROM SERVER:');
-                    console.log('[DEBUG] Symbols object:', subData.roomInfo.symbols);
-                    console.log('[DEBUG] Symbol IDs:', Object.keys(subData.roomInfo.symbols));
-                    Object.entries(subData.roomInfo.symbols).forEach(([id, data]) => {
-                        console.log(`[DEBUG]   ${id}: ${data.display} ${data.name} - payouts:`, data.payout);
-                    });
                     SYMBOLS = subData.roomInfo.symbols;
                     renderPaytable();
-                } else {
-                    console.error('[DEBUG] No symbols in roomInfo!');
                 }
                 if (subData.roomInfo.paylines) {
-                    console.log('[DEBUG] Setting PAYLINES and calling renderPaylines');
                     PAYLINES = subData.roomInfo.paylines;
                     renderPaylines();
-                } else {
-                    console.error('[DEBUG] No paylines in roomInfo!');
                 }
                 if (subData.roomInfo.jackpots) {
                     JACKPOTS = subData.roomInfo.jackpots;
