@@ -318,12 +318,32 @@ function handleJoinRoom(data) {
 
 // Render bet selector dropdown based on betSizeList
 function renderBetSelector() {
-    const display = document.getElementById('betDisplay');
-    if (!display) return;
+    const select = document.getElementById('betSelect');
+    if (!select || BET_SIZE_LIST.length === 0) return;
+
+    // Clear existing options
+    select.innerHTML = '';
+
+    // Add options from betSizeList
+    BET_SIZE_LIST.forEach(bet => {
+        const option = document.createElement('option');
+        option.value = bet;
+        option.textContent = '$' + bet;
+        select.appendChild(option);
+    });
 
     // Set default to middle of list or first item
-    const defaultBet = BET_SIZE_LIST[Math.floor(BET_SIZE_LIST.length / 2)] || BET_SIZE_LIST[0] || 10;
-    display.textContent = '$' + defaultBet;
+    const defaultIndex = Math.floor(BET_SIZE_LIST.length / 2);
+    select.selectedIndex = defaultIndex;
+}
+
+function updateBetDisplay() {
+    // This function is called when select changes
+    // Currently no additional action needed
+    const select = document.getElementById('betSelect');
+    if (select) {
+        log('Bet changed to $' + select.value);
+    }
 }
 
 function handleSubData(subData) {
@@ -370,16 +390,28 @@ function handleSubData(subData) {
 // ==================== SPIN & RENDER ====================
 
 function spin() {
-    if (isSpinning) return;
+    if (isSpinning) {
+        console.log('Already spinning, ignoring click');
+        return;
+    }
 
-    const betDisplay = document.getElementById('betDisplay');
-    let bet = parseInt(betDisplay.textContent.replace('$', '')) || 10;
+    const betSelect = document.getElementById('betSelect');
+    let bet = betSelect ? parseInt(betSelect.value) : 10;
 
     // Validate bet is in allowed list, auto-correct if not
     if (!BET_SIZE_LIST.includes(bet)) {
+        console.log('Bet ' + bet + ' not in list, auto-correcting');
         bet = getClosestBetSize(bet);
-        betDisplay.textContent = '$' + bet;
+        // Update select to corrected value
+        if (betSelect) {
+            const index = BET_SIZE_LIST.indexOf(bet);
+            if (index >= 0) {
+                betSelect.selectedIndex = index;
+            }
+        }
     }
+    
+    console.log('Starting spin with bet:', bet);
 
     isSpinning = true;
     const btn = document.getElementById('spinBtn');
@@ -643,11 +675,15 @@ function hideBonusBanner() {
 }
 
 function resetSpin() {
+    console.log('Resetting spin button');
     isSpinning = false;
-    const btn = document.getElementById('spin-btn');
+    const btn = document.getElementById('spinBtn');
     if (btn) {
         btn.disabled = false;
         btn.textContent = '🎰 SPIN';
+        console.log('Spin button reset successfully');
+    } else {
+        console.error('Spin button not found!');
     }
 }
 

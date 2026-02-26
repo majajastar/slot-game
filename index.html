@@ -101,9 +101,10 @@
                     <!-- Controls -->
                     <div class="controls">
                         <div class="bet-controls">
-                            <button class="bet-btn" id="betMinus" onclick="changeBet(-1)">-</button>
-                            <span id="betDisplay" class="bet-display">$10</span>
-                            <button class="bet-btn" id="betPlus" onclick="changeBet(1)">+</button>
+                            <label>Bet Size:</label>
+                            <select id="betSelect" class="bet-select" onchange="updateBetDisplay()">
+                                <option value="10">$10</option>
+                            </select>
                         </div>
                         <button id="spinBtn" class="btn-spin" onclick="spin()">🎰 SPIN</button>
                     </div>
