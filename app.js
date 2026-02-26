@@ -325,6 +325,14 @@ function handleJoinRoom(data) {
         renderBetSelector();
         updateBetSizeListDisplay();
     }
+    
+    // Force render paytable/paylines if data already loaded
+    if (Object.keys(SYMBOLS).length > 0) {
+        renderPaytable();
+    }
+    if (PAYLINES.length > 0) {
+        renderPaylines();
+    }
 }
 
 // Render bet display with current value
