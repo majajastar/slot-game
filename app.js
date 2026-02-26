@@ -133,14 +133,21 @@ function renderJackpots() {
 function renderBonusInfo() {
     const container = document.getElementById('bonusInfo');
     if (!container || Object.keys(BONUSES).length === 0) return;
-    
-    container.innerHTML = Object.entries(BONUSES).map(([key, bonus]) => `
-        <div class="bonus-item">
+
+    // Get current bet for calculating bonus buy cost
+    const betDisplay = document.getElementById('betDisplay');
+    const currentBet = parseInt(betDisplay?.textContent?.replace('$', '')) || 10;
+
+    container.innerHTML = Object.entries(BONUSES).map(([key, bonus]) => {
+        const cost = bonus.buyPriceMultiplier ? currentBet * bonus.buyPriceMultiplier : 0;
+        const costDisplay = cost > 0 ? `$${cost.toLocaleString()} (${bonus.buyPriceDisplay || bonus.buyPriceMultiplier + 'x'})` : bonus.buyPriceDisplay || '';
+        return `
+        <div class="bonus-item" onclick="buyBonus('${key}')" style="cursor:pointer;">
             <div class="bonus-name">${bonus.name}</div>
             <div class="bonus-desc">${bonus.description}</div>
-            <div class="bonus-meta">${bonus.scatterCount} scatters • ${bonus.buyPriceDisplay || bonus.buyPrice + 'x'}</div>
+            <div class="bonus-meta">${bonus.scatterCount} scatters • Cost: ${costDisplay}</div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 // Update game info from server config
@@ -407,6 +414,26 @@ function handleSubData(subData) {
                     // Don't reset bet display on SyncRoomInfo - keep user's selection
                     updateBetSizeListDisplay();
                 }
+
+                // Restore previous game state if available
+                const lastResumeInfo = subData.roomInfo.lastResumeInfo;
+                if (lastResumeInfo) {
+                    log('Restoring previous game state');
+
+                    // Render the previous grid
+                    if (lastResumeInfo.grid) {
+                        renderGrid(lastResumeInfo.grid, lastResumeInfo.stickyFrames);
+                    }
+
+                    // Check if bonus is active and restore it
+                    if (lastResumeInfo.bonusGameState && lastResumeInfo.bonusGameState.spinsLeft > 0) {
+                        fakeState.inBonus = true;
+                        fakeState.bonusType = lastResumeInfo.bonusGameState.type;
+                        fakeState.bonusSpinsLeft = lastResumeInfo.bonusGameState.spinsLeft;
+                        showBonusBanner(lastResumeInfo.bonusGameState.type, lastResumeInfo.bonusGameState.spinsLeft);
+                        log('Bonus game restored: ' + lastResumeInfo.bonusGameState.type + ' with ' + lastResumeInfo.bonusGameState.spinsLeft + ' spins left');
+                    }
+                }
             }
             break;
 
@@ -445,6 +472,15 @@ function spin() {
     }
     
     console.log('[BET DEBUG] Final bet to send:', bet);
+
+    // Deduct bet from balance immediately for UX
+    const balanceEl = document.getElementById('balance');
+    const currentBalance = parseInt(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
+    const newBalance = Math.max(0, currentBalance - bet);
+    if (balanceEl) {
+        balanceEl.textContent = '$' + newBalance.toLocaleString();
+    }
+    log('Spin: -$' + bet + ' (Balance: $' + newBalance + ')');
 
     isSpinning = true;
     const btn = document.getElementById('spinBtn');
@@ -513,6 +549,11 @@ function handleSpinResult(data) {
             totalWin: result.totalWinAmount
         });
 
+        // Log bonus buy if awardBase is larger than bet (indicates bonus buy)
+        if (result.awardBase > betInfo.bet) {
+            log('Bonus bought: -$' + result.awardBase, 'info');
+        }
+
         // DEBUG: Log raw reel data
         console.log('[FRONTEND DEBUG] Raw grid:');
         if (result.grid) {
@@ -533,11 +574,16 @@ function handleSpinResult(data) {
             console.log('[FRONTEND DEBUG] No winning lines');
         }
         
-        // Update server data
+        // Update balance from server result
         currentBalance = betInfo.finalBalance;
         const balanceEl = document.getElementById('balance');
         if (balanceEl) {
             balanceEl.textContent = '$' + (betInfo.finalBalance || 0).toLocaleString();
+        }
+        
+        // Log win if applicable
+        if (winAmount > 0) {
+            log('Win: +$' + winAmount + ' (Balance: $' + (betInfo.finalBalance || 0) + ')', 'success');
         }
         
         // Update fake state
@@ -550,7 +596,7 @@ function handleSpinResult(data) {
         const totalWinEl = document.getElementById('totalWin');
         if (totalWinEl) totalWinEl.textContent = '$' + fakeState.totalWin.toLocaleString();
         
-        // Render grid with frames if in bonus
+        // Render grid with frames (golden/jackpot frames can appear in any spin)
         if (result.grid) {
             renderGrid(result.grid, result.stickyFrames);
         }
@@ -831,12 +877,76 @@ function changeBet(dir) {
     const newBet = BET_SIZE_LIST[newIdx];
     display.textContent = '$' + newBet;
     log('Bet changed to $' + newBet);
+
+    // Re-render bonus info to update costs
+    renderBonusInfo();
 }
 
-function buyBonus(type) {
+function buyBonus(key) {
     if (isSpinning) return;
-    log('Bonus buy not implemented yet: ' + type);
-    alert('Bonus buy coming soon!');
+
+    // Convert key to bonus type
+    const bonusTypeMap = {
+        'blackAndGold': 'BLACK_AND_GOLD',
+        'goldenHit': 'GOLDEN_HIT'
+    };
+    const bonusType = bonusTypeMap[key];
+    if (!bonusType) {
+        log('Unknown bonus type: ' + key, 'error');
+        return;
+    }
+
+    // Get current bet and calculate cost
+    const betDisplay = document.getElementById('betDisplay');
+    const betText = betDisplay?.textContent || '';
+    const bet = parseInt(betText.replace('$', '')) || 10;
+
+    const bonus = BONUSES[key];
+    const cost = bonus?.buyPriceMultiplier ? bet * bonus.buyPriceMultiplier : 0;
+
+    // Deduct bonus cost from balance immediately
+    const balanceEl = document.getElementById('balance');
+    const currentBalance = parseInt(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
+    const newBalance = Math.max(0, currentBalance - cost);
+    if (balanceEl) {
+        balanceEl.textContent = '$' + newBalance.toLocaleString();
+    }
+
+    log('Buying bonus: ' + bonus?.name + ' for $' + cost + ' (Balance: $' + newBalance + ')');
+
+    isSpinning = true;
+    const btn = document.getElementById('spinBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '...';
+    }
+
+    // Clear previous wins
+    document.querySelectorAll('.reel-cell').forEach(c => {
+        c.classList.remove('winning');
+        c.textContent = '◯';
+    });
+    document.getElementById('winAmount')?.classList.add('hidden');
+    const winWaysEl = document.getElementById('winWays');
+    if (winWaysEl) winWaysEl.innerHTML = '<div class="no-win">...</div>';
+
+    // Reset payline highlights
+    renderPaylines();
+
+    // Send spin request with force bonus
+    send({
+        type: '100000',
+        data: [{
+            subType: 100070,
+            subData: [{
+                opCode: 'SetBet',
+                message: {
+                    bet,
+                    forceBonusType: bonusType
+                }
+            }]
+        }]
+    });
 }
 
 // ==================== UI HELPERS ====================
