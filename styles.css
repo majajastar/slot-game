@@ -496,9 +496,19 @@ body {
     animation: bonusEntry 0.8s ease;
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
     border: 2px solid #fff;
+    min-height: 80px; /* Reserve space to prevent layout shift */
 }
 
-.bonus-banner.hidden { display: none; }
+.bonus-banner.hidden {
+    visibility: hidden;
+    opacity: 0;
+    min-height: 80px; /* Keep space reserved */
+    padding: 0;
+    margin: 10px 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
 
 .bonus-desc-text {
     font-size: 0.8rem;
@@ -624,6 +634,11 @@ body {
 .win-section {
     text-align: center;
     padding: 10px;
+    min-height: 60px; /* Reserve space to prevent layout shift */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .win-amount {
@@ -633,9 +648,15 @@ body {
     animation: fadeIn 0.5s ease;
 }
 
+.win-amount.hidden {
+    visibility: hidden;
+    opacity: 0;
+}
+
 .win-details {
     color: #888;
     font-size: 0.8rem;
+    min-height: 1rem; /* Reserve space */
 }
 
 /* Controls */
