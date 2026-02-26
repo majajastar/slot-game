@@ -825,34 +825,66 @@ function showWins(lineWins, totalWin) {
     winEl.classList.remove('hidden');
     document.getElementById('winDetails').textContent = lineWins.length + ' winning line(s)';
 
-    // Show frame contribution details
+    // Show detailed win breakdown
     const winWaysEl = document.getElementById('winWays');
     if (winWaysEl) {
+        // Calculate total multiplier contribution
+        let totalMultiplier = 1;
+        let hasJackpot = false;
+        lineWins.forEach(lw => {
+            const fc = lw.frameContribution;
+            if (fc) {
+                if (fc.multipliers.length > 0) {
+                    totalMultiplier *= fc.multipliers.reduce((a, b) => a * b, 1);
+                }
+                if (fc.jackpotWins.length > 0) {
+                    hasJackpot = true;
+                }
+            }
+        });
+
         let html = `
-        <div style="background:rgba(46,204,113,0.2);padding:10px;border-radius:8px;margin-bottom:12px;text-align:center;border:1px solid rgba(46,204,113,0.3);">
-            <div style="color:#2ecc71;font-weight:bold;font-size:1.1rem;">${lineWins.length} WAY${lineWins.length>1?'S':''} TO WIN!</div>
-            <div style="color:#ffd700;font-size:1.4rem;font-weight:bold;margin-top:4px;">+$${totalWin.toLocaleString()}</div>
+        <div class="win-summary" style="background:linear-gradient(135deg, rgba(46,204,113,0.2), rgba(255,215,0,0.1));padding:12px;border-radius:10px;margin-bottom:12px;text-align:center;border:2px solid rgba(46,204,113,0.4);">
+            <div style="color:#2ecc71;font-weight:bold;font-size:1.2rem;text-shadow:0 0 10px rgba(46,204,113,0.3);">${lineWins.length} WINNING LINE${lineWins.length>1?'S':''}!</div>
+            <div style="color:#ffd700;font-size:1.6rem;font-weight:bold;margin-top:6px;text-shadow:0 0 15px rgba(255,215,0,0.4);">+$${totalWin.toLocaleString()}</div>
+            ${totalMultiplier > 1 ? `<div style="color:#ff6b6b;font-size:0.85rem;margin-top:4px;font-weight:bold;">🔥 ${totalMultiplier}x Multiplier Boost!</div>` : ''}
+            ${hasJackpot ? `<div style="color:#ffd700;font-size:0.85rem;margin-top:4px;font-weight:bold;">💎 Jackpot Win!</div>` : ''}
         </div>
         `;
         
         lineWins.forEach((lw, idx) => {
             const [lineIdx, symbol, count, win] = lw.info;
+            const symbolName = SYMBOLS[symbol]?.name || symbol;
+            const symbolDisplay = SYMBOLS[symbol]?.display || symbol;
             const fc = lw.frameContribution;
-            let frameInfo = '';
-            if (fc && (fc.multipliers.length > 0 || fc.jackpotWins.length > 0)) {
+            
+            let boostInfo = '';
+            if (fc) {
                 const parts = [];
                 if (fc.multipliers.length > 0) {
-                    parts.push(`Multipliers: ${fc.multipliers.join('x, ')}x`);
+                    const multTotal = fc.multipliers.reduce((a, b) => a * b, 1);
+                    parts.push(`🔥 ${fc.multipliers.join('×')}× = ${multTotal}x`);
                 }
                 if (fc.jackpotWins.length > 0) {
-                    parts.push(`Jackpots: ${fc.jackpotWins.join('x, ')}x`);
+                    parts.push(`💎 Jackpot: ${fc.jackpotWins.join('x, ')}x`);
                 }
-                frameInfo = `<div class="frame-contribution">${parts.join(' • ')}</div>`;
+                if (parts.length > 0) {
+                    boostInfo = `<div style="color:#ff6b6b;font-size:0.75rem;margin-top:4px;font-weight:bold;">${parts.join(' • ')}</div>`;
+                }
             }
+            
             html += `
-                <div class="win-way-item">
-                    <strong>Line ${lineIdx + 1}:</strong> ${SYMBOLS[symbol]?.display || symbol} x${count} = $${win.toLocaleString()}
-                    ${frameInfo}
+                <div class="win-way-item" style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;margin:8px 0;border-left:3px solid #2ecc71;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="color:#888;font-size:0.8rem;">Line ${lineIdx + 1}</span>
+                        <span style="color:#2ecc71;font-weight:bold;">+$${win.toLocaleString()}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                        <span style="font-size:1.5rem;">${symbolDisplay}</span>
+                        <span style="color:#fff;font-size:0.9rem;">${symbolName}</span>
+                        <span style="color:#ffd700;font-size:0.85rem;font-weight:bold;">${count} of a kind</span>
+                    </div>
+                    ${boostInfo}
                 </div>
             `;
         });
