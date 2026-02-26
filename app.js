@@ -708,6 +708,11 @@ function handleSpinResult(data) {
             fakeState.bonusSpinsLeft = spinsLeft;
             showBonusBanner(result.bonusType, spinsLeft);
             log('BONUS TRIGGERED: ' + result.bonusType + '!', 'info');
+            
+            // Also highlight winning paylines when bonus triggers
+            if (result.lineWins?.length > 0) {
+                highlightWinningPaylines(result.lineWins);
+            }
         } else if (fakeState.inBonus) {
             // Continue bonus
             fakeState.bonusSpinsLeft = spinsLeft;
