@@ -89,6 +89,7 @@ body {
 .center-panel {
     display: flex;
     flex-direction: column;
+    position: relative; /* For absolute positioned children */
 }
 
 /* Info Section */
@@ -485,29 +486,27 @@ body {
 .jackpot-item.mega { border-color: #ff69b4; color: #ff69b4; }
 .jackpot-item.max { border-color: var(--gold); color: var(--gold); }
 
-/* Bonus Banner */
+/* Bonus Banner - Fixed position overlay */
 .bonus-banner {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
     background: linear-gradient(45deg, var(--gold), var(--gold-hover));
     color: #1a1a2e;
-    padding: 15px;
+    padding: 12px 20px;
     border-radius: 8px;
     text-align: center;
-    margin: 10px 0;
     animation: bonusEntry 0.8s ease;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
     border: 2px solid #fff;
-    min-height: 80px; /* Reserve space to prevent layout shift */
+    z-index: 100;
 }
 
 .bonus-banner.hidden {
-    visibility: hidden;
-    opacity: 0;
-    min-height: 80px; /* Keep space reserved */
-    padding: 0;
-    margin: 10px 0;
-    border: none;
-    background: transparent;
-    box-shadow: none;
+    display: none;
 }
 
 .bonus-desc-text {
@@ -630,33 +629,44 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Win Section */
+/* Win Section - Fixed position overlay */
 .win-section {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     text-align: center;
-    padding: 10px;
-    min-height: 60px; /* Reserve space to prevent layout shift */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    z-index: 50;
+    pointer-events: none; /* Let clicks pass through */
 }
 
 .win-amount {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     font-weight: bold;
     color: var(--success);
-    animation: fadeIn 0.5s ease;
+    text-shadow: 0 0 20px rgba(46, 204, 113, 0.5), 0 0 40px rgba(46, 204, 113, 0.3);
+    animation: winPop 0.5s ease;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 30px;
+    border-radius: 12px;
+    border: 2px solid var(--success);
 }
 
 .win-amount.hidden {
-    visibility: hidden;
-    opacity: 0;
+    display: none;
 }
 
 .win-details {
-    color: #888;
-    font-size: 0.8rem;
-    min-height: 1rem; /* Reserve space */
+    color: #fff;
+    font-size: 1rem;
+    margin-top: 10px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes winPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 /* Controls */
