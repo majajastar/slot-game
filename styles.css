@@ -488,10 +488,10 @@ body {
 /* Bonus/Normal Mode Banner - Horizontal between jackpot and reels */
 .bonus-banner {
     width: 100%;
-    min-height: 50px;
+    height: 60px;
     background: linear-gradient(45deg, rgba(100, 100, 100, 0.3), rgba(150, 150, 150, 0.2));
     color: #aaa;
-    padding: 10px 15px;
+    padding: 8px 15px;
     border-radius: 8px;
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -499,6 +499,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
 .bonus-banner.bonus-active {
@@ -513,10 +514,15 @@ body {
     font-size: 0.9rem;
     font-weight: bold;
     letter-spacing: 1px;
+    line-height: 44px;
 }
 
 .bonus-content {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 44px;
 }
 
 .bonus-content.hidden {
@@ -524,23 +530,26 @@ body {
 }
 
 .bonus-desc-text {
-    font-size: 0.8rem;
-    margin-top: 5px;
+    font-size: 0.75rem;
+    margin-top: 2px;
+    line-height: 1.2;
 }
 
 .bonus-banner #bonusName {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: bold;
     text-shadow: 0 0 10px rgba(0,0,0,0.3);
     animation: bonusPulse 1.5s infinite;
+    line-height: 1.2;
 }
 
 .bonus-stats {
     display: flex;
     justify-content: center;
     gap: 15px;
-    margin-top: 6px;
-    font-size: 0.85rem;
+    margin-top: 3px;
+    font-size: 0.8rem;
+    line-height: 1.2;
 }
 
 .bonus-stats strong {
