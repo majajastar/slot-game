@@ -324,6 +324,10 @@ function handleJoinRoom(data) {
         if (betInfo.bonuses) {
             BONUSES = betInfo.bonuses;
         }
+        if (betInfo.gameConfig) {
+            GAME_CONFIG = betInfo.gameConfig;
+            updateGameInfo();
+        }
     }
 
     // Show game panel
