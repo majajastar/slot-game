@@ -100,10 +100,32 @@ body {
     text-transform: uppercase;
 }
 
+.info-subtitle {
+    font-size: 0.75rem;
+    color: var(--gold);
+    margin: 10px 0 6px 0;
+    font-weight: bold;
+}
+
+/* Rules Panel - Combined Win Rules & Bonus */
+.rules-subsection {
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rules-subsection:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.rules-subsection.bonus-rules {
+    margin-top: 8px;
+}
+
 /* Win Rules */
 .rule-item {
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .rule-item:last-child {
@@ -134,12 +156,32 @@ body {
 }
 
 /* Paytable */
+.paytable-header {
+    display: grid;
+    grid-template-columns: 32px 1fr 40px 40px 40px;
+    gap: 6px;
+    padding: 6px 4px;
+    border-bottom: 2px solid var(--primary);
+    margin-bottom: 6px;
+    font-size: 0.65rem;
+    color: #888;
+    font-weight: bold;
+}
+
+.paytable-header span {
+    text-align: center;
+}
+
+.paytable-header span:nth-child(2) {
+    text-align: left;
+}
+
 .paytable-row {
     display: grid;
-    grid-template-columns: 30px 1fr 35px 35px 35px;
-    gap: 4px;
-    padding: 5px 0;
-    border-bottom: 1px solid #333;
+    grid-template-columns: 32px 1fr 40px 40px 40px;
+    gap: 6px;
+    padding: 6px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
     font-size: 0.75rem;
     align-items: center;
 }
@@ -148,9 +190,19 @@ body {
     border-bottom: none;
 }
 
+.paytable-row.wild {
+    background: rgba(233,69,96,0.1);
+    border-left: 3px solid var(--primary);
+    padding-left: 4px;
+    border-radius: 0 4px 4px 0;
+}
+
 .paytable-icon {
     font-size: 1.1rem;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .paytable-name {
@@ -158,17 +210,24 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
 }
 
 .paytable-payout {
-    text-align: right;
+    text-align: center;
     color: var(--gold);
+    font-variant-numeric: tabular-nums;
 }
 
-/* Bonus Info */
+.paytable-payout.high {
+    font-weight: bold;
+    color: #ffd700;
+}
+
+/* Bonus Info (in Rules Panel) */
 .bonus-item {
-    padding: 8px 0;
-    border-bottom: 1px solid #333;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .bonus-item:last-child {
@@ -178,11 +237,11 @@ body {
 .bonus-name {
     font-weight: bold;
     color: var(--gold);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .bonus-desc {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #aaa;
     line-height: 1.4;
     margin-top: 4px;

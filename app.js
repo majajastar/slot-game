@@ -10,6 +10,7 @@ let JACKPOTS = {};
 let BONUSES = {};
 let GAME_CONFIG = {};
 let BET_SIZE_LIST = [1, 2, 5, 10, 20, 50, 100]; // Default fallback
+let CURRENT_BET_INDEX = 0; // Track current bet index directly (avoids float comparison issues)
 
 // Line is always 14 (all paylines)
 const ACTIVE_LINES = 14;
@@ -55,37 +56,37 @@ function initGrid() {
 function renderPaytable() {
     const container = document.getElementById('paytable');
     if (!container) return;
-    
+
     const symbolCount = Object.keys(SYMBOLS).length;
     if (symbolCount === 0) {
         container.innerHTML = '<div style="color:#888;padding:10px;">Loading paytable...</div>';
         return;
     }
-    
+
     const symbols = Object.entries(SYMBOLS).filter(([id]) => id !== 'SCATTER');
-    
+
     // Header
     let html = `
-        <div class="paytable-row" style="border-bottom:2px solid #e94560;margin-bottom:8px;padding-bottom:6px;">
-            <span style="font-size:0.65rem;color:#888;text-align:center;">Icon</span>
-            <span style="font-size:0.65rem;color:#888;">Symbol</span>
-            <span class="paytable-payout" style="font-size:0.65rem;color:#888;">5x</span>
-            <span class="paytable-payout" style="font-size:0.65rem;color:#888;">4x</span>
-            <span class="paytable-payout" style="font-size:0.65rem;color:#888;">3x</span>
+        <div class="paytable-header">
+            <span>Icon</span>
+            <span>Symbol</span>
+            <span>5x</span>
+            <span>4x</span>
+            <span>3x</span>
         </div>
     `;
-    
+
     // Data rows
     html += symbols.map(([id, s]) => `
-        <div class="paytable-row" style="${id === 'WILD' ? 'background:rgba(233,69,96,0.1);border-left:3px solid #e94560;padding-left:4px;' : ''}">
+        <div class="paytable-row ${id === 'WILD' ? 'wild' : ''}">
             <span class="paytable-icon">${s.display || '?'}</span>
             <span class="paytable-name">${s.name || id}${id === 'WILD' ? ' ⭐' : ''}</span>
-            <span class="paytable-payout" style="font-weight:bold;color:#ffd700;">${s.payout?.[5] || 0}x</span>
+            <span class="paytable-payout high">${s.payout?.[5] || 0}x</span>
             <span class="paytable-payout">${s.payout?.[4] || 0}x</span>
             <span class="paytable-payout">${s.payout?.[3] || 0}x</span>
         </div>
     `).join('');
-    
+
     container.innerHTML = html;
 }
 
@@ -129,25 +130,17 @@ function renderJackpots() {
     `).join('');
 }
 
-// Render bonus info using server data
+// Render bonus info using server data (in rules panel)
 function renderBonusInfo() {
     const container = document.getElementById('bonusInfo');
     if (!container || Object.keys(BONUSES).length === 0) return;
 
-    // Get current bet for calculating bonus buy cost
-    const betDisplay = document.getElementById('betDisplay');
-    const currentBet = parseInt(betDisplay?.textContent?.replace('$', '')) || 10;
-
-    container.innerHTML = Object.entries(BONUSES).map(([key, bonus]) => {
-        const cost = bonus.buyPriceMultiplier ? currentBet * bonus.buyPriceMultiplier : 0;
-        const costDisplay = cost > 0 ? `$${cost.toLocaleString()} (${bonus.buyPriceDisplay || bonus.buyPriceMultiplier + 'x'})` : bonus.buyPriceDisplay || '';
-        return `
-        <div class="bonus-item" onclick="buyBonus('${key}')" style="cursor:pointer;">
+    container.innerHTML = Object.entries(BONUSES).map(([key, bonus]) => `
+        <div class="bonus-item">
             <div class="bonus-name">${bonus.name}</div>
-            <div class="bonus-desc">${bonus.description}</div>
-            <div class="bonus-meta">${bonus.scatterCount} scatters • Cost: ${costDisplay}</div>
+            <div class="bonus-desc">${bonus.scatterCount} Scatters • ${bonus.description}</div>
         </div>
-    `}).join('');
+    `).join('');
 }
 
 // Update game info from server config
@@ -347,11 +340,20 @@ function handleJoinRoom(data) {
     // Update betSizeList from server if available
     if (betInfo?.betSizeList) {
         BET_SIZE_LIST = betInfo.betSizeList;
-        // Set default bet from server, or first in list, or 10
+        // Only set default bet if current bet is not in the valid list
         const display = document.getElementById('betDisplay');
         if (display) {
-            const defaultBet = betInfo.defaultBet || BET_SIZE_LIST[0] || 10;
-            display.textContent = '$' + defaultBet;
+            const currentBet = parseInt(display.textContent.replace('$', '')) || 0;
+            // If current bet is not in the new list, set to default
+            const currentIdx = BET_SIZE_LIST.indexOf(currentBet);
+            if (currentIdx === -1) {
+                const defaultBet = betInfo.defaultBet || BET_SIZE_LIST[0] || 10;
+                CURRENT_BET_INDEX = BET_SIZE_LIST.indexOf(defaultBet);
+                if (CURRENT_BET_INDEX === -1) CURRENT_BET_INDEX = 0;
+                display.textContent = '$' + defaultBet;
+            } else {
+                CURRENT_BET_INDEX = currentIdx;
+            }
         }
         updateBetSizeListDisplay();
     }
@@ -370,7 +372,8 @@ function renderBetSelector() {
     const display = document.getElementById('betDisplay');
     if (!display || BET_SIZE_LIST.length === 0) return;
 
-    // Use first bet from list as default
+    // Use first bet from list as default, set index
+    CURRENT_BET_INDEX = 0;
     const defaultBet = BET_SIZE_LIST[0] || 10;
     display.textContent = '$' + defaultBet;
 }
@@ -411,7 +414,13 @@ function handleSubData(subData) {
                 }
                 if (subData.roomInfo.betSizeList) {
                     BET_SIZE_LIST = subData.roomInfo.betSizeList;
-                    // Don't reset bet display on SyncRoomInfo - keep user's selection
+                    // Validate current index is still valid, adjust if needed
+                    CURRENT_BET_INDEX = Math.max(0, Math.min(CURRENT_BET_INDEX, BET_SIZE_LIST.length - 1));
+                    // Update display to ensure it matches the tracked index
+                    const display = document.getElementById('betDisplay');
+                    if (display && BET_SIZE_LIST.length > 0) {
+                        display.textContent = '$' + BET_SIZE_LIST[CURRENT_BET_INDEX];
+                    }
                     updateBetSizeListDisplay();
                 }
 
@@ -527,8 +536,12 @@ function getClosestBetSize(bet) {
 }
 
 function handleSpinResult(data) {
+    console.log('[DEBUG] handleSpinResult received:', JSON.stringify(data, null, 2));
+    
     try {
         const betInfo = data.betInfo?.[0];
+        console.log('[DEBUG] betInfo:', JSON.stringify(betInfo, null, 2));
+        
         if (!betInfo) {
             console.error('No betInfo in result', data);
             resetSpin();
@@ -536,6 +549,8 @@ function handleSpinResult(data) {
         }
         
         const result = betInfo.gameResult;
+        console.log('[DEBUG] gameResult:', JSON.stringify(result, null, 2));
+        
         if (!result) {
             console.error('No gameResult in betInfo', betInfo);
             resetSpin();
@@ -859,27 +874,16 @@ function updateStatus(text, type) {
 
 function changeBet(dir) {
     const display = document.getElementById('betDisplay');
-    if (!display) return;
+    if (!display || BET_SIZE_LIST.length === 0) return;
 
-    const current = parseInt(display.textContent.replace('$', '')) || 10;
-    const idx = BET_SIZE_LIST.indexOf(current);
+    // Use tracked index instead of indexOf (avoids float comparison issues)
+    let newIdx = CURRENT_BET_INDEX + dir;
+    newIdx = Math.max(0, Math.min(BET_SIZE_LIST.length - 1, newIdx));
 
-    // Find next valid index
-    let newIdx;
-    if (idx === -1) {
-        // Current bet not in list, find closest
-        newIdx = BET_SIZE_LIST.findIndex(b => b >= current);
-        if (newIdx === -1) newIdx = BET_SIZE_LIST.length - 1;
-    } else {
-        newIdx = Math.max(0, Math.min(BET_SIZE_LIST.length - 1, idx + dir));
-    }
-
+    CURRENT_BET_INDEX = newIdx;
     const newBet = BET_SIZE_LIST[newIdx];
     display.textContent = '$' + newBet;
-    log('Bet changed to $' + newBet);
-
-    // Re-render bonus info to update costs
-    renderBonusInfo();
+    log('Bet changed to $' + newBet + ' [index=' + newIdx + ']');
 }
 
 function buyBonus(key) {
