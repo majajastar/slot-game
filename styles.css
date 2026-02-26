@@ -486,7 +486,7 @@ body {
 .jackpot-item.mega { border-color: #ff69b4; color: #ff69b4; }
 .jackpot-item.max { border-color: var(--gold); color: var(--gold); }
 
-/* Bonus Banner - Fixed position overlay */
+/* Bonus Banner - Fixed position overlay with transparency */
 .bonus-banner {
     position: absolute;
     top: 80px;
@@ -494,15 +494,16 @@ body {
     transform: translateX(-50%);
     width: 90%;
     max-width: 500px;
-    background: linear-gradient(45deg, var(--gold), var(--gold-hover));
+    background: linear-gradient(45deg, rgba(255, 215, 0, 0.9), rgba(255, 237, 78, 0.9));
     color: #1a1a2e;
     padding: 12px 20px;
     border-radius: 8px;
     text-align: center;
     animation: bonusEntry 0.8s ease;
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
-    border: 2px solid #fff;
+    border: 2px solid rgba(255, 255, 255, 0.8);
     z-index: 100;
+    backdrop-filter: blur(4px);
 }
 
 .bonus-banner.hidden {
@@ -521,10 +522,26 @@ body {
     animation: bonusPulse 1.5s infinite;
 }
 
-.bonus-banner #spinsLeft {
-    font-size: 1.1rem;
-    font-weight: bold;
+.bonus-stats {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 8px;
+    font-size: 0.95rem;
+}
+
+.bonus-stats strong {
     color: #d35400;
+}
+
+.bonus-total {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.bonus-total strong {
+    color: #27ae60;
+    font-size: 1.1rem;
 }
 
 @keyframes bonusEntry {

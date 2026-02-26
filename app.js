@@ -719,7 +719,8 @@ function handleSpinResult(data) {
         } else if (fakeState.inBonus) {
             // Continue bonus
             fakeState.bonusSpinsLeft = spinsLeft;
-            updateBonusBanner(spinsLeft);
+            const bonusTotalWin = result.bonusGameState?.totalWin || 0;
+            updateBonusBanner(spinsLeft, bonusTotalWin);
 
             if (result.lastFreeSpin || spinsLeft <= 0) {
                 hideBonusBanner();
@@ -947,11 +948,12 @@ function addToHistory(bet, win, isBonus) {
 
 // ==================== BONUS GAME UI ====================
 
-function showBonusBanner(bonusType, spinsLeft) {
+function showBonusBanner(bonusType, spinsLeft, totalWin = 0) {
     const banner = document.getElementById('bonusBanner');
     const nameEl = document.getElementById('bonusName');
     const descEl = document.getElementById('bonusDesc');
     const spinsEl = document.getElementById('spinsLeft');
+    const winEl = document.getElementById('bonusTotalWin');
 
     const name = bonusType === 'BLACK_AND_GOLD' ? 'BLACK AND GOLD' : 'GOLDEN HIT';
     const desc = bonusType === 'BLACK_AND_GOLD'
@@ -961,6 +963,7 @@ function showBonusBanner(bonusType, spinsLeft) {
     nameEl.textContent = name + ' BONUS!';
     descEl.textContent = desc;
     spinsEl.textContent = spinsLeft;
+    if (winEl) winEl.textContent = '$' + totalWin.toLocaleString();
 
     banner.classList.remove('hidden');
     document.getElementById('gameContainer').classList.add('bonus-mode');
@@ -972,10 +975,14 @@ function showBonusBanner(bonusType, spinsLeft) {
     }, 10);
 }
 
-function updateBonusBanner(spinsLeft) {
+function updateBonusBanner(spinsLeft, totalWin) {
     const spinsEl = document.getElementById('spinsLeft');
     if (spinsEl) {
         spinsEl.textContent = spinsLeft;
+    }
+    const winEl = document.getElementById('bonusTotalWin');
+    if (winEl && totalWin !== undefined) {
+        winEl.textContent = '$' + totalWin.toLocaleString();
     }
 }
 
