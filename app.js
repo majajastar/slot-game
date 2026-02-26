@@ -585,14 +585,24 @@ function renderGrid(grid, frames) {
         'SYM_7': { display: '🎰' }, 'SYM_8': { display: '🪙' },
         'SYM_9': { display: '💠' }
     };
-    
+
+    // DEBUG: Check symbol mapping
+    console.log('[FRONTEND DEBUG] SYMBOLS loaded:', Object.keys(SYMBOLS).length > 0);
+    console.log('[FRONTEND DEBUG] Symbol map keys:', Object.keys(symbolMap));
+
     for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 5; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
             if (!cell) continue;
-            
+
             const symbol = grid[r][c];
             const symbolData = symbolMap[symbol];
+
+            // DEBUG: Log symbol mapping
+            if (r === 0 && c === 0) {
+                console.log(`[FRONTEND DEBUG] Raw symbol: "${symbol}" -> Display: "${symbolData?.display || symbol}"`);
+            }
+
             let html = symbolData?.display || symbol;
             
             // Add frame overlay if present (only during bonus)
