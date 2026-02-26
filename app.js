@@ -136,8 +136,21 @@ function renderJackpots() {
 
 // Render bonus info using server data (in rules panel)
 function renderBonusInfo() {
-    // Bonus rules are now hardcoded in HTML with detailed examples
-    // This function kept for compatibility but no longer updates DOM
+    // Update buy bonus button costs from server config
+    if (BONUSES.blackAndGold) {
+        const blackAndGoldCost = document.getElementById('blackAndGoldCost');
+        if (blackAndGoldCost) {
+            const cost = BONUSES.blackAndGold.buyPriceDisplay || (BONUSES.blackAndGold.buyPriceMultiplier + 'x');
+            blackAndGoldCost.textContent = `${BONUSES.blackAndGold.scatterCount} scatters • ${cost}`;
+        }
+    }
+    if (BONUSES.goldenHit) {
+        const goldenHitCost = document.getElementById('goldenHitCost');
+        if (goldenHitCost) {
+            const cost = BONUSES.goldenHit.buyPriceDisplay || (BONUSES.goldenHit.buyPriceMultiplier + 'x');
+            goldenHitCost.textContent = `${BONUSES.goldenHit.scatterCount} scatters • ${cost}`;
+        }
+    }
 }
 
 // Render frame configuration info from server
@@ -363,6 +376,7 @@ function handleJoinRoom(data) {
         }
         if (betInfo.bonuses) {
             BONUSES = betInfo.bonuses;
+            renderBonusInfo();
         }
         if (betInfo.gameConfig) {
             GAME_CONFIG = betInfo.gameConfig;
