@@ -625,20 +625,21 @@ function handleSpinResult(data) {
         }
     
     // Handle bonus game
-    if (result.isBonus) {
-        if (!fakeState.inBonus && result.bonusSpinsLeft > 0) {
+    const spinsLeft = result.bonusGameState?.spinsLeft;
+    if (result.isBonus && spinsLeft !== undefined) {
+        if (!fakeState.inBonus && spinsLeft > 0) {
             // Bonus just triggered
             fakeState.inBonus = true;
             fakeState.bonusType = result.bonusType;
-            fakeState.bonusSpinsLeft = result.bonusSpinsLeft;
-            showBonusBanner(result.bonusType, result.bonusSpinsLeft);
+            fakeState.bonusSpinsLeft = spinsLeft;
+            showBonusBanner(result.bonusType, spinsLeft);
             log('BONUS TRIGGERED: ' + result.bonusType + '!', 'info');
         } else if (fakeState.inBonus) {
             // Continue bonus
-            fakeState.bonusSpinsLeft = result.bonusSpinsLeft;
-            updateBonusBanner(result.bonusSpinsLeft);
+            fakeState.bonusSpinsLeft = spinsLeft;
+            updateBonusBanner(spinsLeft);
             
-            if (result.lastFreeSpin) {
+            if (result.lastFreeSpin || spinsLeft <= 0) {
                 hideBonusBanner();
                 fakeState.inBonus = false;
                 fakeState.bonusType = null;
