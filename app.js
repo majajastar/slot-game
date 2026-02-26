@@ -791,7 +791,13 @@ function showWins(lineWins, totalWin) {
     // Show frame contribution details
     const winWaysEl = document.getElementById('winWays');
     if (winWaysEl) {
-        let html = '';
+        let html = `
+        <div style="background:rgba(46,204,113,0.2);padding:10px;border-radius:8px;margin-bottom:12px;text-align:center;border:1px solid rgba(46,204,113,0.3);">
+            <div style="color:#2ecc71;font-weight:bold;font-size:1.1rem;">${lineWins.length} WAY${lineWins.length>1?'S':''} TO WIN!</div>
+            <div style="color:#ffd700;font-size:1.4rem;font-weight:bold;margin-top:4px;">+$${totalWin.toLocaleString()}</div>
+        </div>
+        `;
+        
         lineWins.forEach((lw, idx) => {
             const [lineIdx, symbol, count, win] = lw.info;
             const fc = lw.frameContribution;
@@ -815,30 +821,6 @@ function showWins(lineWins, totalWin) {
         });
         winWaysEl.innerHTML = html;
     }
-    
-    // Update win ways panel
-    const winWaysEl = document.getElementById('winWays');
-    winWaysEl.innerHTML = `
-        <div style="background:rgba(46,204,113,0.2);padding:10px;border-radius:8px;margin-bottom:12px;text-align:center;border:1px solid rgba(46,204,113,0.3);">
-            <div style="color:#2ecc71;font-weight:bold;font-size:1.1rem;">${lineWins.length} WAY${lineWins.length>1?'S':''} TO WIN!</div>
-            <div style="color:#ffd700;font-size:1.4rem;font-weight:bold;margin-top:4px;">+$${totalWin.toLocaleString()}</div>
-        </div>
-    ` + lineWins.map((lw, i) => {
-        const [line, symbol, count, win] = lw.info;
-        const symData = SYMBOLS[symbol] || { display: symbol, name: symbol };
-        return `
-            <div class="win-way-item" style="animation:fadeIn 0.3s ${i*0.1}s both;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span style="color:#2ecc71;font-weight:bold;">+$${win}</span>
-                    <span style="color:#888;font-size:0.7rem;">Line ${line+1}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-                    <span style="color:#fff;font-size:0.8rem;">${symData.display} ${symData.name}</span>
-                    <span style="color:#ffd700;font-size:0.8rem;font-weight:bold;">${count} of a kind</span>
-                </div>
-            </div>
-        `;
-    }).join('');
 }
 
 // Highlight winning paylines in the paylines display
