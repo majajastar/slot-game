@@ -530,14 +530,18 @@ function spin() {
     
     console.log('[BET DEBUG] Final bet to send:', bet);
 
-    // Deduct bet from balance immediately for UX
-    const balanceEl = document.getElementById('balance');
-    const currentBalance = parseFloat(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
-    const newBalance = Math.max(0, currentBalance - bet);
-    if (balanceEl) {
-        balanceEl.textContent = '$' + newBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    // Deduct bet from balance immediately for UX (only if not in bonus)
+    if (!fakeState.inBonus) {
+        const balanceEl = document.getElementById('balance');
+        const currentBalance = parseFloat(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
+        const newBalance = Math.max(0, currentBalance - bet);
+        if (balanceEl) {
+            balanceEl.textContent = '$' + newBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        log('Spin: -$' + bet + ' (Balance: $' + newBalance + ')');
+    } else {
+        log('Bonus Spin: Free! (Spins left: ' + fakeState.bonusSpinsLeft + ')');
     }
-    log('Spin: -$' + bet + ' (Balance: $' + newBalance + ')');
 
     isSpinning = true;
     const btn = document.getElementById('spinBtn');
