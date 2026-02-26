@@ -89,7 +89,6 @@ body {
 .center-panel {
     display: flex;
     flex-direction: column;
-    position: relative; /* For absolute positioned children */
 }
 
 /* Info Section */
@@ -486,20 +485,17 @@ body {
 .jackpot-item.mega { border-color: #ff69b4; color: #ff69b4; }
 .jackpot-item.max { border-color: var(--gold); color: var(--gold); }
 
-/* Bonus/Normal Mode Banner - Fixed area */
+/* Bonus/Normal Mode Banner - Horizontal between jackpot and reels */
 .bonus-banner {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 200px;
-    min-height: 60px;
+    width: 100%;
+    min-height: 50px;
     background: linear-gradient(45deg, rgba(100, 100, 100, 0.3), rgba(150, 150, 150, 0.2));
     color: #aaa;
     padding: 10px 15px;
     border-radius: 8px;
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    z-index: 100;
+    margin: 10px 0;
     display: flex;
     align-items: center;
     justify-content: center;
