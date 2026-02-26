@@ -422,34 +422,52 @@ function getClosestBetSize(bet) {
 }
 
 function handleSpinResult(data) {
-    const betInfo = data.betInfo?.[0];
-    if (!betInfo) {
-        resetSpin();
-        return;
-    }
-    
-    const result = betInfo.gameResult;
-    const winAmount = result.totalWinAmount || 0;
-    
-    // Update server data
-    currentBalance = betInfo.finalBalance;
-    document.getElementById('balance').textContent = '$' + betInfo.finalBalance.toLocaleString();
-    
-    // Update fake state
-    fakeState.spinCount++;
-    fakeState.totalWin += winAmount;
-    document.getElementById('spinCount').textContent = fakeState.spinCount;
-    document.getElementById('totalWin').textContent = '$' + fakeState.totalWin.toLocaleString();
-    
-    // Render grid with frames if in bonus
-    renderGrid(result.grid, result.stickyFrames);
-    
-    // Show wins
-    if (winAmount > 0 && result.lineWins?.length > 0) {
-        showWins(result.lineWins, winAmount);
-    } else {
-        document.getElementById('winWays').innerHTML = '<div class="no-win">No win this spin</div>';
-    }
+    try {
+        const betInfo = data.betInfo?.[0];
+        if (!betInfo) {
+            console.error('No betInfo in result', data);
+            resetSpin();
+            return;
+        }
+        
+        const result = betInfo.gameResult;
+        if (!result) {
+            console.error('No gameResult in betInfo', betInfo);
+            resetSpin();
+            return;
+        }
+        
+        const winAmount = result.totalWinAmount || 0;
+        
+        // Update server data
+        currentBalance = betInfo.finalBalance;
+        const balanceEl = document.getElementById('balance');
+        if (balanceEl) {
+            balanceEl.textContent = '$' + (betInfo.finalBalance || 0).toLocaleString();
+        }
+        
+        // Update fake state
+        fakeState.spinCount++;
+        fakeState.totalWin += winAmount;
+        
+        const spinCountEl = document.getElementById('spinCount');
+        if (spinCountEl) spinCountEl.textContent = fakeState.spinCount;
+        
+        const totalWinEl = document.getElementById('totalWin');
+        if (totalWinEl) totalWinEl.textContent = '$' + fakeState.totalWin.toLocaleString();
+        
+        // Render grid with frames if in bonus
+        if (result.grid) {
+            renderGrid(result.grid, result.stickyFrames);
+        }
+        
+        // Show wins
+        const winWaysEl = document.getElementById('winWays');
+        if (winAmount > 0 && result.lineWins?.length > 0) {
+            showWins(result.lineWins, winAmount);
+        } else if (winWaysEl) {
+            winWaysEl.innerHTML = '<div class="no-win">No win this spin</div>';
+        }
     
     // Handle bonus game
     if (result.isBonus) {
@@ -475,23 +493,40 @@ function handleSpinResult(data) {
         }
     }
     
-    // Add to history
-    addToHistory(betInfo.bet, winAmount, fakeState.inBonus);
+        // Add to history
+        addToHistory(betInfo.bet, winAmount, fakeState.inBonus);
+        
+        log('Win: ' + winAmount + ', Balance: ' + betInfo.finalBalance);
+    } catch (err) {
+        console.error('Error in handleSpinResult:', err);
+        log('Error processing spin: ' + err.message, 'error');
+    }
     
-    log('Win: ' + winAmount + ', Balance: ' + betInfo.finalBalance);
     resetSpin();
 }
 
 function renderGrid(grid, frames) {
+    // Ensure SYMBOLS is loaded, fallback to default if not
+    const symbolMap = Object.keys(SYMBOLS).length > 0 ? SYMBOLS : {
+        'WILD': { display: '💎' }, 'SCATTER': { display: '⭐' },
+        'SYM_1': { display: '👑' }, 'SYM_2': { display: '💍' },
+        'SYM_3': { display: '🏆' }, 'SYM_4': { display: '💵' },
+        'SYM_5': { display: '🎲' }, 'SYM_6': { display: '🎯' },
+        'SYM_7': { display: '🎰' }, 'SYM_8': { display: '🪙' },
+        'SYM_9': { display: '💠' }
+    };
+    
     for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 5; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
+            if (!cell) continue;
+            
             const symbol = grid[r][c];
-            const symbolData = SYMBOLS[symbol];
+            const symbolData = symbolMap[symbol];
             let html = symbolData?.display || symbol;
             
-            // Add frame overlay if present
-            if (frames && frames[r] && frames[r][c] && frames[r][c].value > 0) {
+            // Add frame overlay if present (only during bonus)
+            if (frames && Array.isArray(frames) && frames[r] && frames[r][c] && frames[r][c].value > 0) {
                 const frame = frames[r][c];
                 const isJackpot = frame.type === 'jackpot';
                 let label, color;
@@ -610,8 +645,10 @@ function hideBonusBanner() {
 function resetSpin() {
     isSpinning = false;
     const btn = document.getElementById('spin-btn');
-    btn.disabled = false;
-    btn.textContent = '🎰 SPIN';
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🎰 SPIN';
+    }
 }
 
 // ==================== UI HELPERS ====================
@@ -624,12 +661,6 @@ function updateStatus(text, type) {
     const status = document.getElementById('connection-status');
     status.textContent = text;
     status.className = `status ${type}`;
-
-    const btn = document.getElementById('spinSpin');
-    if (btn) {
-        btn.disabled = false;
-        btn.textContent = '🎰 SPIN';
-    }
 }
 
 // ==================== CONTROLS ====================
