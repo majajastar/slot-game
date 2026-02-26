@@ -88,18 +88,22 @@ function renderPaytable() {
     `;
     
     // Data rows
-    html += symbols.map(([id, s]) => `
+    console.log('[DEBUG] Rendering paytable rows for:', symbols.map(([id]) => id).join(', '));
+    html += symbols.map(([id, s]) => {
+        console.log(`[DEBUG] Rendering row: ${id} = ${s.display} ${s.name}`);
+        return `
         <div class="paytable-row" style="${id === 'WILD' ? 'background:rgba(233,69,96,0.1);border-left:3px solid #e94560;padding-left:4px;' : ''}">
-            <span class="paytable-icon">${s.display}</span>
-            <span class="paytable-name">${s.name}${id === 'WILD' ? ' ⭐' : ''}</span>
-            <span class="paytable-payout" style="font-weight:bold;color:#ffd700;">${s.payout[5]}x</span>
-            <span class="paytable-payout">${s.payout[4]}x</span>
-            <span class="paytable-payout">${s.payout[3]}x</span>
+            <span class="paytable-icon">${s.display || '?'}</span>
+            <span class="paytable-name">${s.name || id}${id === 'WILD' ? ' ⭐' : ''}</span>
+            <span class="paytable-payout" style="font-weight:bold;color:#ffd700;">${s.payout?.[5] || 0}x</span>
+            <span class="paytable-payout">${s.payout?.[4] || 0}x</span>
+            <span class="paytable-payout">${s.payout?.[3] || 0}x</span>
         </div>
-    `).join('');
+    `}).join('');
     
     container.innerHTML = html;
-    console.log('[DEBUG] Paytable rendered successfully with', symbols.length, 'symbols');
+    console.log('[DEBUG] Paytable HTML inserted into container');
+    console.log('[DEBUG] Container innerHTML length:', container.innerHTML.length);
 }
 
 // Render paylines using server data
@@ -471,7 +475,12 @@ function handleSubData(subData) {
                 
                 // Load game data from server
                 if (subData.roomInfo.symbols) {
-                    console.log('[DEBUG] Setting SYMBOLS and calling renderPaytable');
+                    console.log('[DEBUG] RECEIVED PAYTABLE FROM SERVER:');
+                    console.log('[DEBUG] Symbols object:', subData.roomInfo.symbols);
+                    console.log('[DEBUG] Symbol IDs:', Object.keys(subData.roomInfo.symbols));
+                    Object.entries(subData.roomInfo.symbols).forEach(([id, data]) => {
+                        console.log(`[DEBUG]   ${id}: ${data.display} ${data.name} - payouts:`, data.payout);
+                    });
                     SYMBOLS = subData.roomInfo.symbols;
                     renderPaytable();
                 } else {
