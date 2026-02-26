@@ -88,6 +88,9 @@ function renderPaytable() {
     console.log('[DEBUG] paytable display:', getComputedStyle(container).display);
     console.log('[DEBUG] paytable visibility:', getComputedStyle(container).visibility);
     
+    // TEMP: Add border to see container
+    container.style.border = '2px solid red';
+    
     const symbolCount = Object.keys(SYMBOLS).length;
     console.log('[DEBUG] symbolCount:', symbolCount);
     if (symbolCount === 0) {
@@ -422,6 +425,18 @@ function handleJoinRoom(data) {
     document.getElementById('gameContent').classList.remove('hidden');
     
     console.log('[DEBUG] Game panel now visible');
+    
+    // Force immediate re-render if data exists
+    setTimeout(() => {
+        if (Object.keys(SYMBOLS).length > 0) {
+            console.log('[DEBUG] Immediate re-render of paytable');
+            renderPaytable();
+        }
+        if (PAYLINES.length > 0) {
+            console.log('[DEBUG] Immediate re-render of paylines');
+            renderPaylines();
+        }
+    }, 50);
     console.log('[DEBUG] paytable element:', document.getElementById('paytable'));
     console.log('[DEBUG] paylinesDisplay element:', document.getElementById('paylinesDisplay'));
 
