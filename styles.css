@@ -707,6 +707,15 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* Jackpot frames use icon (larger font size) */
+.frame-overlay.jackpot-frame {
+    font-size: 0.8rem;
+    width: 26px;
+    height: 26px;
+    top: -8px;
+    right: -8px;
+}
+
 /* Win Section - Fixed position overlay */
 .win-section {
     position: absolute;

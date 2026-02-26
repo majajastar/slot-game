@@ -146,8 +146,8 @@ function renderFrameInfo() {
     // Update frame chance info (chances are ok to show, weights are secret)
     const normalChance = document.getElementById('frameChanceNormal');
     const bonusChance = document.getElementById('frameChanceBonus');
-    if (normalChance) normalChance.textContent = (FRAME_CONFIG.frameChanceNormal * 100).toFixed(0) + '%';
-    if (bonusChance) bonusChance.textContent = (FRAME_CONFIG.frameChanceBonus * 100).toFixed(0) + '%';
+    if (normalChance) normalChance.textContent = (FRAME_CONFIG.frameChanceNormal * 100).toFixed(2) + '%';
+    if (bonusChance) bonusChance.textContent = (FRAME_CONFIG.frameChanceBonus * 100).toFixed(2) + '%';
 
     // Update max values from config
     const maxMultiplierEl = document.getElementById('maxMultiplier');
@@ -576,15 +576,16 @@ function spin() {
                 let label, color;
                 
                 if (isJackpot) {
-                    label = frame.value === 25 ? 'M' : frame.value === 100 ? 'J' : frame.value === 500 ? 'E' : 'X';
-                    color = frame.value === 25 ? '#87ceeb' : frame.value === 100 ? '#ffa500' : frame.value === 500 ? '#ff69b4' : '#ffd700';
+                    const jackpotDisplay = getJackpotFrameDisplay(frame.value);
+                    label = jackpotDisplay.label;
+                    color = jackpotDisplay.color;
                 } else {
                     label = frame.value >= 100 ? '99' : frame.value.toString();
                     color = '#ffd700';
                 }
                 
-                const fontSize = isJackpot ? '0.6rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
-                c.innerHTML += `<div class="frame-overlay" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
+                const fontSize = isJackpot ? '0.7rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
+                c.innerHTML += `<div class="frame-overlay jackpot-frame" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
             }
         });
         spins++;
@@ -758,6 +759,40 @@ function handleSpinResult(data) {
     resetSpin();
 }
 
+// Helper to get jackpot frame display (icon + color) matching jackpot display
+function getJackpotFrameDisplay(value) {
+    // Default labels and colors if JACKPOTS not loaded
+    if (!JACKPOTS.display) {
+        return {
+            label: value === 25 ? 'M' : value === 100 ? 'J' : value === 500 ? 'E' : 'X',
+            color: value === 25 ? '#87ceeb' : value === 100 ? '#ffa500' : value === 500 ? '#ff69b4' : '#ffd700'
+        };
+    }
+    
+    // Find matching jackpot from JACKPOTS.display
+    const jackpotEntry = Object.entries(JACKPOTS.display).find(([k, v]) => v.multiplier === `${value}x`);
+    if (jackpotEntry) {
+        const [key, data] = jackpotEntry;
+        return { label: data.icon, color: getJackpotColor(data.name) };
+    }
+    
+    // Fallback
+    return {
+        label: value === 25 ? 'M' : value === 100 ? 'J' : value === 500 ? 'E' : 'X',
+        color: value === 25 ? '#87ceeb' : value === 100 ? '#ffa500' : value === 500 ? '#ff69b4' : '#ffd700'
+    };
+}
+
+function getJackpotColor(name) {
+    const colors = {
+        'MINI': '#87ceeb',
+        'MAJOR': '#ffa500',
+        'MEGA': '#ff69b4',
+        'MAX': '#ffd700'
+    };
+    return colors[name] || '#ffd700';
+}
+
 function renderGrid(grid, frames) {
     // Ensure SYMBOLS is loaded, fallback to default if not
     const symbolMap = Object.keys(SYMBOLS).length > 0 ? SYMBOLS : {
@@ -795,15 +830,16 @@ function renderGrid(grid, frames) {
                 let label, color;
                 
                 if (isJackpot) {
-                    label = frame.value === 25 ? 'M' : frame.value === 100 ? 'J' : frame.value === 500 ? 'E' : 'X';
-                    color = frame.value === 25 ? '#87ceeb' : frame.value === 100 ? '#ffa500' : frame.value === 500 ? '#ff69b4' : '#ffd700';
+                    const jackpotDisplay = getJackpotFrameDisplay(frame.value);
+                    label = jackpotDisplay.label;
+                    color = jackpotDisplay.color;
                 } else {
                     label = frame.value >= 100 ? '99' : frame.value.toString();
                     color = '#ffd700';
                 }
                 
-                const fontSize = isJackpot ? '0.6rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
-                html += `<div class="frame-overlay" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
+                const fontSize = isJackpot ? '0.7rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
+                html += `<div class="frame-overlay jackpot-frame" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
             }
             
             cell.innerHTML = html;
