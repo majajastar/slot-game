@@ -442,6 +442,9 @@ function spin() {
     });
     document.getElementById('winAmount').classList.add('hidden');
     document.getElementById('winWays').innerHTML = '<div class="no-win">...</div>';
+    
+    // Reset payline highlights
+    renderPaylines();
 
     // Spin animation
     const displays = Object.keys(SYMBOLS).length > 0 ? Object.values(SYMBOLS).map(s => s.display) : ['💎', '👑', '💍', '🏆', '💵'];
@@ -608,6 +611,9 @@ function showWins(lineWins, totalWin) {
         });
     });
     
+    // Highlight winning paylines in the paylines display
+    highlightWinningPaylines(lineWins);
+    
     // Show win amount
     const winEl = document.getElementById('winAmount');
     winEl.textContent = '+$' + totalWin.toLocaleString();
@@ -637,6 +643,41 @@ function showWins(lineWins, totalWin) {
             </div>
         `;
     }).join('');
+}
+
+// Highlight winning paylines in the paylines display
+function highlightWinningPaylines(lineWins) {
+    const container = document.getElementById('paylinesDisplay');
+    if (!container || PAYLINES.length === 0) return;
+    
+    // Get winning line indices
+    const winningLineIndices = lineWins.map(lw => lw.info[0]);
+    
+    // Re-render paylines with winning ones highlighted
+    container.innerHTML = PAYLINES.map((line, idx) => {
+        const isWinning = winningLineIndices.includes(idx);
+        return `
+            <div class="payline-item" style="background:${isWinning ? 'rgba(46,204,113,0.3)' : 'rgba(0,0,0,0.3)'};padding:6px;border-radius:6px;text-align:center;border:${isWinning ? '2px solid #2ecc71' : 'none'};">
+                <div style="font-size:0.6rem;color:${isWinning ? '#2ecc71' : '#888'};margin-bottom:4px;font-weight:${isWinning ? 'bold' : 'normal'};">${line.name}${isWinning ? ' ✓' : ''}</div>
+                <div style="display:grid;grid-template-columns:repeat(5,10px);grid-template-rows:repeat(4,10px);gap:1px;margin:0 auto;width:54px;">
+                    ${Array.from({length: 20}).map((_, i) => {
+                        const r = Math.floor(i / 5);
+                        const c = i % 5;
+                        const isActive = line.pattern[c] === r;
+                        const bgColor = isActive 
+                            ? (isWinning ? '#2ecc71' : 'rgba(255,255,255,0.3)') 
+                            : 'rgba(255,255,255,0.05)';
+                        return `<div style="width:10px;height:10px;background:${bgColor};border-radius:2px;"></div>`;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Reset after 3 seconds
+    setTimeout(() => {
+        renderPaylines();
+    }, 3000);
 }
 
 function addToHistory(bet, win, isBonus) {
