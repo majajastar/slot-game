@@ -340,7 +340,11 @@ function handleJoinRoom(data) {
     // Update betSizeList from server if available
     if (betInfo?.betSizeList) {
         BET_SIZE_LIST = betInfo.betSizeList;
-        renderBetSelector();
+        // Only set default bet on first load (not on reconnects)
+        const currentBet = parseInt(document.getElementById('betDisplay')?.textContent?.replace('$', '')) || 0;
+        if (currentBet === 0 || !BET_SIZE_LIST.includes(currentBet)) {
+            renderBetSelector();
+        }
         updateBetSizeListDisplay();
     }
     
@@ -399,7 +403,7 @@ function handleSubData(subData) {
                 }
                 if (subData.roomInfo.betSizeList) {
                     BET_SIZE_LIST = subData.roomInfo.betSizeList;
-                    renderBetSelector();
+                    // Don't reset bet display on SyncRoomInfo - keep user's selection
                     updateBetSizeListDisplay();
                 }
             }
