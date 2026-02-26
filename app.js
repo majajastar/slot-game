@@ -462,6 +462,7 @@ function spin() {
     }, 60);
 
     // Send spin request (line is always 14 on server, only send bet)
+    console.log('[BET DEBUG] Sending bet:', bet, 'Type:', typeof bet);
     send({
         type: '100000',
         data: [{
@@ -492,6 +493,13 @@ function handleSpinResult(data) {
             resetSpin();
             return;
         }
+
+        // DEBUG: Log bet info
+        console.log('[BET DEBUG] Sent bet vs Received bet:', {
+            sent: betInfo.bet,
+            awardBase: result.awardBase,
+            totalWin: result.totalWinAmount
+        });
 
         // DEBUG: Log raw reel data
         console.log('[FRONTEND DEBUG] Raw grid:');
