@@ -142,8 +142,7 @@ function renderBonusInfo() {
 
 // Render frame configuration info from server
 function renderFrameInfo() {
-    if (!FRAME_CONFIG.multiplierValues) return;
-
+    console.log(`FRAME_CONFIG = ${JSON.stringify(FRAME_CONFIG)}`)
     // Update frame chance info (chances are ok to show, weights are secret)
     const normalChance = document.getElementById('frameChanceNormal');
     const bonusChance = document.getElementById('frameChanceBonus');
@@ -412,9 +411,8 @@ function handleJoinRoom(data) {
     if (Object.keys(JACKPOTS).length > 0) {
         renderJackpots();
     }
-    if (FRAME_CONFIG.multiplierValues) {
-        renderFrameInfo();
-    }
+    console.log(`DEBUG FRAME_CONFIG = ${JSON.stringify(FRAME_CONFIG)}`)
+    renderFrameInfo();
 }
 
 // Render bet display with current value (fallback if needed)
