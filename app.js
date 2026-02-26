@@ -139,7 +139,7 @@ function renderBonusInfo() {
 
 // Render frame configuration info from server
 function renderFrameInfo() {
-    if (!FRAME_CONFIG.frameChanceNormal) return;
+    if (!FRAME_CONFIG.multiplierValues) return;
 
     // Update frame chance info (chances are ok to show, weights are secret)
     const normalChance = document.getElementById('frameChanceNormal');
@@ -149,7 +149,7 @@ function renderFrameInfo() {
 
     // Render multiplier values only (weights kept secret in backend)
     const container = document.getElementById('multiplierTable');
-    if (!container || !FRAME_CONFIG.multiplierValues) return;
+    if (!container) return;
 
     const values = FRAME_CONFIG.multiplierValues;
 
@@ -390,7 +390,10 @@ function handleJoinRoom(data) {
     if (PAYLINES.length > 0) {
         renderPaylines();
     }
-    if (FRAME_CONFIG.frameChanceNormal) {
+    if (Object.keys(JACKPOTS).length > 0) {
+        renderJackpots();
+    }
+    if (FRAME_CONFIG.multiplierValues) {
         renderFrameInfo();
     }
 }
@@ -759,15 +762,43 @@ function showWins(lineWins, totalWin) {
             if (cell) cell.classList.add('winning');
         });
     });
-    
+
     // Highlight winning paylines in the paylines display
     highlightWinningPaylines(lineWins);
-    
+
     // Show win amount
     const winEl = document.getElementById('winAmount');
     winEl.textContent = '+$' + totalWin.toLocaleString();
     winEl.classList.remove('hidden');
     document.getElementById('winDetails').textContent = lineWins.length + ' winning line(s)';
+
+    // Show frame contribution details
+    const winWaysEl = document.getElementById('winWays');
+    if (winWaysEl) {
+        let html = '';
+        lineWins.forEach((lw, idx) => {
+            const [lineIdx, symbol, count, win] = lw.info;
+            const fc = lw.frameContribution;
+            let frameInfo = '';
+            if (fc && (fc.multipliers.length > 0 || fc.jackpotWins.length > 0)) {
+                const parts = [];
+                if (fc.multipliers.length > 0) {
+                    parts.push(`Multipliers: ${fc.multipliers.join('x, ')}x`);
+                }
+                if (fc.jackpotWins.length > 0) {
+                    parts.push(`Jackpots: ${fc.jackpotWins.join('x, ')}x`);
+                }
+                frameInfo = `<div class="frame-contribution">${parts.join(' • ')}</div>`;
+            }
+            html += `
+                <div class="win-way-item">
+                    <strong>Line ${lineIdx + 1}:</strong> ${SYMBOLS[symbol]?.display || symbol} x${count} = $${win.toLocaleString()}
+                    ${frameInfo}
+                </div>
+            `;
+        });
+        winWaysEl.innerHTML = html;
+    }
     
     // Update win ways panel
     const winWaysEl = document.getElementById('winWays');

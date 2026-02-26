@@ -122,14 +122,15 @@
                                 <div class="rule-detail">
                                     <ul>
                                         <li>10 Free Spins</li>
-                                        <li>All multipliers <strong>DOUBLED</strong> (2x→4x, 5x→10x, etc.)</li>
+                                        <li>Multipliers ≤10x are <strong>DOUBLED</strong> (2x→4x, 5x→10x, 10x→20x)</li>
+                                        <li>Maximum multiplier: <strong>100x</strong> (cannot be exceeded)</li>
                                         <li>Jackpot frames refill after win</li>
                                     </ul>
                                     <div class="example-win">
                                         <div class="example-grid">
-                                            <span class="frame-double">2x</span><span class="frame-double">4x</span><span class="frame-double">10x</span>
+                                            <span class="frame-double">4x</span><span class="frame-double">20x</span><span class="frame-double max">100x</span>
                                         </div>
-                                        <div class="example-text">Normal: 2x,4x,10x → Golden Hit: 4x,8x,20x!</div>
+                                        <div class="example-text">2x→4x, 10x→20x, 100x stays 100x (max cap)</div>
                                     </div>
                                 </div>
                             </div>
@@ -152,11 +153,8 @@
                 <!-- CENTER: Main Game Area -->
                 <div class="center-panel">
                     <!-- Jackpot Display -->
-                    <div class="jackpot-display">
-                        <div class="jackpot-item mini">🔷<br>MINI<br>25x</div>
-                        <div class="jackpot-item major">🔶<br>MAJOR<br>100x</div>
-                        <div class="jackpot-item mega">💎<br>MEGA<br>500x</div>
-                        <div class="jackpot-item max">👑<br>MAX<br>20000x</div>
+                    <div id="jackpotDisplay" class="jackpot-display">
+                        <div class="loading-text">Loading jackpots...</div>
                     </div>
                     
                     <!-- Bonus Banner (hidden by default) -->

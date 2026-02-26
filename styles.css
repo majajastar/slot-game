@@ -239,6 +239,10 @@ body {
     font-size: 0.8rem;
 }
 
+.multiplier-table {
+    min-height: 50px;
+}
+
 .loading-text {
     text-align: center;
     color: #666;
@@ -302,6 +306,13 @@ body {
     font-size: 0.65rem;
     color: var(--gold);
     font-weight: bold;
+}
+
+.example-grid span.frame-double.max {
+    background: linear-gradient(135deg, rgba(255, 0, 0, 0.3), rgba(255, 0, 0, 0.1));
+    border: 2px solid #ff4444;
+    color: #ff6b6b;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
 }
 
 .example-text {
@@ -867,6 +878,13 @@ body {
     border-radius: 6px;
     border-left: 3px solid var(--success);
     animation: fadeIn 0.3s ease;
+}
+
+.frame-contribution {
+    font-size: 0.7rem;
+    color: var(--gold);
+    margin-top: 4px;
+    font-style: italic;
 }
 
 @keyframes fadeIn {
