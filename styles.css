@@ -992,3 +992,118 @@ body {
         font-size: 1.5rem;
     }
 }
+
+/* ==========================================
+   BONUS TRIGGER OVERLAY
+   ========================================== */
+.trigger-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    flex-direction: column;
+}
+
+.trigger-overlay.active {
+    display: flex;
+}
+
+.trigger-content {
+    text-align: center;
+    padding: 30px;
+    animation: triggerEntry 0.5s ease;
+}
+
+@keyframes triggerEntry {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.trigger-content h2 {
+    color: var(--gold);
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    animation: triggerPulse 1.5s infinite;
+}
+
+@keyframes triggerPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.trigger-text {
+    color: #fff;
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+}
+
+.trigger-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 70px);
+    gap: 10px;
+    margin: 20px auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+}
+
+.trigger-cell {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(145deg, #1a2332, #252d3d);
+    border: 2px solid #444;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+.trigger-cell.scatter {
+    border-color: #ff6b6b;
+    animation: scatterPulse 0.5s ease-in-out 5;
+    background: linear-gradient(145deg, #3d2020, #4a2525);
+}
+
+@keyframes scatterPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+.trigger-win {
+    color: var(--success);
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin: 15px 0;
+}
+
+.trigger-btn {
+    margin-top: 20px;
+    padding: 15px 40px;
+    background: linear-gradient(45deg, var(--gold), var(--gold-hover));
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #1a1a2e;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.trigger-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}

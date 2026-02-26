@@ -704,6 +704,11 @@ function handleSpinResult(data) {
             fakeState.inBonus = true;
             fakeState.bonusType = result.bonusType;
             fakeState.bonusSpinsLeft = spinsLeft;
+            
+            // Show trigger overlay with the triggering grid
+            showBonusTrigger(result.bonusType, result.grid, result.lineWins, result.totalWinAmount);
+            
+            // Also show banner for in-game display
             showBonusBanner(result.bonusType, spinsLeft);
             log('BONUS TRIGGERED: ' + result.bonusType + '!', 'info');
             
@@ -946,6 +951,49 @@ function hideBonusBanner() {
     const banner = document.getElementById('bonusBanner');
     banner.classList.add('hidden');
     document.getElementById('gameContainer').classList.remove('bonus-mode');
+}
+
+// ==================== BONUS TRIGGER OVERLAY ====================
+
+function showBonusTrigger(bonusType, grid, lineWins, totalWin) {
+    const overlay = document.getElementById('triggerOverlay');
+    const textEl = document.getElementById('triggerText');
+    const gridEl = document.getElementById('triggerGrid');
+    const winEl = document.getElementById('triggerWin');
+
+    // Set text based on bonus type
+    const bonusName = bonusType === 'BLACK_AND_GOLD' ? 'Black & Gold' : 'Golden Hit';
+    const scatterCount = bonusType === 'BLACK_AND_GOLD' ? '3' : '4';
+    textEl.textContent = `${scatterCount} Scatters! You won ${bonusName} Bonus!`;
+
+    // Render the triggering grid
+    let gridHtml = '';
+    for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 5; c++) {
+            const symbol = grid[r][c];
+            const isScatter = symbol === 'SCATTER';
+            const display = SYMBOLS[symbol]?.display || symbol;
+            gridHtml += `<div class="trigger-cell ${isScatter ? 'scatter' : ''}">${display}</div>`;
+        }
+    }
+    gridEl.innerHTML = gridHtml;
+
+    // Show win amount
+    winEl.textContent = totalWin > 0 ? `Win: +$${totalWin.toLocaleString()}` : '';
+
+    // Show overlay
+    overlay.classList.add('active');
+}
+
+function hideBonusTrigger() {
+    const overlay = document.getElementById('triggerOverlay');
+    overlay.classList.remove('active');
+}
+
+function enterBonus() {
+    hideBonusTrigger();
+    // Bonus game continues automatically
+    log('Entering bonus game...', 'info');
 }
 
 function resetSpin() {
