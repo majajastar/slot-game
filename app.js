@@ -488,8 +488,26 @@ function handleSpinResult(data) {
             resetSpin();
             return;
         }
-        
+
+        // DEBUG: Log raw reel data
+        console.log('[FRONTEND DEBUG] Raw grid:');
+        if (result.grid) {
+            result.grid.forEach((row, r) => {
+                console.log(`  Row ${r}:`, row.join(' | '));
+            });
+        }
+
+        // DEBUG: Log win data
         const winAmount = result.totalWinAmount || 0;
+        if (result.lineWins && result.lineWins.length > 0) {
+            console.log('[FRONTEND DEBUG] Winning lines:', result.lineWins.length);
+            result.lineWins.forEach((lw, idx) => {
+                const [lineIdx, symbol, count, win] = lw.info;
+                console.log(`  Line ${lineIdx + 1}: ${symbol} x${count} = $${win}`);
+            });
+        } else {
+            console.log('[FRONTEND DEBUG] No winning lines');
+        }
         
         // Update server data
         currentBalance = betInfo.finalBalance;
