@@ -560,6 +560,15 @@ wss.on('connection', (ws, req) => {
 
                     // SyncRoomInfo
                     if (subData?.opCode === 'SyncRoomInfo') {
+                        const roomInfo = {
+                            minBet: 1,
+                            maxBet: 2000,
+                            ...GAME_DATA,
+                            lines: 14
+                        };
+                        console.log('[SERVER] SyncRoomInfo - GAME_DATA keys:', Object.keys(GAME_DATA));
+                        console.log('[SERVER] SyncRoomInfo - has symbols:', !!GAME_DATA.symbols, 'count:', GAME_DATA.symbols ? Object.keys(GAME_DATA.symbols).length : 0);
+                        console.log('[SERVER] SyncRoomInfo - has paylines:', !!GAME_DATA.paylines, 'count:', GAME_DATA.paylines ? GAME_DATA.paylines.length : 0);
                         ws.send(JSON.stringify({
                             vals: {
                                 type: 100000,
@@ -567,16 +576,12 @@ wss.on('connection', (ws, req) => {
                                     subType: 100071,
                                     subData: [{
                                         opCode: 'SyncRoomInfo',
-                                        roomInfo: {
-                                            minBet: 1,
-                                            maxBet: 2000,
-                                            ...GAME_DATA,
-                                            lines: 14
-                                        }
+                                        roomInfo
                                     }]
                                 }
                             }
                         }));
+                        console.log('[SERVER] SyncRoomInfo sent');
                         return;
                     }
 
