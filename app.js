@@ -33,8 +33,15 @@ let currentBalance = 0;
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initGrid();
-    // render functions will be called after data is received from server
     connect();
+    
+    // Debug: Check if containers exist after a delay
+    setTimeout(() => {
+        console.log('[INIT] Checking DOM elements:');
+        console.log('[INIT] paytable:', document.getElementById('paytable'));
+        console.log('[INIT] paylinesDisplay:', document.getElementById('paylinesDisplay'));
+        console.log('[INIT] gameContent hidden:', document.getElementById('gameContent')?.classList.contains('hidden'));
+    }, 1000);
 });
 
 // Create 4x5 grid
@@ -58,6 +65,15 @@ function initGrid() {
     }, 100);
 }
 
+// Manual render for debugging
+window.debugRender = function() {
+    console.log('[MANUAL] debugRender called');
+    console.log('[MANUAL] SYMBOLS:', Object.keys(SYMBOLS));
+    console.log('[MANUAL] PAYLINES:', PAYLINES.length);
+    renderPaytable();
+    renderPaylines();
+};
+
 // Render paytable using server data
 function renderPaytable() {
     console.log('[DEBUG] renderPaytable called');
@@ -66,6 +82,11 @@ function renderPaytable() {
         console.error('[DEBUG] paytable container NOT FOUND in DOM!');
         return;
     }
+    
+    console.log('[DEBUG] paytable container:', container);
+    console.log('[DEBUG] paytable parent:', container.parentElement);
+    console.log('[DEBUG] paytable display:', getComputedStyle(container).display);
+    console.log('[DEBUG] paytable visibility:', getComputedStyle(container).visibility);
     
     const symbolCount = Object.keys(SYMBOLS).length;
     console.log('[DEBUG] symbolCount:', symbolCount);
