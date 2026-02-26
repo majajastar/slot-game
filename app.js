@@ -550,7 +550,8 @@ function spin() {
         c.textContent = '◯';
     });
     document.getElementById('winAmount').classList.add('hidden');
-    document.getElementById('winWays').innerHTML = '<div class="no-win">...</div>';
+    document.getElementById('winDetails').textContent = '';
+    document.getElementById('winWays').innerHTML = '<div class="no-win">Spin to see your wins...</div>';
     
     // Reset payline highlights
     renderPaylines();
@@ -1131,8 +1132,9 @@ function buyBonus(key) {
         c.textContent = '◯';
     });
     document.getElementById('winAmount')?.classList.add('hidden');
+    document.getElementById('winDetails').textContent = '';
     const winWaysEl = document.getElementById('winWays');
-    if (winWaysEl) winWaysEl.innerHTML = '<div class="no-win">...</div>';
+    if (winWaysEl) winWaysEl.innerHTML = '<div class="no-win">Spin to see your wins...</div>';
 
     // Reset payline highlights
     renderPaylines();
