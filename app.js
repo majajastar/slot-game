@@ -54,10 +54,15 @@ function initGrid() {
 
 // Render paytable using server data
 function renderPaytable() {
+    console.log('[DEBUG] renderPaytable called');
     const container = document.getElementById('paytable');
-    if (!container) return;
+    if (!container) {
+        console.error('[DEBUG] paytable container NOT FOUND in DOM!');
+        return;
+    }
     
     const symbolCount = Object.keys(SYMBOLS).length;
+    console.log('[DEBUG] symbolCount:', symbolCount);
     if (symbolCount === 0) {
         container.innerHTML = '<div style="color:#888;padding:10px;">Loading paytable...</div>';
         return;
@@ -88,13 +93,19 @@ function renderPaytable() {
     `).join('');
     
     container.innerHTML = html;
+    console.log('[DEBUG] Paytable rendered successfully with', symbols.length, 'symbols');
 }
 
 // Render paylines using server data
 function renderPaylines() {
+    console.log('[DEBUG] renderPaylines called');
     const container = document.getElementById('paylinesDisplay');
-    if (!container) return;
+    if (!container) {
+        console.error('[DEBUG] paylinesDisplay container NOT FOUND in DOM!');
+        return;
+    }
     
+    console.log('[DEBUG] PAYLINES count:', PAYLINES.length);
     if (PAYLINES.length === 0) {
         container.innerHTML = '<div style="color:#888;padding:10px;">Loading paylines...</div>';
         return;
@@ -113,6 +124,7 @@ function renderPaylines() {
             </div>
         </div>
     `).join('');
+    console.log('[DEBUG] Paylines rendered successfully with', PAYLINES.length, 'lines');
 }
 
 // Render jackpots using server data
@@ -220,7 +232,7 @@ async function connect() {
         
         socket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-            console.log('[SERVER →]', msg);
+            console.log('[SERVER →]', JSON.parse(JSON.stringify(msg)));
             handleMessage(msg);
         };
         
@@ -242,10 +254,9 @@ async function connect() {
 }
 
 function send(msg) {
-    console.log('[→ SERVER]', msg);
+    console.log('[→ SERVER]', JSON.parse(JSON.stringify(msg)));
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(msg));
-        log('→ ' + JSON.stringify(msg).substring(0, 100));
     }
 }
 
@@ -256,8 +267,6 @@ function handleMessage(msg) {
         log('Server error: ' + msg.errCode, 'error');
         return;
     }
-    
-    log('← ' + JSON.stringify(msg).substring(0, 150));
     
     const { type, data } = msg.vals;
     
@@ -359,15 +368,26 @@ function handleSubData(subData) {
 
     switch (subData.opCode) {
         case 'SyncRoomInfo':
+            console.log('[DEBUG] SyncRoomInfo received');
             if (subData.roomInfo) {
+                console.log('[DEBUG] roomInfo keys:', Object.keys(subData.roomInfo));
+                console.log('[DEBUG] has symbols:', !!subData.roomInfo.symbols, 'count:', subData.roomInfo.symbols ? Object.keys(subData.roomInfo.symbols).length : 0);
+                console.log('[DEBUG] has paylines:', !!subData.roomInfo.paylines, 'count:', subData.roomInfo.paylines ? subData.roomInfo.paylines.length : 0);
+                
                 // Load game data from server
                 if (subData.roomInfo.symbols) {
+                    console.log('[DEBUG] Setting SYMBOLS and calling renderPaytable');
                     SYMBOLS = subData.roomInfo.symbols;
                     renderPaytable();
+                } else {
+                    console.error('[DEBUG] No symbols in roomInfo!');
                 }
                 if (subData.roomInfo.paylines) {
+                    console.log('[DEBUG] Setting PAYLINES and calling renderPaylines');
                     PAYLINES = subData.roomInfo.paylines;
                     renderPaylines();
+                } else {
+                    console.error('[DEBUG] No paylines in roomInfo!');
                 }
                 if (subData.roomInfo.jackpots) {
                     JACKPOTS = subData.roomInfo.jackpots;
