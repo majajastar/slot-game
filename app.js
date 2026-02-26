@@ -340,10 +340,11 @@ function handleJoinRoom(data) {
     // Update betSizeList from server if available
     if (betInfo?.betSizeList) {
         BET_SIZE_LIST = betInfo.betSizeList;
-        // Only set default bet on first load (not on reconnects)
-        const currentBet = parseInt(document.getElementById('betDisplay')?.textContent?.replace('$', '')) || 0;
-        if (currentBet === 0 || !BET_SIZE_LIST.includes(currentBet)) {
-            renderBetSelector();
+        // Set default bet from server, or first in list, or 10
+        const display = document.getElementById('betDisplay');
+        if (display) {
+            const defaultBet = betInfo.defaultBet || BET_SIZE_LIST[0] || 10;
+            display.textContent = '$' + defaultBet;
         }
         updateBetSizeListDisplay();
     }
@@ -357,13 +358,13 @@ function handleJoinRoom(data) {
     }
 }
 
-// Render bet display with current value
+// Render bet display with current value (fallback if needed)
 function renderBetSelector() {
     const display = document.getElementById('betDisplay');
     if (!display || BET_SIZE_LIST.length === 0) return;
 
-    // Set default to middle of list
-    const defaultBet = BET_SIZE_LIST[Math.floor(BET_SIZE_LIST.length / 2)] || BET_SIZE_LIST[0] || 10;
+    // Use first bet from list as default
+    const defaultBet = BET_SIZE_LIST[0] || 10;
     display.textContent = '$' + defaultBet;
 }
 
