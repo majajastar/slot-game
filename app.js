@@ -326,6 +326,10 @@ function handleJoinRoom(data) {
     // Show game panel
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('gameContent').classList.remove('hidden');
+    
+    console.log('[DEBUG] Game panel now visible');
+    console.log('[DEBUG] paytable element:', document.getElementById('paytable'));
+    console.log('[DEBUG] paylinesDisplay element:', document.getElementById('paylinesDisplay'));
 
     // Update UI with server data
     document.getElementById('balance').textContent = '$' + data.balance.toLocaleString();
@@ -338,12 +342,34 @@ function handleJoinRoom(data) {
     }
     
     // Force render paytable/paylines if data already loaded
+    console.log('[DEBUG] Checking for existing data - symbols:', Object.keys(SYMBOLS).length, 'paylines:', PAYLINES.length);
     if (Object.keys(SYMBOLS).length > 0) {
+        console.log('[DEBUG] Calling renderPaytable from handleJoinRoom');
         renderPaytable();
     }
     if (PAYLINES.length > 0) {
+        console.log('[DEBUG] Calling renderPaylines from handleJoinRoom');
         renderPaylines();
     }
+    
+    // Fallback: try rendering again after DOM update
+    setTimeout(() => {
+        console.log('[DEBUG] Delayed render check - symbols:', Object.keys(SYMBOLS).length, 'paylines:', PAYLINES.length);
+        if (Object.keys(SYMBOLS).length > 0) {
+            const pt = document.getElementById('paytable');
+            if (pt && pt.innerHTML.includes('Loading')) {
+                console.log('[DEBUG] Paytable still loading, forcing render');
+                renderPaytable();
+            }
+        }
+        if (PAYLINES.length > 0) {
+            const pl = document.getElementById('paylinesDisplay');
+            if (pl && pl.innerHTML.includes('Loading')) {
+                console.log('[DEBUG] Paylines still loading, forcing render');
+                renderPaylines();
+            }
+        }
+    }, 500);
 }
 
 // Render bet display with current value
