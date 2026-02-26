@@ -3,38 +3,16 @@
  * Uses fake data for fields not available from server
  */
 
-// Symbol definitions with emojis
-const SYMBOLS = {
-    'WILD': { display: '💎', name: 'Diamond Wild', payout: { 5: 100, 4: 0, 3: 0 } },
-    'SCATTER': { display: '⭐', name: 'Star Scatter', payout: { 5: 0, 4: 0, 3: 0 } },
-    'SYM_1': { display: '👑', name: 'Crown', payout: { 5: 50, 4: 25, 3: 10 } },
-    'SYM_2': { display: '💍', name: 'Ring', payout: { 5: 40, 4: 20, 3: 8 } },
-    'SYM_3': { display: '🏆', name: 'Trophy', payout: { 5: 30, 4: 15, 3: 6 } },
-    'SYM_4': { display: '💵', name: 'Cash', payout: { 5: 20, 4: 10, 3: 4 } },
-    'SYM_5': { display: '🎲', name: 'Dice', payout: { 5: 5, 4: 2, 3: 1 } },
-    'SYM_6': { display: '🎯', name: 'Target', payout: { 5: 5, 4: 2, 3: 1 } },
-    'SYM_7': { display: '🎰', name: 'Slot', payout: { 5: 5, 4: 2, 3: 1 } },
-    'SYM_8': { display: '🪙', name: 'Coin', payout: { 5: 5, 4: 2, 3: 1 } },
-    'SYM_9': { display: '💠', name: 'Gem', payout: { 5: 5, 4: 2, 3: 1 } }
-};
+// Data from server (populated after SyncRoomInfo)
+let SYMBOLS = {};
+let PAYLINES = [];
+let JACKPOTS = {};
+let BONUSES = {};
+let GAME_CONFIG = {};
+let BET_SIZE_LIST = [1, 2, 5, 10, 20, 50, 100]; // Default fallback
 
-// Payline patterns (fake data - 14 paylines on 4x5 grid)
-const PAYLINES = [
-    { name: 'Line 1', pattern: [0, 0, 0, 0, 0] },
-    { name: 'Line 2', pattern: [1, 1, 1, 1, 1] },
-    { name: 'Line 3', pattern: [2, 2, 2, 2, 2] },
-    { name: 'Line 4', pattern: [3, 3, 3, 3, 3] },
-    { name: 'Line 5', pattern: [0, 1, 0, 1, 0] },
-    { name: 'Line 6', pattern: [1, 2, 1, 2, 1] },
-    { name: 'Line 7', pattern: [2, 3, 2, 3, 2] },
-    { name: 'Line 8', pattern: [1, 0, 1, 0, 1] },
-    { name: 'Line 9', pattern: [2, 1, 2, 1, 2] },
-    { name: 'Line 10', pattern: [3, 2, 3, 2, 3] },
-    { name: 'Line 11', pattern: [0, 1, 2, 1, 0] },
-    { name: 'Line 12', pattern: [1, 2, 3, 2, 1] },
-    { name: 'Line 13', pattern: [3, 2, 1, 2, 3] },
-    { name: 'Line 14', pattern: [2, 1, 0, 1, 2] }
-];
+// Line is always 14 (all paylines)
+const ACTIVE_LINES = 14;
 
 // Fake game state for fields not in server response
 let fakeState = {
@@ -42,6 +20,7 @@ let fakeState = {
     totalWin: 0,
     history: [],
     inBonus: false,
+    bonusType: null,
     bonusSpinsLeft: 0
 };
 
@@ -54,8 +33,7 @@ let currentBalance = 0;
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initGrid();
-    renderPaytable();
-    renderPaylines();
+    // render functions will be called after data is received from server
     connect();
 });
 
@@ -74,9 +52,11 @@ function initGrid() {
     }
 }
 
-// Render paytable using fake data
+// Render paytable using server data
 function renderPaytable() {
     const container = document.getElementById('paytable');
+    if (!container || Object.keys(SYMBOLS).length === 0) return;
+    
     const symbols = Object.entries(SYMBOLS).filter(([id]) => id !== 'SCATTER');
     
     // Header
@@ -104,9 +84,11 @@ function renderPaytable() {
     container.innerHTML = html;
 }
 
-// Render paylines using fake data
+// Render paylines using server data
 function renderPaylines() {
     const container = document.getElementById('paylinesDisplay');
+    if (!container || PAYLINES.length === 0) return;
+    
     container.innerHTML = PAYLINES.map((line, idx) => `
         <div class="payline-item">
             <div class="payline-name">${line.name}</div>
@@ -120,6 +102,57 @@ function renderPaylines() {
             </div>
         </div>
     `).join('');
+}
+
+// Render jackpots using server data
+function renderJackpots() {
+    const container = document.getElementById('jackpotDisplay');
+    if (!container || !JACKPOTS.display) return;
+    
+    container.innerHTML = Object.entries(JACKPOTS.display).map(([value, data]) => `
+        <div class="jackpot-item ${data.name.toLowerCase()}">
+            ${data.icon}<br>
+            ${data.name}<br>
+            ${data.multiplier}
+        </div>
+    `).join('');
+}
+
+// Render bonus info using server data
+function renderBonusInfo() {
+    const container = document.getElementById('bonusInfo');
+    if (!container || Object.keys(BONUSES).length === 0) return;
+    
+    container.innerHTML = Object.entries(BONUSES).map(([key, bonus]) => `
+        <div class="bonus-item">
+            <div class="bonus-name">${bonus.name}</div>
+            <div class="bonus-desc">${bonus.description}</div>
+            <div class="bonus-meta">${bonus.scatterCount} scatters • ${bonus.buyPriceDisplay || bonus.buyPrice + 'x'}</div>
+        </div>
+    `).join('');
+}
+
+// Update game info from server config
+function updateGameInfo() {
+    if (!GAME_CONFIG.name) return;
+
+    const headerTitle = document.querySelector('.header h1');
+    if (headerTitle && GAME_CONFIG.icon && GAME_CONFIG.name) {
+        headerTitle.textContent = `${GAME_CONFIG.icon} ${GAME_CONFIG.name}`;
+    }
+
+    const subtitle = document.querySelector('.subtitle');
+    if (subtitle && GAME_CONFIG.grid && GAME_CONFIG.paylines) {
+        subtitle.textContent = `${GAME_CONFIG.grid.rows}x${GAME_CONFIG.grid.cols} Grid | ${GAME_CONFIG.paylines.count} Paylines | RTP ${GAME_CONFIG.rtp}%`;
+    }
+}
+
+// Update bet size list display
+function updateBetSizeListDisplay() {
+    const display = document.getElementById('betSizeListDisplay');
+    if (display && BET_SIZE_LIST.length > 0) {
+        display.textContent = BET_SIZE_LIST.join(', ');
+    }
 }
 
 // ==================== CONNECTION ====================
@@ -267,29 +300,67 @@ function handleGameMessage(data) {
 function handleJoinRoom(data) {
     log(`Joined room: ${data.roomId}`);
     currentBalance = data.balance;
-    
+
     // Show game panel
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('gameContent').classList.remove('hidden');
-    
+
     // Update UI with server data
     document.getElementById('balance').textContent = '$' + data.balance.toLocaleString();
-    
-    if (data.betInfo?.[0]) {
-        // Could update min/max bet here if needed
+
+    // Update betSizeList from server if available
+    if (data.betInfo?.[0]?.betSizeList) {
+        BET_SIZE_LIST = data.betInfo[0].betSizeList;
+        renderBetSelector();
+        updateBetSizeListDisplay();
     }
+}
+
+// Render bet selector dropdown based on betSizeList
+function renderBetSelector() {
+    const display = document.getElementById('betDisplay');
+    if (!display) return;
+
+    // Set default to middle of list or first item
+    const defaultBet = BET_SIZE_LIST[Math.floor(BET_SIZE_LIST.length / 2)] || BET_SIZE_LIST[0] || 10;
+    display.textContent = '$' + defaultBet;
 }
 
 function handleSubData(subData) {
     if (!subData?.opCode) return;
-    
+
     switch (subData.opCode) {
         case 'SyncRoomInfo':
             if (subData.roomInfo) {
-                // Update room info if needed
+                // Load game data from server
+                if (subData.roomInfo.symbols) {
+                    SYMBOLS = subData.roomInfo.symbols;
+                    renderPaytable();
+                }
+                if (subData.roomInfo.paylines) {
+                    PAYLINES = subData.roomInfo.paylines;
+                    renderPaylines();
+                }
+                if (subData.roomInfo.jackpots) {
+                    JACKPOTS = subData.roomInfo.jackpots;
+                    renderJackpots();
+                }
+                if (subData.roomInfo.bonuses) {
+                    BONUSES = subData.roomInfo.bonuses;
+                    renderBonusInfo();
+                }
+                if (subData.roomInfo.gameConfig) {
+                    GAME_CONFIG = subData.roomInfo.gameConfig;
+                    updateGameInfo();
+                }
+                if (subData.roomInfo.betSizeList) {
+                    BET_SIZE_LIST = subData.roomInfo.betSizeList;
+                    renderBetSelector();
+                    updateBetSizeListDisplay();
+                }
             }
             break;
-            
+
         case 'SetBet':
             handleSpinResult(subData);
             break;
@@ -300,25 +371,31 @@ function handleSubData(subData) {
 
 function spin() {
     if (isSpinning) return;
-    
-    const bet = parseInt(document.getElementById('betDisplay').textContent.replace('$', '')) || 10;
-    const line = 14; // Always 14 lines for now
-    
+
+    const betDisplay = document.getElementById('betDisplay');
+    let bet = parseInt(betDisplay.textContent.replace('$', '')) || 10;
+
+    // Validate bet is in allowed list, auto-correct if not
+    if (!BET_SIZE_LIST.includes(bet)) {
+        bet = getClosestBetSize(bet);
+        betDisplay.textContent = '$' + bet;
+    }
+
     isSpinning = true;
     const btn = document.getElementById('spinBtn');
     btn.disabled = true;
     btn.textContent = '...';
-    
+
     // Clear previous wins
-    document.querySelectorAll('.reel-cell').forEach(c => { 
-        c.classList.remove('winning'); 
-        c.textContent = '◯'; 
+    document.querySelectorAll('.reel-cell').forEach(c => {
+        c.classList.remove('winning');
+        c.textContent = '◯';
     });
     document.getElementById('winAmount').classList.add('hidden');
     document.getElementById('winWays').innerHTML = '<div class="no-win">...</div>';
-    
+
     // Spin animation
-    const displays = Object.values(SYMBOLS).map(s => s.display);
+    const displays = Object.keys(SYMBOLS).length > 0 ? Object.values(SYMBOLS).map(s => s.display) : ['💎', '👑', '💍', '🏆', '💵'];
     let spins = 0;
     const animInterval = setInterval(() => {
         document.querySelectorAll('.reel-cell').forEach(c => {
@@ -327,15 +404,21 @@ function spin() {
         spins++;
         if (spins >= 10) clearInterval(animInterval);
     }, 60);
-    
-    // Send spin request
+
+    // Send spin request (line is always 14 on server, only send bet)
     send({
         type: '100000',
         data: [{
             subType: 100070,
-            subData: [{ opCode: 'SetBet', message: { bet, line } }]
+            subData: [{ opCode: 'SetBet', message: { bet } }]
         }]
     });
+}
+
+function getClosestBetSize(bet) {
+    return BET_SIZE_LIST.reduce((prev, curr) =>
+        Math.abs(curr - bet) < Math.abs(prev - bet) ? curr : prev
+    );
 }
 
 function handleSpinResult(data) {
@@ -358,8 +441,8 @@ function handleSpinResult(data) {
     document.getElementById('spinCount').textContent = fakeState.spinCount;
     document.getElementById('totalWin').textContent = '$' + fakeState.totalWin.toLocaleString();
     
-    // Render grid
-    renderGrid(result.grid);
+    // Render grid with frames if in bonus
+    renderGrid(result.grid, result.stickyFrames);
     
     // Show wins
     if (winAmount > 0 && result.lineWins?.length > 0) {
@@ -368,19 +451,64 @@ function handleSpinResult(data) {
         document.getElementById('winWays').innerHTML = '<div class="no-win">No win this spin</div>';
     }
     
-    // Add to history
-    addToHistory(betInfo.bet, winAmount);
+    // Handle bonus game
+    if (result.isBonus) {
+        if (!fakeState.inBonus && result.bonusSpinsLeft > 0) {
+            // Bonus just triggered
+            fakeState.inBonus = true;
+            fakeState.bonusType = result.bonusType;
+            fakeState.bonusSpinsLeft = result.bonusSpinsLeft;
+            showBonusBanner(result.bonusType, result.bonusSpinsLeft);
+            log('BONUS TRIGGERED: ' + result.bonusType + '!', 'info');
+        } else if (fakeState.inBonus) {
+            // Continue bonus
+            fakeState.bonusSpinsLeft = result.bonusSpinsLeft;
+            updateBonusBanner(result.bonusSpinsLeft);
+            
+            if (result.lastFreeSpin) {
+                hideBonusBanner();
+                fakeState.inBonus = false;
+                fakeState.bonusType = null;
+                fakeState.bonusSpinsLeft = 0;
+                log('Bonus completed!', 'info');
+            }
+        }
+    }
     
-    log(`Win: ${winAmount}, Balance: ${betInfo.finalBalance}`);
+    // Add to history
+    addToHistory(betInfo.bet, winAmount, fakeState.inBonus);
+    
+    log('Win: ' + winAmount + ', Balance: ' + betInfo.finalBalance);
     resetSpin();
 }
 
-function renderGrid(grid) {
+function renderGrid(grid, frames) {
     for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 5; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
             const symbol = grid[r][c];
-            cell.textContent = SYMBOLS[symbol]?.display || symbol;
+            const symbolData = SYMBOLS[symbol];
+            let html = symbolData?.display || symbol;
+            
+            // Add frame overlay if present
+            if (frames && frames[r] && frames[r][c] && frames[r][c].value > 0) {
+                const frame = frames[r][c];
+                const isJackpot = frame.type === 'jackpot';
+                let label, color;
+                
+                if (isJackpot) {
+                    label = frame.value === 25 ? 'M' : frame.value === 100 ? 'J' : frame.value === 500 ? 'E' : 'X';
+                    color = frame.value === 25 ? '#87ceeb' : frame.value === 100 ? '#ffa500' : frame.value === 500 ? '#ff69b4' : '#ffd700';
+                } else {
+                    label = frame.value >= 100 ? '99' : frame.value.toString();
+                    color = '#ffd700';
+                }
+                
+                const fontSize = isJackpot ? '0.6rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
+                html += `<div class="frame-overlay" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
+            }
+            
+            cell.innerHTML = html;
             cell.className = `reel-cell symbol-${symbol}`;
         }
     }
@@ -411,7 +539,7 @@ function showWins(lineWins, totalWin) {
         </div>
     ` + lineWins.map((lw, i) => {
         const [line, symbol, count, win] = lw.info;
-        const symData = SYMBOLS[symbol];
+        const symData = SYMBOLS[symbol] || { display: symbol, name: symbol };
         return `
             <div class="win-way-item" style="animation:fadeIn 0.3s ${i*0.1}s both;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -419,7 +547,7 @@ function showWins(lineWins, totalWin) {
                     <span style="color:#888;font-size:0.7rem;">Line ${line+1}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-                    <span style="color:#fff;font-size:0.8rem;">${symData?.display} ${symData?.name}</span>
+                    <span style="color:#fff;font-size:0.8rem;">${symData.display} ${symData.name}</span>
                     <span style="color:#ffd700;font-size:0.8rem;font-weight:bold;">${count} of a kind</span>
                 </div>
             </div>
@@ -427,21 +555,56 @@ function showWins(lineWins, totalWin) {
     }).join('');
 }
 
-function addToHistory(bet, win) {
+function addToHistory(bet, win, isBonus) {
     const container = document.getElementById('spinHistory');
     const item = document.createElement('div');
     item.className = 'history-item';
-    
-    const winText = win > 0 ? `<span style="color:#2ecc71;font-weight:bold;">+$${win}</span>` : 
+
+    const winText = win > 0 ? `<span style="color:#2ecc71;font-weight:bold;">+$${win}</span>` :
                     '<span style="color:#888;">No win</span>';
-    
-    item.innerHTML = `Spin ${fakeState.spinCount}: <span style="color:#666;">-$${bet}</span> → ${winText}`;
+    const bonusTag = isBonus ? '<span style="color:#ffd700;font-size:0.7rem;"> [BONUS]</span>' : '';
+
+    item.innerHTML = `Spin ${fakeState.spinCount}: <span style="color:#666;">-$${bet}</span> → ${winText}${bonusTag}`;
     container.insertBefore(item, container.firstChild);
-    
+
     // Keep last 10
     while (container.children.length > 10) {
         container.removeChild(container.lastChild);
     }
+}
+
+// ==================== BONUS GAME UI ====================
+
+function showBonusBanner(bonusType, spinsLeft) {
+    const banner = document.getElementById('bonusBanner');
+    const nameEl = document.getElementById('bonusName');
+    const descEl = document.getElementById('bonusDesc');
+    const spinsEl = document.getElementById('spinsLeft');
+
+    const name = bonusType === 'BLACK_AND_GOLD' ? 'BLACK AND GOLD' : 'GOLDEN HIT';
+    const desc = bonusType === 'BLACK_AND_GOLD'
+        ? '10 free spins with sticky golden frames'
+        : 'Enhanced bonus with doubled multipliers';
+
+    nameEl.textContent = name + ' BONUS!';
+    descEl.textContent = desc;
+    spinsEl.textContent = spinsLeft;
+
+    banner.classList.remove('hidden');
+    document.getElementById('gameContainer').classList.add('bonus-mode');
+}
+
+function updateBonusBanner(spinsLeft) {
+    const spinsEl = document.getElementById('spinsLeft');
+    if (spinsEl) {
+        spinsEl.textContent = spinsLeft;
+    }
+}
+
+function hideBonusBanner() {
+    const banner = document.getElementById('bonusBanner');
+    banner.classList.add('hidden');
+    document.getElementById('gameContainer').classList.remove('bonus-mode');
 }
 
 function resetSpin() {
@@ -473,11 +636,20 @@ function updateStatus(text, type) {
 
 function changeBet(dir) {
     const display = document.getElementById('betDisplay');
-    const sizes = [1, 2, 5, 10, 20, 50, 100];
     const current = parseInt(display.textContent.replace('$', '')) || 10;
-    const idx = sizes.indexOf(current);
-    const newIdx = Math.max(0, Math.min(sizes.length - 1, idx + dir));
-    display.textContent = '$' + sizes[newIdx];
+    const idx = BET_SIZE_LIST.indexOf(current);
+
+    // Find next valid index
+    let newIdx;
+    if (idx === -1) {
+        // Current bet not in list, find closest
+        newIdx = BET_SIZE_LIST.findIndex(b => b >= current);
+        if (newIdx === -1) newIdx = BET_SIZE_LIST.length - 1;
+    } else {
+        newIdx = Math.max(0, Math.min(BET_SIZE_LIST.length - 1, idx + dir));
+    }
+
+    display.textContent = '$' + BET_SIZE_LIST[newIdx];
 }
 
 function buyBonus(type) {

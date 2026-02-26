@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TheLuxe - Slot Game</title>
+    <title>TheLuxe - Slot Game (TEST MODE)</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,11 +12,12 @@
         <div class="header">
             <h1>💎 TheLuxe</h1>
             <div class="subtitle">4x5 Grid | 14 Lines Always Active | RTP 96%</div>
+            <div style="background:#ff6b6b;color:#fff;padding:5px 15px;border-radius:20px;font-size:0.75rem;margin-top:8px;display:inline-block;">🧪 TEST MODE - FAKE SERVER</div>
         </div>
-        
+
         <!-- Loading State -->
-        <div id="loading" class="loading">Connecting to game server...</div>
-        
+        <div id="loading" class="loading">Connecting to fake server...</div>
+
         <!-- Game Content -->
         <div id="gameContent" class="hidden">
             <div class="main-layout">
@@ -42,7 +43,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- LEFT-CENTER: Paytable & Bonus -->
                 <div class="left-center-panel">
                     <div class="info-section">
@@ -69,9 +70,15 @@
                         <div id="spinHistory" class="spin-history"></div>
                     </div>
                 </div>
-                
+
                 <!-- CENTER: Main Game Area -->
                 <div class="center-panel">
+                    <!-- Bet Size List Display -->
+                    <div style="background:rgba(0,0,0,0.3);padding:8px;border-radius:8px;margin-bottom:10px;text-align:center;">
+                        <span style="color:#888;font-size:0.7rem;">Valid Bet Sizes: </span>
+                        <span id="betSizeListDisplay" style="color:#ffd700;font-size:0.75rem;">Loading...</span>
+                    </div>
+
                     <!-- Jackpot Display -->
                     <div class="jackpot-display">
                         <div class="jackpot-item mini">🔷<br>MINI<br>25x</div>
@@ -79,25 +86,25 @@
                         <div class="jackpot-item mega">💎<br>MEGA<br>500x</div>
                         <div class="jackpot-item max">👑<br>MAX<br>20000x</div>
                     </div>
-                    
+
                     <!-- Bonus Banner (hidden by default) -->
                     <div id="bonusBanner" class="bonus-banner hidden">
                         <strong id="bonusName">BONUS ACTIVE!</strong>
                         <div id="bonusDesc" class="bonus-desc-text"></div>
                         <div>Spins Left: <span id="spinsLeft">0</span></div>
                     </div>
-                    
+
                     <!-- Reel Container -->
                     <div class="reel-container" id="reelContainer">
                         <div id="reelGrid" class="reel-grid"></div>
                     </div>
-                    
+
                     <!-- Win Display -->
                     <div class="win-section">
                         <div id="winAmount" class="win-amount hidden">+$0</div>
                         <div id="winDetails" class="win-details"></div>
                     </div>
-                    
+
                     <!-- Controls -->
                     <div class="controls">
                         <div class="bet-controls">
@@ -107,22 +114,7 @@
                         </div>
                         <button id="spinBtn" class="btn-spin" onclick="spin()">🎰 SPIN</button>
                     </div>
-                    
-                    <!-- Buy Bonus -->
-                    <div class="buy-bonus-section">
-                        <div class="buy-bonus-title">🎁 BUY BONUS</div>
-                        <div class="bonus-buttons">
-                            <button class="btn-bonus" onclick="buyBonus('blackAndGold')">
-                                <div>Black & Gold</div>
-                                <small>3 scatters • 80x</small>
-                            </button>
-                            <button class="btn-bonus" onclick="buyBonus('goldenHit')">
-                                <div>Golden Hit</div>
-                                <small>4 scatters • 250x</small>
-                            </button>
-                        </div>
-                    </div>
-                    
+
                     <!-- Stats Bar -->
                     <div class="stats-bar">
                         <div class="stat">
@@ -137,15 +129,19 @@
                             <div class="stat-label">Spins</div>
                             <div class="stat-value" id="spinCount">0</div>
                         </div>
+                        <div class="stat">
+                            <div class="stat-label">Lines</div>
+                            <div class="stat-value" style="color:#2ecc71;">14</div>
+                        </div>
                     </div>
-                    
+
                     <!-- Paylines -->
                     <div class="paylines-section">
-                        <div class="info-title">14 PAYLINES</div>
+                        <div class="info-title">14 PAYLINES (Always Active)</div>
                         <div id="paylinesDisplay" class="paylines-grid"></div>
                     </div>
                 </div>
-                
+
                 <!-- RIGHT: Win Ways -->
                 <div class="right-panel">
                     <div class="info-section">
@@ -157,7 +153,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Logs Panel -->
         <div class="logs-panel">
             <div class="logs-header">
@@ -168,7 +164,7 @@
         </div>
     </div>
 
-    <script src="config.js"></script>
+    <script src="config-test.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
