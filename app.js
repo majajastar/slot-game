@@ -316,33 +316,20 @@ function handleJoinRoom(data) {
     }
 }
 
-// Render bet selector dropdown based on betSizeList
+// Render bet display with current value
 function renderBetSelector() {
-    const select = document.getElementById('betSelect');
-    if (!select || BET_SIZE_LIST.length === 0) return;
+    const display = document.getElementById('betDisplay');
+    if (!display || BET_SIZE_LIST.length === 0) return;
 
-    // Clear existing options
-    select.innerHTML = '';
-
-    // Add options from betSizeList
-    BET_SIZE_LIST.forEach(bet => {
-        const option = document.createElement('option');
-        option.value = bet;
-        option.textContent = '$' + bet;
-        select.appendChild(option);
-    });
-
-    // Set default to middle of list or first item
-    const defaultIndex = Math.floor(BET_SIZE_LIST.length / 2);
-    select.selectedIndex = defaultIndex;
+    // Set default to middle of list
+    const defaultBet = BET_SIZE_LIST[Math.floor(BET_SIZE_LIST.length / 2)] || BET_SIZE_LIST[0] || 10;
+    display.textContent = '$' + defaultBet;
 }
 
-function updateBetDisplay() {
-    // This function is called when select changes
-    // Currently no additional action needed
-    const select = document.getElementById('betSelect');
-    if (select) {
-        log('Bet changed to $' + select.value);
+function updateBetSizeListDisplay() {
+    const hint = document.getElementById('betSizeListDisplay');
+    if (hint && BET_SIZE_LIST.length > 0) {
+        hint.textContent = BET_SIZE_LIST.join(', ');
     }
 }
 
@@ -395,19 +382,16 @@ function spin() {
         return;
     }
 
-    const betSelect = document.getElementById('betSelect');
-    let bet = betSelect ? parseInt(betSelect.value) : 10;
+    const betDisplay = document.getElementById('betDisplay');
+    let bet = parseInt(betDisplay?.textContent?.replace('$', '')) || 10;
 
     // Validate bet is in allowed list, auto-correct if not
     if (!BET_SIZE_LIST.includes(bet)) {
         console.log('Bet ' + bet + ' not in list, auto-correcting');
         bet = getClosestBetSize(bet);
-        // Update select to corrected value
-        if (betSelect) {
-            const index = BET_SIZE_LIST.indexOf(bet);
-            if (index >= 0) {
-                betSelect.selectedIndex = index;
-            }
+        // Update display to corrected value
+        if (betDisplay) {
+            betDisplay.textContent = '$' + bet;
         }
     }
     
@@ -703,6 +687,8 @@ function updateStatus(text, type) {
 
 function changeBet(dir) {
     const display = document.getElementById('betDisplay');
+    if (!display) return;
+
     const current = parseInt(display.textContent.replace('$', '')) || 10;
     const idx = BET_SIZE_LIST.indexOf(current);
 
@@ -716,7 +702,9 @@ function changeBet(dir) {
         newIdx = Math.max(0, Math.min(BET_SIZE_LIST.length - 1, idx + dir));
     }
 
-    display.textContent = '$' + BET_SIZE_LIST[newIdx];
+    const newBet = BET_SIZE_LIST[newIdx];
+    display.textContent = '$' + newBet;
+    log('Bet changed to $' + newBet);
 }
 
 function buyBonus(type) {

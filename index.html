@@ -101,10 +101,12 @@
                     <!-- Controls -->
                     <div class="controls">
                         <div class="bet-controls">
-                            <label>Bet Size:</label>
-                            <select id="betSelect" class="bet-select" onchange="updateBetDisplay()">
-                                <option value="10">$10</option>
-                            </select>
+                            <button class="bet-btn" id="betMinus" onclick="changeBet(-1)">-</button>
+                            <div class="bet-display-container">
+                                <span id="betDisplay" class="bet-display">$10</span>
+                                <div id="betSizeListDisplay" class="bet-size-hint">Loading...</div>
+                            </div>
+                            <button class="bet-btn" id="betPlus" onclick="changeBet(1)">+</button>
                         </div>
                         <button id="spinBtn" class="btn-spin" onclick="spin()">🎰 SPIN</button>
                     </div>
@@ -147,12 +149,49 @@
                     </div>
                 </div>
                 
-                <!-- RIGHT: Win Ways -->
+                <!-- RIGHT: Win Ways & Possible Wins -->
                 <div class="right-panel">
                     <div class="info-section">
-                        <div class="info-title">Win Ways</div>
+                        <div class="info-title">💰 Current Spin Wins</div>
                         <div id="winWays">
                             <div class="no-win">Spin to see wins...</div>
+                        </div>
+                    </div>
+                    <div class="info-section">
+                        <div class="info-title">🎯 Possible Winning Combinations</div>
+                        <div id="possibleWins" class="possible-wins">
+                            <div class="win-combo">
+                                <span class="combo-symbols">💎💎💎💎💎</span>
+                                <span class="combo-payout">100x (Jackpot!)</span>
+                            </div>
+                            <div class="win-combo">
+                                <span class="combo-symbols">👑👑👑👑👑</span>
+                                <span class="combo-payout">50x</span>
+                            </div>
+                            <div class="win-combo">
+                                <span class="combo-symbols">👑👑👑👑</span>
+                                <span class="combo-payout">25x</span>
+                            </div>
+                            <div class="win-combo">
+                                <span class="combo-symbols">👑👑👑</span>
+                                <span class="combo-payout">10x</span>
+                            </div>
+                            <div class="win-combo">
+                                <span class="combo-symbols">💍💍💍💍💍</span>
+                                <span class="combo-payout">40x</span>
+                            </div>
+                            <div class="win-combo">
+                                <span class="combo-symbols">💍💍💍💍</span>
+                                <span class="combo-payout">20x</span>
+                            </div>
+                            <div class="win-combo">
+                                <span class="combo-symbols">💍💍💍</span>
+                                <span class="combo-payout">8x</span>
+                            </div>
+                            <div class="win-combo low">
+                                <span class="combo-symbols">🎲🎲🎲</span>
+                                <span class="combo-payout">1x</span>
+                            </div>
                         </div>
                     </div>
                 </div>

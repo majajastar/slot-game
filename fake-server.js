@@ -92,9 +92,18 @@ const PAYOUTS = {
     'SYM_6': [5, 2, 1], 'SYM_7': [5, 2, 1], 'SYM_8': [5, 2, 1], 'SYM_9': [5, 2, 1]
 };
 
+// Adjusted weights for better win frequency (higher RTP)
 const SYMBOL_WEIGHTS = {
-    'WILD': 0.05, 'SYM_1': 0.13, 'SYM_2': 0.15, 'SYM_3': 0.18, 'SYM_4': 0.20,
-    'SYM_5': 0.67, 'SYM_6': 0.67, 'SYM_7': 0.67, 'SYM_8': 0.67, 'SYM_9': 0.67
+    'WILD': 0.08,      // Increased from 0.05
+    'SYM_1': 0.10,     // Decreased from 0.13
+    'SYM_2': 0.12,     // Decreased from 0.15
+    'SYM_3': 0.14,     // Decreased from 0.18
+    'SYM_4': 0.16,     // Decreased from 0.20
+    'SYM_5': 0.40,     // Decreased from 0.67
+    'SYM_6': 0.40,     // Decreased from 0.67
+    'SYM_7': 0.40,     // Decreased from 0.67
+    'SYM_8': 0.40,     // Decreased from 0.67
+    'SYM_9': 0.40      // Decreased from 0.67
 };
 
 // HTTP Server for SID and Launch API
@@ -426,6 +435,19 @@ function processNormalSpin(requestedBet) {
                 positions: result.positions,
                 info: [i, result.symbol, result.count, result.win]
             });
+        }
+    }
+
+    // Debug logging
+    if (lineWins.length > 0) {
+        console.log(`[WIN] ${lineWins.length} winning lines, total: $${totalWin}`);
+        lineWins.forEach(lw => {
+            console.log(`      Line ${lw.info[0]+1}: ${lw.info[1]} x${lw.info[2]} = $${lw.info[3]}`);
+        });
+    } else {
+        // Log losing spin occasionally
+        if (Math.random() < 0.1) {
+            console.log(`[SPIN] No win (bet: $${bet})`);
         }
     }
 
