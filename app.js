@@ -220,6 +220,7 @@ async function connect() {
         
         socket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
+            console.log('[SERVER →]', msg);
             handleMessage(msg);
         };
         
@@ -241,6 +242,7 @@ async function connect() {
 }
 
 function send(msg) {
+    console.log('[→ SERVER]', msg);
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(msg));
         log('→ ' + JSON.stringify(msg).substring(0, 100));
