@@ -504,10 +504,13 @@ function handleSubData(subData) {
     switch (subData.opCode) {
         case 'SyncRoomInfo':
             console.log('[DEBUG] SyncRoomInfo received');
+            console.log('[DEBUG] Full subData:', JSON.parse(JSON.stringify(subData)));
             if (subData.roomInfo) {
                 console.log('[DEBUG] roomInfo keys:', Object.keys(subData.roomInfo));
                 console.log('[DEBUG] has symbols:', !!subData.roomInfo.symbols, 'count:', subData.roomInfo.symbols ? Object.keys(subData.roomInfo.symbols).length : 0);
                 console.log('[DEBUG] has paylines:', !!subData.roomInfo.paylines, 'count:', subData.roomInfo.paylines ? subData.roomInfo.paylines.length : 0);
+                console.log('[DEBUG] roomInfo.symbols type:', typeof subData.roomInfo.symbols);
+                console.log('[DEBUG] roomInfo.paylines type:', typeof subData.roomInfo.paylines);
                 
                 // Load game data from server
                 if (subData.roomInfo.symbols) {

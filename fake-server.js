@@ -569,7 +569,11 @@ wss.on('connection', (ws, req) => {
                         console.log('[SERVER] SyncRoomInfo - GAME_DATA keys:', Object.keys(GAME_DATA));
                         console.log('[SERVER] SyncRoomInfo - has symbols:', !!GAME_DATA.symbols, 'count:', GAME_DATA.symbols ? Object.keys(GAME_DATA.symbols).length : 0);
                         console.log('[SERVER] SyncRoomInfo - has paylines:', !!GAME_DATA.paylines, 'count:', GAME_DATA.paylines ? GAME_DATA.paylines.length : 0);
-                        ws.send(JSON.stringify({
+                        console.log('[SERVER] SyncRoomInfo - roomInfo keys:', Object.keys(roomInfo));
+                        console.log('[SERVER] SyncRoomInfo - roomInfo has symbols:', !!roomInfo.symbols);
+                        console.log('[SERVER] SyncRoomInfo - roomInfo has paylines:', !!roomInfo.paylines);
+                        
+                        const response = {
                             vals: {
                                 type: 100000,
                                 data: {
@@ -580,7 +584,9 @@ wss.on('connection', (ws, req) => {
                                     }]
                                 }
                             }
-                        }));
+                        };
+                        console.log('[SERVER] Sending response:', JSON.stringify(response, null, 2).substring(0, 2000));
+                        ws.send(JSON.stringify(response));
                         console.log('[SERVER] SyncRoomInfo sent');
                         return;
                     }
