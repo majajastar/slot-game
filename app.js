@@ -718,6 +718,7 @@ function handleSpinResult(data) {
     
     // Handle bonus game
     const spinsLeft = result.bonusGameState?.spinsLeft;
+    console.log(`@@@@@@@@ spinsLeft = ${spinsLeft}`)
     if (result.isBonus && spinsLeft !== undefined) {
         if (!fakeState.inBonus && spinsLeft > 0) {
             // Bonus just triggered
