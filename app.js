@@ -501,8 +501,9 @@ function handleSubData(subData) {
                         fakeState.inBonus = true;
                         fakeState.bonusType = lastResumeInfo.bonusGameState.type;
                         fakeState.bonusSpinsLeft = lastResumeInfo.bonusGameState.spinsLeft;
-                        showBonusBanner(lastResumeInfo.bonusGameState.type, lastResumeInfo.bonusGameState.spinsLeft);
-                        log('Bonus game restored: ' + lastResumeInfo.bonusGameState.type + ' with ' + lastResumeInfo.bonusGameState.spinsLeft + ' spins left');
+                        fakeState.totalWin = lastResumeInfo.bonusGameState.totalWin || 0;
+                        showBonusBanner(lastResumeInfo.bonusGameState.type, lastResumeInfo.bonusGameState.spinsLeft, fakeState.totalWin);
+                        log('Bonus game restored: ' + lastResumeInfo.bonusGameState.type + ' with ' + lastResumeInfo.bonusGameState.spinsLeft + ' spins left, total win: $' + fakeState.totalWin);
                     }
                 }
             }
