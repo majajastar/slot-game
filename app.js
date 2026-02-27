@@ -26,6 +26,9 @@ let fakeState = {
     bonusSpinsLeft: 0
 };
 
+// Mega Boost mode state (10x cost, 10x bonus entry chance)
+let megaBoostEnabled = false;
+
 // Current sticky frames (for bonus game persistence during spins)
 let currentStickyFrames = null;
 
@@ -151,13 +154,22 @@ function renderBonusInfo() {
             goldenHitCost.textContent = `${BONUSES.goldenHit.scatterCount} scatters • ${cost}`;
         }
     }
-    if (BONUSES.megaBonus) {
-        const megaBonusCost = document.getElementById('megaBonusCost');
-        if (megaBonusCost) {
-            const cost = BONUSES.megaBonus.buyPriceDisplay || (BONUSES.megaBonus.buyPriceMultiplier + 'x');
-            const entryMult = BONUSES.megaBonus.bonusEntryMultiplier || 10;
-            megaBonusCost.textContent = `BUY ONLY • ${cost} per spin • ${entryMult}x bonus entry`;
-        }
+}
+
+// Toggle Mega Boost mode on/off
+function toggleMegaBoost() {
+    const toggle = document.getElementById('megaBoostToggle');
+    if (!toggle) return;
+
+    megaBoostEnabled = toggle.checked;
+    log(megaBoostEnabled ? '⚡ MEGA BOOST ENABLED! Spins cost 10x with 10x bonus entry chance!' : '⚡ Mega Boost disabled', megaBoostEnabled ? 'highlight' : 'info');
+}
+
+// Toggle Mega Boost details panel
+function toggleMegaBoostDetails() {
+    const details = document.getElementById('megaBoostDetails');
+    if (details) {
+        details.style.display = details.style.display === 'none' ? 'block' : 'none';
     }
 }
 
@@ -616,12 +628,17 @@ function spin() {
     }, 60);
 
     // Send spin request (line is always 14 on server, only send bet)
-    console.log('[BET DEBUG] Sending bet:', bet, 'Type:', typeof bet);
+    // Include megaBoost flag if enabled (10x cost, 10x bonus entry chance)
+    console.log('[BET DEBUG] Sending bet:', bet, 'Type:', typeof bet, 'MegaBoost:', megaBoostEnabled);
+    const spinMessage = { bet };
+    if (megaBoostEnabled) {
+        spinMessage.megaBoost = true;
+    }
     send({
         type: '100000',
         data: [{
             subType: 100070,
-            subData: [{ opCode: 'SetBet', message: { bet } }]
+            subData: [{ opCode: 'SetBet', message: spinMessage }]
         }]
     });
 }
@@ -1174,8 +1191,7 @@ function buyBonus(key) {
     // Convert key to bonus type
     const bonusTypeMap = {
         'blackAndGold': 'BLACK_AND_GOLD',
-        'goldenHit': 'GOLDEN_HIT',
-        'megaBonus': 'MEGA_BONUS'
+        'goldenHit': 'GOLDEN_HIT'
     };
     const bonusType = bonusTypeMap[key];
     if (!bonusType) {

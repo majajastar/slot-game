@@ -214,10 +214,32 @@
                                 <div>Golden Hit</div>
                                 <small id="goldenHitCost">4 scatters • Loading...</small>
                             </button>
-                            <button class="btn-bonus btn-mega" onclick="buyBonus('megaBonus')">
-                                <div>🔥 Mega Bonus</div>
-                                <small id="megaBonusCost">Loading...</small>
-                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Mega Boost Mode Toggle -->
+                    <div class="mega-boost-section" id="megaBoostSection">
+                        <div class="mega-boost-header" onclick="toggleMegaBoostDetails()">
+                            <span class="mega-boost-icon">⚡</span>
+                            <span class="mega-boost-title">MEGA BOOST MODE</span>
+                            <label class="mega-boost-toggle" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="megaBoostToggle" onchange="toggleMegaBoost()">
+                                <span class="mega-boost-slider"></span>
+                            </label>
+                        </div>
+                        <div class="mega-boost-details" id="megaBoostDetails" style="display: none;">
+                            <div class="mega-boost-rule">
+                                <span class="mega-boost-label">Cost:</span>
+                                <span class="mega-boost-value" id="megaBoostCost">10x per spin</span>
+                            </div>
+                            <div class="mega-boost-rule">
+                                <span class="mega-boost-label">Bonus Entry:</span>
+                                <span class="mega-boost-value" id="megaBoostChance">10% (10x normal)</span>
+                            </div>
+                            <div class="mega-boost-rule">
+                                <span class="mega-boost-label">Effect:</span>
+                                <span class="mega-boost-desc">10x higher chance to trigger bonus games</span>
+                            </div>
                         </div>
                     </div>
                     
