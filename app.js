@@ -26,6 +26,10 @@ let fakeState = {
     bonusSpinsLeft: 0
 };
 
+// Mega Boost mode state
+let megaBoostEnabled = false;
+let megaBoostConfig = null; // Will be populated from backend
+
 // Current sticky frames (for bonus game persistence during spins)
 let currentStickyFrames = null;
 
@@ -151,6 +155,65 @@ function renderBonusInfo() {
             goldenHitCost.textContent = `${BONUSES.goldenHit.scatterCount} scatters • ${cost}`;
         }
     }
+    if (BONUSES.megaBonus) {
+        const megaBonusCost = document.getElementById('megaBonusCost');
+        if (megaBonusCost) {
+            const cost = BONUSES.megaBonus.buyPriceDisplay || (BONUSES.megaBonus.buyPriceMultiplier + 'x');
+            const entryMult = BONUSES.megaBonus.bonusEntryMultiplier || 10;
+            megaBonusCost.textContent = `BUY ONLY • ${cost} per spin • ${entryMult}x bonus entry`;
+        }
+    }
+    
+    // Update Mega Boost section from backend config
+    updateMegaBoostSection();
+}
+
+// Update Mega Boost section from backend data
+function updateMegaBoostSection() {
+    const megaBoostSection = document.getElementById('megaBoostSection');
+    if (!megaBoostSection) return;
+    
+    // Only show if megaBonus config exists from backend
+    if (BONUSES.megaBonus && BONUSES.megaBonus.megaBoostEnabled !== false) {
+        megaBoostSection.style.display = 'block';
+        
+        // Store config for later use
+        megaBoostConfig = {
+            cost: BONUSES.megaBonus.buyPriceMultiplier || 50,
+            entryMultiplier: BONUSES.megaBonus.bonusEntryMultiplier || 10,
+            baseEntryChance: BONUSES.megaBonus.baseEntryChance || 0.01
+        };
+        
+        // Update the details
+        const costEl = document.getElementById('megaBoostCost');
+        const chanceEl = document.getElementById('megaBoostChance');
+        
+        if (costEl) {
+            costEl.textContent = `${megaBoostConfig.cost}x per normal spin`;
+        }
+        if (chanceEl) {
+            const boostedChance = (megaBoostConfig.baseEntryChance * megaBoostConfig.entryMultiplier * 100).toFixed(1);
+            chanceEl.textContent = `${boostedChance}% (10x normal)`;
+        }
+    } else {
+        megaBoostSection.style.display = 'none';
+    }
+}
+
+// Toggle Mega Boost mode
+function toggleMegaBoost() {
+    const toggle = document.getElementById('megaBoostToggle');
+    const details = document.getElementById('megaBoostDetails');
+    
+    if (!toggle || !details) return;
+    
+    megaBoostEnabled = toggle.checked;
+    
+    // Show/hide details
+    details.style.display = megaBoostEnabled ? 'block' : 'none';
+    
+    // Log the state change
+    log(megaBoostEnabled ? '⚡ MEGA BOOST ENABLED! Bonus entry chance increased 10x!' : '⚡ Mega Boost disabled', megaBoostEnabled ? 'highlight' : 'info');
 }
 
 // Render frame configuration info from server
@@ -608,12 +671,17 @@ function spin() {
     }, 60);
 
     // Send spin request (line is always 14 on server, only send bet)
-    console.log('[BET DEBUG] Sending bet:', bet, 'Type:', typeof bet);
+    // Include megaBoost flag if enabled
+    console.log('[BET DEBUG] Sending bet:', bet, 'Type:', typeof bet, 'MegaBoost:', megaBoostEnabled);
+    const spinMessage = { bet };
+    if (megaBoostEnabled) {
+        spinMessage.megaBoost = true;
+    }
     send({
         type: '100000',
         data: [{
             subType: 100070,
-            subData: [{ opCode: 'SetBet', message: { bet } }]
+            subData: [{ opCode: 'SetBet', message: spinMessage }]
         }]
     });
 }
@@ -1012,9 +1080,12 @@ function showBonusBanner(bonusType, spinsLeft, totalWin = 0) {
     const spinsEl = document.getElementById('spinsLeft');
     const winEl = document.getElementById('bonusTotalWin');
 
-    const name = bonusType === 'BLACK_AND_GOLD' ? 'BLACK AND GOLD' : 'GOLDEN HIT';
+    const name = bonusType === 'BLACK_AND_GOLD' ? 'BLACK AND GOLD' : 
+                 bonusType === 'MEGA_BONUS' ? 'MEGA BONUS' : 'GOLDEN HIT';
     const desc = bonusType === 'BLACK_AND_GOLD'
         ? '10 free spins with sticky golden frames'
+        : bonusType === 'MEGA_BONUS'
+        ? '50x per spin with 10x bonus entry chance! 10 free spins'
         : 'Enhanced bonus with doubled multipliers';
 
     nameEl.textContent = name + ' BONUS!';
@@ -1071,8 +1142,9 @@ function showBonusTrigger(bonusType, grid, lineWins, totalWin) {
     const winEl = document.getElementById('triggerWin');
 
     // Set text based on bonus type
-    const bonusName = bonusType === 'BLACK_AND_GOLD' ? 'Black & Gold' : 'Golden Hit';
-    const scatterCount = bonusType === 'BLACK_AND_GOLD' ? '3' : '4';
+    const bonusName = bonusType === 'BLACK_AND_GOLD' ? 'Black & Gold' : 
+                      bonusType === 'MEGA_BONUS' ? 'Mega Bonus' : 'Golden Hit';
+    const scatterCount = bonusType === 'GOLDEN_HIT' ? '4' : '3';
     textEl.textContent = `${scatterCount} Scatters! You won ${bonusName} Bonus!`;
 
     // Render the triggering grid
@@ -1162,7 +1234,8 @@ function buyBonus(key) {
     // Convert key to bonus type
     const bonusTypeMap = {
         'blackAndGold': 'BLACK_AND_GOLD',
-        'goldenHit': 'GOLDEN_HIT'
+        'goldenHit': 'GOLDEN_HIT',
+        'megaBonus': 'MEGA_BONUS'
     };
     const bonusType = bonusTypeMap[key];
     if (!bonusType) {

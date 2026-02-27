@@ -908,10 +908,135 @@ body {
     cursor: not-allowed;
 }
 
+/* Mega Bonus button - special styling */
+.btn-bonus.btn-mega {
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    color: #fff;
+    border: 2px solid #ff9f43;
+    box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+    animation: megaPulse 2s infinite;
+}
+
+.btn-bonus.btn-mega:hover:not(:disabled) {
+    background: linear-gradient(45deg, #ff5722, #ff6b35);
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+    transform: scale(1.08);
+}
+
+@keyframes megaPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 107, 53, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 107, 53, 0.9); }
+}
+
 /* Hide buy bonus section during bonus game */
 .game-container.bonus-mode .buy-bonus-section {
     opacity: 0.3;
     pointer-events: none;
+}
+
+/* Mega Boost Section */
+.mega-boost-section {
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(247, 147, 30, 0.2));
+    border: 2px solid #ff6b35;
+    border-radius: 12px;
+    padding: 12px 15px;
+    margin: 10px 0;
+    animation: megaPulse 2s infinite;
+}
+
+.mega-boost-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.mega-boost-icon {
+    font-size: 1.2rem;
+}
+
+.mega-boost-title {
+    flex: 1;
+    font-weight: bold;
+    color: #ff9f43;
+    text-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
+}
+
+.mega-boost-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.mega-boost-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.mega-boost-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #444;
+    transition: .4s;
+    border-radius: 26px;
+}
+
+.mega-boost-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.mega-boost-toggle input:checked + .mega-boost-slider {
+    background-color: #ff6b35;
+}
+
+.mega-boost-toggle input:checked + .mega-boost-slider:before {
+    transform: translateX(24px);
+}
+
+.mega-boost-details {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.mega-boost-rule {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin: 8px 0;
+    font-size: 0.85rem;
+}
+
+.mega-boost-label {
+    color: #aaa;
+    flex-shrink: 0;
+}
+
+.mega-boost-value {
+    color: #ff9f43;
+    font-weight: bold;
+    text-align: right;
+}
+
+.mega-boost-desc {
+    color: #ddd;
+    font-size: 0.8rem;
+    text-align: right;
+    max-width: 60%;
 }
 
 /* Stats Bar */
