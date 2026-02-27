@@ -1017,13 +1017,15 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin: 8px 0;
+    margin: 10px 0;
     font-size: 0.85rem;
+    line-height: 1.4;
 }
 
 .mega-boost-label {
     color: #aaa;
     flex-shrink: 0;
+    font-weight: 500;
 }
 
 .mega-boost-value {
@@ -1032,11 +1034,17 @@ body {
     text-align: right;
 }
 
+.mega-boost-value.active {
+    color: #ff6b35;
+    text-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
+}
+
 .mega-boost-desc {
-    color: #ddd;
+    color: #ccc;
     font-size: 0.8rem;
     text-align: right;
-    max-width: 60%;
+    max-width: 65%;
+    line-height: 1.4;
 }
 
 /* Stats Bar */

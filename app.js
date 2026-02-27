@@ -154,6 +154,12 @@ function renderBonusInfo() {
             goldenHitCost.textContent = `${BONUSES.goldenHit.scatterCount} scatters • ${cost}`;
         }
     }
+    
+    // Update Mega Boost display from server config
+    if (BONUSES.megaBoost) {
+        // Initialize the full display
+        updateMegaBoostDisplay();
+    }
 }
 
 // Toggle Mega Boost mode on/off
@@ -162,7 +168,98 @@ function toggleMegaBoost() {
     if (!toggle) return;
 
     megaBoostEnabled = toggle.checked;
+    
+    // Update all Mega Boost display elements
+    updateMegaBoostDisplay();
+    
+    // Update main bet display to show boosted amount
+    updateBetDisplayWithBoost();
+    
     log(megaBoostEnabled ? '⚡ MEGA BOOST ENABLED! Spins cost 10x with 10x bonus entry chance!' : '⚡ Mega Boost disabled', megaBoostEnabled ? 'highlight' : 'info');
+}
+
+// Update all Mega Boost display elements based on current state
+function updateMegaBoostDisplay() {
+    const statusEl = document.getElementById('megaBoostStatus');
+    const costEl = document.getElementById('megaBoostCost');
+    const chanceEl = document.getElementById('megaBoostChance');
+    const descEl = document.getElementById('megaBoostDesc');
+    
+    const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
+    const entryMult = BONUSES.megaBoost?.bonusEntryMultiplier || 10;
+    const baseChance = BONUSES.megaBoost?.baseEntryChance || 0.01;
+    const boostedChance = (baseChance * entryMult * 100).toFixed(1);
+    
+    if (megaBoostEnabled) {
+        if (statusEl) {
+            statusEl.textContent = 'ENABLED ⚡';
+            statusEl.style.color = '#ff6b35';
+        }
+        if (costEl) costEl.textContent = `${boostMultiplier}x per spin`;
+        if (chanceEl) chanceEl.textContent = `${boostedChance}% (${entryMult}x normal)`;
+        if (descEl) descEl.textContent = 'Boost is ACTIVE! Each spin costs 10x more but has 10x higher chance to trigger bonus games. Perfect for bonus hunting!';
+    } else {
+        if (statusEl) {
+            statusEl.textContent = 'DISABLED';
+            statusEl.style.color = '#888';
+        }
+        if (costEl) costEl.textContent = '1x per spin (normal)';
+        if (chanceEl) chanceEl.textContent = `${(baseChance * 100).toFixed(1)}% (normal)`;
+        if (descEl) descEl.textContent = 'When enabled, each spin costs 10x more but has 10x higher chance to trigger Black & Gold or Golden Hit bonus games.';
+    }
+    
+    // Update the boosted bet display
+    updateMegaBoostBetDisplay();
+}
+
+// Update the boosted bet display in Mega Boost details
+function updateMegaBoostBetDisplay() {
+    const betDisplay = document.getElementById('betDisplay');
+    const megaBoostBetDisplay = document.getElementById('megaBoostBetDisplay');
+
+    if (!betDisplay || !megaBoostBetDisplay) return;
+
+    // Always use baseBet from dataset to avoid double multiplication
+    const baseBet = parseFloat(betDisplay.dataset.baseBet) || 10;
+    const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
+
+    if (megaBoostEnabled) {
+        const boostedBet = baseBet * boostMultiplier;
+        megaBoostBetDisplay.textContent = `$${formatBet(boostedBet)} (${boostMultiplier}x $${formatBet(baseBet)})`;
+        megaBoostBetDisplay.classList.add('active');
+    } else {
+        megaBoostBetDisplay.textContent = `$${formatBet(baseBet)} (${boostMultiplier}x = $${formatBet(baseBet * boostMultiplier)})`;
+        megaBoostBetDisplay.classList.remove('active');
+    }
+}
+
+// Update main bet display to show boosted amount when enabled
+function updateBetDisplayWithBoost() {
+    const betDisplay = document.getElementById('betDisplay');
+    if (!betDisplay) return;
+    
+    // Get current bet from display
+    let currentBet = parseFloat(betDisplay.dataset.baseBet || betDisplay.textContent.replace('$', '')) || 10;
+    
+    // Store base bet if not already stored
+    if (!betDisplay.dataset.baseBet) {
+        betDisplay.dataset.baseBet = currentBet;
+    } else {
+        currentBet = parseFloat(betDisplay.dataset.baseBet);
+    }
+    
+    const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
+    
+    if (megaBoostEnabled) {
+        const boostedBet = currentBet * boostMultiplier;
+        betDisplay.textContent = '$' + formatBet(boostedBet);
+        betDisplay.style.color = '#ff9f43';
+        betDisplay.style.textShadow = '0 0 10px rgba(255, 159, 67, 0.5)';
+    } else {
+        betDisplay.textContent = '$' + formatBet(currentBet);
+        betDisplay.style.color = '';
+        betDisplay.style.textShadow = '';
+    }
 }
 
 // Toggle Mega Boost details panel
@@ -458,6 +555,7 @@ function renderBetSelector() {
     CURRENT_BET_INDEX = 0;
     const defaultBet = BET_SIZE_LIST[0] || 10;
     display.textContent = '$' + formatBet(defaultBet);
+    display.dataset.baseBet = defaultBet; // Store base bet for boost calculation
 }
 
 function updateBetSizeListDisplay() {
@@ -544,14 +642,13 @@ function spin() {
     }
 
     const betDisplay = document.getElementById('betDisplay');
-    const betText = betDisplay?.textContent || '';
-    const betNumber = parseFloat(betText.replace('$', ''));
-
-    console.log('[BET DEBUG] Bet display text:', betText);
-    console.log('[BET DEBUG] Parsed bet number:', betNumber);
+    
+    // Use base bet if available (when boost is enabled), otherwise parse from display
+    let bet = parseFloat(betDisplay?.dataset.baseBet) || 10;
+    
+    console.log('[BET DEBUG] Base bet:', bet);
+    console.log('[BET DEBUG] Mega Boost enabled:', megaBoostEnabled);
     console.log('[BET DEBUG] BET_SIZE_LIST:', BET_SIZE_LIST);
-
-    let bet = betNumber || 10;
 
     // Validate bet is in allowed list, auto-correct if not
     if (!BET_SIZE_LIST.includes(bet)) {
@@ -559,21 +656,36 @@ function spin() {
         bet = getClosestBetSize(bet);
         // Update display to corrected value
         if (betDisplay) {
-            betDisplay.textContent = '$' + formatBet(bet);
+            betDisplay.dataset.baseBet = bet;
+            if (megaBoostEnabled) {
+                const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
+                betDisplay.textContent = '$' + formatBet(bet * boostMultiplier);
+            } else {
+                betDisplay.textContent = '$' + formatBet(bet);
+            }
         }
     }
     
-    console.log('[BET DEBUG] Final bet to send:', bet);
+    // Calculate the actual cost for balance deduction
+    const boostMultiplier = megaBoostEnabled ? (BONUSES.megaBoost?.costMultiplier || 10) : 1;
+    const actualCost = bet * boostMultiplier;
+    
+    console.log('[BET DEBUG] Final base bet to send:', bet);
+    console.log('[BET DEBUG] Actual cost (with boost):', actualCost);
 
     // Deduct bet from balance immediately for UX (only if not in bonus)
     if (!fakeState.inBonus) {
         const balanceEl = document.getElementById('balance');
         const currentBalance = parseFloat(balanceEl?.textContent?.replace('$', '').replace(/,/g, '')) || 0;
-        const newBalance = Math.max(0, currentBalance - bet);
+        const newBalance = Math.max(0, currentBalance - actualCost);
         if (balanceEl) {
             balanceEl.textContent = '$' + newBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
-        log('Spin: -$' + bet + ' (Balance: $' + newBalance + ')');
+        if (megaBoostEnabled) {
+            log('Mega Boost Spin: -$' + actualCost + ' (10x $' + bet + ') (Balance: $' + newBalance + ')', 'highlight');
+        } else {
+            log('Spin: -$' + bet + ' (Balance: $' + newBalance + ')');
+        }
     } else {
         log('Bonus Spin: Free! (Spins left: ' + fakeState.bonusSpinsLeft + ')');
     }
@@ -1177,8 +1289,27 @@ function changeBet(dir) {
 
     CURRENT_BET_INDEX = newIdx;
     const newBet = BET_SIZE_LIST[newIdx];
-    display.textContent = '$' + formatBet(newBet);
-    log('Bet changed to $' + formatBet(newBet) + ' [index=' + newIdx + ']');
+    
+    // Store base bet for boost calculation
+    display.dataset.baseBet = newBet;
+    
+    // Update display with boost if enabled
+    if (megaBoostEnabled) {
+        const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
+        const boostedBet = newBet * boostMultiplier;
+        display.textContent = '$' + formatBet(boostedBet);
+        display.style.color = '#ff9f43';
+        display.style.textShadow = '0 0 10px rgba(255, 159, 67, 0.5)';
+    } else {
+        display.textContent = '$' + formatBet(newBet);
+        display.style.color = '';
+        display.style.textShadow = '';
+    }
+    
+    // Update the boost details panel
+    updateMegaBoostBetDisplay();
+    
+    log('Bet changed to $' + formatBet(newBet) + (megaBoostEnabled ? ' (Boosted: $' + formatBet(newBet * (BONUSES.megaBoost?.costMultiplier || 10)) + ')' : '') + ' [index=' + newIdx + ']');
 }
 
 function buyBonus(key) {
