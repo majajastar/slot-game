@@ -16,19 +16,23 @@ const CONFIG = {
     gameTypeId: 'theluxe',
     currency: 'USD',
     
-    // Symbol emojis for display
+    // Symbol emojis for display (frontend decides icons)
     symbols: {
         'WILD': '💎',
         'SCATTER': '⭐',
+        // High payout symbols
         'SYM_1': '👑',
         'SYM_2': '💍',
         'SYM_3': '🏆',
         'SYM_4': '💵',
-        'SYM_5': '🎲',
-        'SYM_6': '🎯',
-        'SYM_7': '🎰',
-        'SYM_8': '🪙',
-        'SYM_9': '💠'
+        // Low payout symbols - Poker
+        'SYM_5': '♠️',
+        'SYM_6': '♥️',
+        'SYM_7': '♦️',
+        'SYM_8': '♣️',
+        'SYM_9': '🎴',
+        // Collect symbol
+        'COLLECT': '🍀'
     },
     
     // Grid dimensions
