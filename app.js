@@ -708,10 +708,7 @@ function spin() {
     btn.textContent = '...';
 
     // Clear previous wins
-    document.querySelectorAll('.reel-cell').forEach(c => {
-        c.classList.remove('winning');
-        c.textContent = '◯';
-    });
+
     document.getElementById('winAmount').classList.add('hidden');
     document.getElementById('winDetails').textContent = '';
     document.getElementById('winWays').innerHTML = '<div class="no-win">Spin to see your wins...</div>';
