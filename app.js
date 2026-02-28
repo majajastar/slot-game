@@ -84,15 +84,27 @@ function renderPaytable() {
     `;
 
     // Data rows
-    html += symbols.map(([id, s]) => `
-        <div class="paytable-row ${id === 'WILD' ? 'wild' : ''}">
-            <span class="paytable-icon">${s.display || '?'}</span>
-            <span class="paytable-name">${s.name || id}${id === 'WILD' ? ' ⭐' : ''}</span>
-            <span class="paytable-payout high">${s.payout?.[5] || 0}x</span>
-            <span class="paytable-payout">${s.payout?.[4] || 0}x</span>
-            <span class="paytable-payout">${s.payout?.[3] || 0}x</span>
-        </div>
-    `).join('');
+    html += symbols.map(([id, s]) => {
+        // Special handling for Collect symbol (bonus only)
+        if (id === 'COLLECT') {
+            return `
+                <div class="paytable-row collect">
+                    <span class="paytable-icon">${s.display || '?'}</span>
+                    <span class="paytable-name">${s.name || id} <small>(Bonus)</small></span>
+                    <span class="paytable-payout" style="grid-column: span 3; text-align: center; color: #ff9f43;">Sum of all frames + jackpots</span>
+                </div>
+            `;
+        }
+        return `
+            <div class="paytable-row ${id === 'WILD' ? 'wild' : ''}">
+                <span class="paytable-icon">${s.display || '?'}</span>
+                <span class="paytable-name">${s.name || id}${id === 'WILD' ? ' ⭐' : ''}</span>
+                <span class="paytable-payout high">${s.payout?.[5] || 0}x</span>
+                <span class="paytable-payout">${s.payout?.[4] || 0}x</span>
+                <span class="paytable-payout">${s.payout?.[3] || 0}x</span>
+            </div>
+        `;
+    }).join('');
 
     container.innerHTML = html;
 }

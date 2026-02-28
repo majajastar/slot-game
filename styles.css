@@ -385,6 +385,13 @@ body {
     border-radius: 0 4px 4px 0;
 }
 
+.paytable-row.collect {
+    background: rgba(255, 159, 67, 0.15);
+    border-left: 3px solid #ff9f43;
+    padding-left: 2px;
+    border-radius: 0 4px 4px 0;
+}
+
 .paytable-icon {
     font-size: 1rem;
     text-align: center;
