@@ -83,13 +83,14 @@ function renderPaytable() {
         </div>
     `;
 
-    // Data rows
+    // Data rows - use CONFIG.symbols for display (frontend controls icons)
     html += symbols.map(([id, s]) => {
+        const display = CONFIG.symbols[id] || '?';
         // Special handling for Collect symbol (bonus only)
         if (id === 'COLLECT') {
             return `
                 <div class="paytable-row collect">
-                    <span class="paytable-icon">${s.display || '?'}</span>
+                    <span class="paytable-icon">${display}</span>
                     <span class="paytable-name">${s.name || id} <small>(Bonus)</small></span>
                     <span class="paytable-payout" style="grid-column: span 3; text-align: center; color: #ff9f43;">Sum of all frames + jackpots</span>
                 </div>
@@ -97,7 +98,7 @@ function renderPaytable() {
         }
         return `
             <div class="paytable-row ${id === 'WILD' ? 'wild' : ''}">
-                <span class="paytable-icon">${s.display || '?'}</span>
+                <span class="paytable-icon">${display}</span>
                 <span class="paytable-name">${s.name || id}${id === 'WILD' ? ' ⭐' : ''}</span>
                 <span class="paytable-payout high">${s.payout?.[5] || 0}x</span>
                 <span class="paytable-payout">${s.payout?.[4] || 0}x</span>
@@ -716,8 +717,8 @@ function spin() {
     // Reset payline highlights
     renderPaylines();
 
-    // Spin animation
-    const displays = Object.keys(SYMBOLS).length > 0 ? Object.values(SYMBOLS).map(s => s.display) : ['💎', '👑', '💍', '🏆', '💵'];
+    // Spin animation - use CONFIG.symbols for display (frontend controls icons)
+    const displays = Object.values(CONFIG.symbols);
     let spins = 0;
     const animInterval = setInterval(() => {
         document.querySelectorAll('.reel-cell').forEach((c, idx) => {
@@ -956,19 +957,10 @@ function getJackpotColor(name) {
 }
 
 function renderGrid(grid, frames) {
-    // Ensure SYMBOLS is loaded, fallback to default if not
-    const symbolMap = Object.keys(SYMBOLS).length > 0 ? SYMBOLS : {
-        'WILD': { display: '💎' }, 'SCATTER': { display: '⭐' },
-        'SYM_1': { display: '👑' }, 'SYM_2': { display: '💍' },
-        'SYM_3': { display: '🏆' }, 'SYM_4': { display: '💵' },
-        'SYM_5': { display: '🎲' }, 'SYM_6': { display: '🎯' },
-        'SYM_7': { display: '🎰' }, 'SYM_8': { display: '🪙' },
-        'SYM_9': { display: '💠' }
+    // Use CONFIG.symbols for display (frontend controls icons, not backend)
+    const getSymbolDisplay = (symbolId) => {
+        return CONFIG.symbols[symbolId] || symbolId;
     };
-
-    // DEBUG: Check symbol mapping
-    console.log('[FRONTEND DEBUG] SYMBOLS loaded:', Object.keys(SYMBOLS).length > 0);
-    console.log('[FRONTEND DEBUG] Symbol map keys:', Object.keys(symbolMap));
 
     for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 5; c++) {
@@ -976,14 +968,9 @@ function renderGrid(grid, frames) {
             if (!cell) continue;
 
             const symbol = grid[r][c];
-            const symbolData = symbolMap[symbol];
+            const display = getSymbolDisplay(symbol);
 
-            // DEBUG: Log symbol mapping
-            if (r === 0 && c === 0) {
-                console.log(`[FRONTEND DEBUG] Raw symbol: "${symbol}" -> Display: "${symbolData?.display || symbol}"`);
-            }
-
-            let html = symbolData?.display || symbol;
+            let html = display;
             
             // Add frame overlay if present (only during bonus)
             if (frames && Array.isArray(frames) && frames[r] && frames[r][c] && frames[r][c].value > 0) {
@@ -1059,7 +1046,7 @@ function showWins(lineWins, totalWin) {
         lineWins.forEach((lw, idx) => {
             const [lineIdx, symbol, count, win] = lw.info;
             const symbolName = SYMBOLS[symbol]?.name || symbol;
-            const symbolDisplay = SYMBOLS[symbol]?.display || symbol;
+            const symbolDisplay = CONFIG.symbols[symbol] || symbol;
             const fc = lw.frameContribution;
             
             let boostInfo = '';
@@ -1231,7 +1218,7 @@ function showBonusTrigger(bonusType, grid, lineWins, totalWin) {
         for (let c = 0; c < 5; c++) {
             const symbol = grid[r][c];
             const isScatter = symbol === 'SCATTER';
-            const display = SYMBOLS[symbol]?.display || symbol;
+            const display = CONFIG.symbols[symbol] || symbol;
             gridHtml += `<div class="trigger-cell ${isScatter ? 'scatter' : ''}">${display}</div>`;
         }
     }

@@ -26,11 +26,11 @@ const CONFIG = {
         'SYM_3': '🏆',
         'SYM_4': '💵',
         // Low payout symbols - Poker
-        'SYM_5': '♠️',
-        'SYM_6': '♥️',
-        'SYM_7': '♦️',
-        'SYM_8': '♣️',
-        'SYM_9': '🎴',
+        'SYM_5': '🎴',
+        'SYM_6': '♠️',
+        'SYM_7': '♥️',
+        'SYM_8': '♦️',
+        'SYM_9': '♣️',
         // Collect symbol
         'COLLECT': '🍀'
     },
