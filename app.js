@@ -70,7 +70,7 @@ function renderPaytable() {
         return;
     }
 
-    const symbols = Object.entries(SYMBOLS);
+    const symbols = Object.entries(SYMBOLS).filter(([id]) => id !== 'SCATTER');
 
     // Header
     let html = `
@@ -83,9 +83,9 @@ function renderPaytable() {
         </div>
     `;
 
-    // Data rows - use SYMBOLS from backend (includes display property)
+    // Data rows - use CONFIG.symbols for display (frontend controls icons)
     html += symbols.map(([id, s]) => {
-        const display = s.display || '?';
+        const display = CONFIG.symbols[id] || '?';
         // Special handling for Collect symbol (bonus only)
         if (id === 'COLLECT') {
             return `
@@ -728,8 +728,7 @@ function spin() {
 
     // Spin animation - use CONFIG.symbols for display (frontend controls icons)
     const displays = Object.values(CONFIG.symbols);
-    let spins = 0;
-    const animInterval = setInterval(() => {
+    window.spinAnimInterval = setInterval(() => {
         document.querySelectorAll('.reel-cell').forEach((c, idx) => {
             const r = Math.floor(idx / 5);
             const col = idx % 5;
@@ -754,8 +753,6 @@ function spin() {
                 c.innerHTML += `<div class="frame-overlay jackpot-frame" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
             }
         });
-        spins++;
-        if (spins >= 10) clearInterval(animInterval);
     }, 60);
 
     // Send spin request (line is always 14 on server, only send bet)
@@ -782,20 +779,20 @@ function getClosestBetSize(bet) {
 
 function handleSpinResult(data) {
     console.log('[DEBUG] handleSpinResult received:', JSON.stringify(data, null, 2));
-    
+
     try {
         const betInfo = data.betInfo?.[0];
         console.log('[DEBUG] betInfo:', JSON.stringify(betInfo, null, 2));
-        
+
         if (!betInfo) {
             console.error('No betInfo in result', data);
             resetSpin();
             return;
         }
-        
+
         const result = betInfo.gameResult;
         console.log('[DEBUG] gameResult:', JSON.stringify(result, null, 2));
-        
+
         if (!result) {
             console.error('No gameResult in betInfo', betInfo);
             resetSpin();
@@ -867,6 +864,12 @@ function handleSpinResult(data) {
             renderGrid(result.grid, result.stickyFrames);
         }
         
+        // Stop spin animation
+        if (window.spinAnimInterval) {
+            clearInterval(window.spinAnimInterval);
+            window.spinAnimInterval = null;
+        }
+
         // Show wins
         const winWaysEl = document.getElementById('winWays');
         if (winAmount > 0 && result.lineWins?.length > 0) {
