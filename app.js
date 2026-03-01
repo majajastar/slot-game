@@ -70,7 +70,7 @@ function renderPaytable() {
         return;
     }
 
-    const symbols = Object.entries(SYMBOLS).filter(([id]) => id !== 'SCATTER');
+    const symbols = Object.entries(SYMBOLS);
 
     // Header
     let html = `
@@ -83,9 +83,9 @@ function renderPaytable() {
         </div>
     `;
 
-    // Data rows - use CONFIG.symbols for display (frontend controls icons)
+    // Data rows - use SYMBOLS from backend (includes display property)
     html += symbols.map(([id, s]) => {
-        const display = CONFIG.symbols[id] || '?';
+        const display = s.display || '?';
         // Special handling for Collect symbol (bonus only)
         if (id === 'COLLECT') {
             return `
@@ -96,10 +96,19 @@ function renderPaytable() {
                 </div>
             `;
         }
+        if (id === 'SCATTER') {
+            return `
+                <div class="paytable-row collect">
+                    <span class="paytable-icon">${display}</span>
+                    <span class="paytable-name">${s.name || id} <small>(Bonus)</small></span>
+                    <span class="paytable-payout" style="grid-column: span 3; text-align: center; color: #ff9f43;">3+ to trigger bonus </span>
+                </div>
+            `;
+        }
         return `
             <div class="paytable-row ${id === 'WILD' ? 'wild' : ''}">
                 <span class="paytable-icon">${display}</span>
-                <span class="paytable-name">${s.name || id}${id === 'WILD' ? ' ⭐' : ''}</span>
+                <span class="paytable-name">${s.name || id}</span>
                 <span class="paytable-payout high">${s.payout?.[5] || 0}x</span>
                 <span class="paytable-payout">${s.payout?.[4] || 0}x</span>
                 <span class="paytable-payout">${s.payout?.[3] || 0}x</span>
@@ -157,7 +166,7 @@ function renderBonusInfo() {
         const blackAndGoldCost = document.getElementById('blackAndGoldCost');
         if (blackAndGoldCost) {
             const cost = BONUSES.blackAndGold.buyPriceDisplay || (BONUSES.blackAndGold.buyPriceMultiplier + 'x');
-            blackAndGoldCost.textContent = `${BONUSES.blackAndGold.scatterCount} scatters • ${cost}`;
+            blackAndGoldCost.textContent = `${BONUSES.blackAndGold.scatterCount} scatters ${cost}`;
         }
     }
     if (BONUSES.goldenHit) {
@@ -198,9 +207,9 @@ function updateMegaBoostDisplay() {
     const chanceEl = document.getElementById('megaBoostChance');
     const descEl = document.getElementById('megaBoostDesc');
     
-    const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
+    const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 5;
     const entryMult = BONUSES.megaBoost?.bonusEntryMultiplier || 10;
-    const baseChance = BONUSES.megaBoost?.baseEntryChance || 0.01;
+    const baseChance = BONUSES.bonusEntryChance || 0.01;
     const boostedChance = (baseChance * entryMult * 100).toFixed(1);
     
     if (megaBoostEnabled) {
@@ -210,7 +219,7 @@ function updateMegaBoostDisplay() {
         }
         if (costEl) costEl.textContent = `${boostMultiplier}x per spin`;
         if (chanceEl) chanceEl.textContent = `${boostedChance}% (${entryMult}x normal)`;
-        if (descEl) descEl.textContent = 'Boost is ACTIVE! Each spin costs 10x more but has 10x higher chance to trigger bonus games. Perfect for bonus hunting!';
+        if (descEl) descEl.textContent = `Boost is ACTIVE! Each spin costs ${boostMultiplier}x more but has ${entryMult}x higher chance to trigger bonus games. Perfect for bonus hunting!`;
     } else {
         if (statusEl) {
             statusEl.textContent = 'DISABLED';
@@ -218,7 +227,7 @@ function updateMegaBoostDisplay() {
         }
         if (costEl) costEl.textContent = '1x per spin (normal)';
         if (chanceEl) chanceEl.textContent = `${(baseChance * 100).toFixed(1)}% (normal)`;
-        if (descEl) descEl.textContent = 'When enabled, each spin costs 10x more but has 10x higher chance to trigger Black & Gold or Golden Hit bonus games.';
+        if (descEl) descEl.textContent = `When enabled, each spin costs ${boostMultiplier}x more but has ${entryMult}x higher chance to trigger Black & Gold or Golden Hit bonus games.`;
     }
     
     // Update the boosted bet display
@@ -848,11 +857,13 @@ function handleSpinResult(data) {
         if (totalWinEl) totalWinEl.textContent = '$' + fakeState.totalWin.toLocaleString();
         
         // Render grid with frames (golden/jackpot frames can appear in any spin)
+        console.log(`@@@@@@@@@@@ renderGridAAA`)
         if (result.grid) {
             // Store sticky frames for bonus game persistence
             if (result.stickyFrames) {
                 currentStickyFrames = result.stickyFrames;
             }
+            console.log(`@@@@@@@@@@@ renderGrid`)
             renderGrid(result.grid, result.stickyFrames);
         }
         
@@ -866,7 +877,6 @@ function handleSpinResult(data) {
     
     // Handle bonus game
     const spinsLeft = result.bonusGameState?.spinsLeft;
-    console.log(`@@@@@@@@ spinsLeft = ${spinsLeft}`)
     if (result.isBonus && spinsLeft !== undefined) {
         if (!fakeState.inBonus && spinsLeft > 0) {
             // Bonus just triggered
