@@ -17,22 +17,23 @@ const CONFIG = {
     currency: 'USD',
     
     // Symbol emojis for display (frontend decides icons)
+    // Symbol IDs: WILD=1, SCATTER=26, High=201-205, Low=101-104, COLLECT=777
     symbols: {
-        'WILD': '💎',
-        'SCATTER': '⭐',
-        // High payout symbols
-        'SYM_1': '👑',
-        'SYM_2': '💍',
-        'SYM_3': '🏆',
-        'SYM_4': '💵',
-        // Low payout symbols - Poker
-        'SYM_5': '🎴',
-        'SYM_6': '♠️',
-        'SYM_7': '♥️',
-        'SYM_8': '♦️',
-        'SYM_9': '♣️',
+        '1': '💎',      // WILD
+        '26': '⭐',     // SCATTER
+        // High payout symbols (201-205)
+        '201': '👑',
+        '202': '💍',
+        '203': '🏆',
+        '204': '💵',
+        '205': '🎴',
+        // Low payout symbols (101-104)
+        '101': '♠️',
+        '102': '♥️',
+        '103': '♦️',
+        '104': '♣️',
         // Collect symbol
-        'COLLECT': '🍀'
+        '777': '🍀'
     },
     
     // Grid dimensions
