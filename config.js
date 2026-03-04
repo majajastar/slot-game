@@ -20,7 +20,7 @@ const CONFIG = {
     // Symbol IDs: WILD=1, SCATTER=26, High=201-205, Low=101-104, COLLECT=777
     symbols: {
         '1': '💎',      // WILD
-        '26': '⭐',     // SCATTER
+        '2': '⭐',     // SCATTER
         // High payout symbols (201-205)
         '201': '👑',
         '202': '💍',
