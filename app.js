@@ -854,13 +854,11 @@ function handleSpinResult(data) {
         if (totalWinEl) totalWinEl.textContent = '$' + fakeState.totalWin.toLocaleString();
         
         // Render grid with frames (golden/jackpot frames can appear in any spin)
-        console.log(`@@@@@@@@@@@ renderGridAAA`)
         if (result.grid) {
             // Store sticky frames for bonus game persistence
             if (result.stickyFrames) {
                 currentStickyFrames = result.stickyFrames;
             }
-            console.log(`@@@@@@@@@@@ renderGrid`)
             renderGrid(result.grid, result.stickyFrames);
         }
         
