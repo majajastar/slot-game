@@ -4,8 +4,7 @@
   "description": "TheLuxe Slot Game Frontend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "fake-server": "node fake-server.js"
+    "start": "node server.js"
   },
   "keywords": [
     "slot",

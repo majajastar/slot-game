@@ -20,6 +20,7 @@ A modern HTML5 frontend for TheLuxe slot game with WebSocket connection to AWS L
 
 - Node.js 14+
 - Modern browser (Chrome, Firefox, Safari, Edge)
+- AWS backend credentials
 
 ### Installation
 
@@ -27,32 +28,31 @@ A modern HTML5 frontend for TheLuxe slot game with WebSocket connection to AWS L
 npm install
 ```
 
-### Run with Fake Server (Local Testing)
+### Configuration
+
+Update `config.js` with your backend credentials:
+
+```javascript
+const CONFIG = {
+    sidUrl: 'https://your-api.execute-api.region.amazonaws.com/mock-wallet/sid',
+    wsBaseUrl: 'wss://your-websocket.execute-api.region.amazonaws.com/uat',
+    authToken: 'your-auth-token',
+    testUuid: 'your-uuid',
+    testUserId: 'your-user-id',
+    apiSecret: 'your-api-secret',
+    operatorId: 'op001',
+    gameTypeId: 'theluxe',
+    currency: 'USD'
+};
+```
+
+### Run
 
 ```bash
-# Terminal 1: Start fake server
-node fake-server.js
-
-# Terminal 2: Start frontend
-node server.js
+npm start
 ```
 
 Then open http://localhost:3000 in your browser.
-
-### Run with Production Backend
-
-Update `config.js` with your credentials:
-```javascript
-authToken: 'your-auth-token',
-testUuid: 'your-uuid',
-testUserId: 'your-user-id',
-apiSecret: 'your-api-secret'
-```
-
-Then start the frontend:
-```bash
-node server.js
-```
 
 ## Symbol IDs
 
@@ -81,8 +81,7 @@ slot-game/
 ├── ws-client.js        # WebSocket client wrapper
 ├── config.js           # Configuration and constants
 ├── API.md              # Complete API documentation
-├── fake-server.js      # Local testing server
-├── server.js           # Production HTTP server
+├── server.js           # HTTP server
 └── package.json        # NPM configuration
 ```
 
@@ -116,22 +115,6 @@ See [API.md](API.md) for complete documentation.
 ```
 
 ## Development
-
-### Testing Locally
-
-Use the fake server for development without AWS:
-
-```bash
-node fake-server.js  # Runs on port 3001 (HTTP) and 3002 (WebSocket)
-```
-
-The fake server simulates:
-- Login/authentication
-- Room joining
-- Spin results
-- Bonus games
-- Mega Boost mode
-- Balance updates
 
 ### Adding New Features
 
@@ -175,7 +158,6 @@ Required endpoints:
 
 ```bash
 npm start              # Start frontend server (port 3000)
-node fake-server.js    # Start fake backend (ports 3001/3002)
 node server.js         # Start production server
 ```
 
