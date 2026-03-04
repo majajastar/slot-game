@@ -376,6 +376,413 @@ send({
 
 ---
 
+## WebSocket Connection Setup
+
+### Complete Connection Flow
+
+Full example of connecting to the production server:
+
+```javascript
+// ==========================================
+// 1. CONFIGURATION
+// ==========================================
+
+const CONFIG = {
+    // Production server endpoints
+    sidUrl: 'https://lbucmxb2ke.execute-api.ap-southeast-1.amazonaws.com/mock-wallet/sid',
+    wsBaseUrl: 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat',
+    
+    // Authentication credentials
+    authToken: 'your-auth-token-here',
+    testUuid: 'your-uuid-here',
+    testUserId: 'your-user-id',
+    apiSecret: 'your-api-secret',
+    operatorId: 'op001',
+    
+    // Game settings
+    gameTypeId: 'theluxe',
+    currency: 'USD'
+};
+
+// ==========================================
+// 2. WEBSOCKET URL BUILDER
+// ==========================================
+
+function getWebSocketUrl(token, lang = 'en') {
+    return `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+}
+
+// ==========================================
+// 3. AUTHENTICATION (Get SID)
+// ==========================================
+
+async function authenticate() {
+    const response = await fetch(CONFIG.sidUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Api-Secret': CONFIG.apiSecret
+        },
+        body: JSON.stringify({
+            authToken: CONFIG.authToken,
+            uuid: CONFIG.testUuid,
+            userId: CONFIG.testUserId,
+            operatorId: CONFIG.operatorId,
+            gameTypeId: CONFIG.gameTypeId,
+            currency: CONFIG.currency
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Authentication failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.token; // Returns WebSocket token
+}
+
+// ==========================================
+// 4. WEBSOCKET CLIENT CLASS
+// ==========================================
+
+class TheLuxeWebSocket {
+    constructor() {
+        this.socket = null;
+        this.isConnected = false;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.messageQueue = [];
+        this.pingInterval = null;
+        
+        // Event callbacks
+        this.callbacks = {
+            onConnect: null,
+            onDisconnect: null,
+            onError: null,
+            onLogin: null,
+            onJoinRoom: null,
+            onSyncRoom: null,
+            onSetBet: null
+        };
+    }
+    
+    // Set event handlers
+    on(event, callback) {
+        if (this.callbacks.hasOwnProperty('on' + event)) {
+            this.callbacks['on' + event] = callback;
+        }
+    }
+    
+    // Connect to WebSocket
+    async connect(token, lang = 'en') {
+        const wsUrl = getWebSocketUrl(token, lang);
+        
+        return new Promise((resolve, reject) => {
+            this.socket = new WebSocket(wsUrl);
+            
+            this.socket.onopen = () => {
+                console.log('[WS] Connected');
+                this.isConnected = true;
+                this.reconnectAttempts = 0;
+                this.startPingInterval();
+                
+                if (this.callbacks.onConnect) {
+                    this.callbacks.onConnect();
+                }
+                
+                // Auto-initiate login flow
+                this.initiateLoginFlow();
+                resolve();
+            };
+            
+            this.socket.onmessage = (event) => {
+                this.handleMessage(event.data);
+            };
+            
+            this.socket.onerror = (error) => {
+                console.error('[WS] Error:', error);
+                if (this.callbacks.onError) {
+                    this.callbacks.onError(error);
+                }
+                reject(error);
+            };
+            
+            this.socket.onclose = () => {
+                console.log('[WS] Disconnected');
+                this.isConnected = false;
+                this.stopPingInterval();
+                
+                if (this.callbacks.onDisconnect) {
+                    this.callbacks.onDisconnect();
+                }
+                
+                // Attempt reconnection
+                this.attemptReconnect();
+            };
+        });
+    }
+    
+    // Initiate login flow after connection
+    initiateLoginFlow() {
+        // Step 1: Login
+        this.sendLogin();
+        
+        // Step 2: Join room (after login response)
+        this.on('Login', () => {
+            this.sendJoinRoom();
+        });
+        
+        // Step 3: Sync room info (after join room response)
+        this.on('JoinRoom', () => {
+            this.sendSyncRoomInfo();
+            // Start periodic sync
+            this.startPeriodicSync();
+        });
+    }
+    
+    // Send message
+    send(type, data) {
+        const message = JSON.stringify({ type, data });
+        
+        if (this.isConnected && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(message);
+            return true;
+        } else {
+            console.warn('[WS] Not connected, queuing message');
+            this.messageQueue.push({ type, data });
+            return false;
+        }
+    }
+    
+    // Process queued messages after connection
+    flushMessageQueue() {
+        while (this.messageQueue.length > 0 && this.isConnected) {
+            const { type, data } = this.messageQueue.shift();
+            this.send(type, data);
+        }
+    }
+    
+    // Handle incoming messages
+    handleMessage(data) {
+        try {
+            const message = JSON.parse(data);
+            
+            if (message.errCode !== 0) {
+                console.error('[WS] Server error:', message.errCode, message);
+                if (this.callbacks.onError) {
+                    this.callbacks.onError(message);
+                }
+                return;
+            }
+            
+            const { type, data: msgData } = message.vals || {};
+            
+            switch (type) {
+                case 1: // Login response
+                    this.handleLogin(msgData);
+                    break;
+                case 100000: // Game messages
+                    this.handleGameMessage(msgData);
+                    break;
+                default:
+                    console.warn('[WS] Unknown message type:', type);
+            }
+        } catch (e) {
+            console.error('[WS] Failed to parse message:', e);
+        }
+    }
+    
+    // Message handlers
+    handleLogin(data) {
+        console.log('[WS] Login success:', data.sessionId);
+        if (this.callbacks.onLogin) {
+            this.callbacks.onLogin(data);
+        }
+    }
+    
+    handleGameMessage(data) {
+        const subType = data.subType;
+        const subData = data.subData?.[0];
+        
+        switch (subType) {
+            case 100005: // Join room response
+                if (this.callbacks.onJoinRoom) {
+                    this.callbacks.onJoinRoom(subData);
+                }
+                break;
+            case 100071: // Sync room / Set bet response
+                if (subData?.opCode === 'SyncRoomInfo') {
+                    if (this.callbacks.onSyncRoom) {
+                        this.callbacks.onSyncRoom(subData);
+                    }
+                } else if (subData?.opCode === 'SetBet') {
+                    if (this.callbacks.onSetBet) {
+                        this.callbacks.onSetBet(subData);
+                    }
+                }
+                break;
+        }
+    }
+    
+    // API Methods
+    sendLogin() {
+        return this.send('0', [{ subType: 0 }]);
+    }
+    
+    sendJoinRoom() {
+        return this.send('100000', [{ subType: 100004 }]);
+    }
+    
+    sendSyncRoomInfo() {
+        return this.send('100000', [{
+            subType: 100070,
+            subData: [{ opCode: 'SyncRoomInfo' }]
+        }]);
+    }
+    
+    sendSetBet(bet, options = {}) {
+        const message = { bet, ...options };
+        return this.send('100000', [{
+            subType: 100070,
+            subData: [{ opCode: 'SetBet', message }]
+        }]);
+    }
+    
+    // Keep-alive ping
+    startPingInterval() {
+        this.stopPingInterval();
+        this.pingInterval = setInterval(() => {
+            if (this.isConnected) {
+                this.sendSyncRoomInfo();
+            }
+        }, 20000); // Every 20 seconds
+    }
+    
+    stopPingInterval() {
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+            this.pingInterval = null;
+        }
+    }
+    
+    // Periodic sync for state updates
+    startPeriodicSync() {
+        // Sync every 30 seconds to keep balance/state updated
+        this.syncInterval = setInterval(() => {
+            if (this.isConnected) {
+                this.sendSyncRoomInfo();
+            }
+        }, 30000);
+    }
+    
+    // Reconnection logic
+    attemptReconnect() {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.error('[WS] Max reconnection attempts reached');
+            return;
+        }
+        
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+        
+        console.log(`[WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+        
+        setTimeout(async () => {
+            try {
+                const token = await authenticate();
+                await this.connect(token);
+            } catch (error) {
+                console.error('[WS] Reconnection failed:', error);
+            }
+        }, delay);
+    }
+    
+    // Disconnect
+    disconnect() {
+        this.stopPingInterval();
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        if (this.socket) {
+            this.socket.close();
+        }
+    }
+}
+
+// ==========================================
+// 5. USAGE EXAMPLE
+// ==========================================
+
+async function initializeGame() {
+    const client = new TheLuxeWebSocket();
+    
+    // Set up event handlers
+    client.on('Connect', () => {
+        console.log('Connected to server');
+    });
+    
+    client.on('Login', (data) => {
+        console.log('Logged in:', data.sessionId);
+    });
+    
+    client.on('JoinRoom', (data) => {
+        console.log('Joined room:', data.roomId);
+        // Store game configuration
+        const config = data.betInfo?.[0];
+        window.gameConfig = config;
+    });
+    
+    client.on('SyncRoom', (data) => {
+        console.log('Balance:', data.roomInfo?.balance);
+        // Update UI with balance
+        updateBalanceDisplay(data.roomInfo?.balance);
+    });
+    
+    client.on('SetBet', (data) => {
+        const result = data.betInfo?.[0]?.gameResult;
+        if (result) {
+            handleSpinResult(result);
+        }
+    });
+    
+    client.on('Error', (error) => {
+        console.error('Connection error:', error);
+        showErrorMessage('Connection lost. Retrying...');
+    });
+    
+    client.on('Disconnect', () => {
+        console.log('Disconnected from server');
+    });
+    
+    try {
+        // Step 1: Authenticate to get token
+        console.log('Authenticating...');
+        const token = await authenticate();
+        
+        // Step 2: Connect WebSocket
+        console.log('Connecting WebSocket...');
+        await client.connect(token);
+        
+        // Connection established and login flow initiated automatically
+        console.log('Game ready!');
+        
+        return client;
+    } catch (error) {
+        console.error('Failed to initialize:', error);
+        throw error;
+    }
+}
+
+// Initialize
+initializeGame().then(client => {
+    // Now you can play
+    // Spin: client.sendSetBet(10)
+    // Buy Bonus: client.sendSetBet(10, { forceBonusType: 'BLACK_AND_GOLD' })
+});
+```
+
+---
+
 ## WebSocket Client Methods
 
 Using the `TheLuxeWSClient` class from `ws-client.js`:
