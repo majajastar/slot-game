@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node src/websocket/cli.js"
+    "fake-server": "node fake-server.js"
   },
   "keywords": [
     "slot",

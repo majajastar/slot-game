@@ -1,153 +1,183 @@
 # TheLuxe Slot Game - Frontend
 
-A modern HTML5 frontend for TheLuxe slot game with WebSocket connection to the game server.
+A modern HTML5 frontend for TheLuxe slot game with WebSocket connection to AWS Lambda backend.
 
 ## Features
 
 - 🎰 **4x5 Slot Grid** - Beautiful animated slot machine interface
 - 💰 **Real-time Balance** - Live balance updates from server
-- 🎯 **Configurable Betting** - Adjustable bet amount (1-100) and lines (1-14)
+- 🎯 **Multiple Bet Sizes** - Configurable betting (5, 10, 20, 40, 50)
+- 🎁 **Buy Bonus** - Purchase Black & Gold (80x) or Golden Hit (200x) bonuses
+- ⚡ **Mega Boost** - 10x cost mode with 10x bonus entry chance
 - ✨ **Win Animations** - Visual highlights for winning combinations
-- 📊 **Line Win Details** - Shows which paylines won and how much
-- 📝 **Message Logs** - Real-time WebSocket message logging
-- 🎨 **Modern UI** - Dark theme with gold accents
+- 🖼️ **Sticky Frames** - Bonus game frame overlays with multipliers
+- 📊 **Win Details** - Shows paylines, symbol contributions, frame multipliers
+- 📝 **API Documentation** - Complete API reference in API.md
 
 ## Quick Start
 
-### Option 1: Using Node.js server
+### Prerequisites
+
+- Node.js 14+
+- Modern browser (Chrome, Firefox, Safari, Edge)
+
+### Installation
 
 ```bash
-cd theluxe-frontend
 npm install
-npm start
+```
+
+### Run with Fake Server (Local Testing)
+
+```bash
+# Terminal 1: Start fake server
+node fake-server.js
+
+# Terminal 2: Start frontend
+node server.js
 ```
 
 Then open http://localhost:3000 in your browser.
 
-### Option 2: Using any static server
+### Run with Production Backend
 
-```bash
-cd theluxe-frontend
-npx http-server -p 3000
+Update `config.js` with your credentials:
+```javascript
+authToken: 'your-auth-token',
+testUuid: 'your-uuid',
+testUserId: 'your-user-id',
+apiSecret: 'your-api-secret'
 ```
 
-## How to Play
+Then start the frontend:
+```bash
+node server.js
+```
 
-1. **Connect**: Click "Connect" button (auto-fetches token if empty)
-2. **Wait**: The client will automatically:
-   - Login to the server
-   - Join the lobby
-   - Enter the game room
-   - Sync room info
-3. **Set Bet**: Choose bet amount and number of lines
-4. **Spin**: Click the "SPIN" button
-5. **Win**: Watch for winning combinations and celebrate!
+## Symbol IDs
+
+| ID | Emoji | Name | Type |
+|----|-------|------|------|
+| 1 | 💎 | Wild | Special |
+| 2 | ⭐ | Scatter | Special |
+| 201 | 👑 | Crown | High |
+| 202 | 💍 | Ring | High |
+| 203 | 🏆 | Trophy | High |
+| 204 | 💵 | Cash | High |
+| 205 | 🎴 | Card | High |
+| 101 | ♠️ | Spades | Low |
+| 102 | ♥️ | Hearts | Low |
+| 103 | ♦️ | Diamonds | Low |
+| 104 | ♣️ | Clubs | Low |
+| 777 | 🍀 | Collect | Special |
 
 ## File Structure
 
 ```
-theluxe-frontend/
-├── index.html      # Main HTML structure
-├── styles.css      # Styling and animations
-├── app.js          # Main application logic
-├── ws-client.js    # WebSocket client wrapper
-├── config.js       # Configuration and constants
-├── server.js       # Simple HTTP server
-└── package.json    # NPM configuration
+slot-game/
+├── index.html          # Main HTML structure
+├── styles.css          # Styling and animations
+├── app.js              # Main application logic
+├── ws-client.js        # WebSocket client wrapper
+├── config.js           # Configuration and constants
+├── API.md              # Complete API documentation
+├── fake-server.js      # Local testing server
+├── server.js           # Production HTTP server
+└── package.json        # NPM configuration
 ```
 
-## WebSocket Message Flow
+## How to Play
 
+1. **Connect**: The client auto-connects on page load
+2. **Wait**: Automatically logs in, joins room, and syncs
+3. **Set Bet**: Click +/- buttons to adjust bet amount
+4. **Spin**: Click "SPIN" button
+5. **Buy Bonus**: Click "Buy Bonus" for 80x or 200x bonus games
+6. **Mega Boost**: Toggle switch for 10x cost mode
+
+## API Quick Reference
+
+See [API.md](API.md) for complete documentation.
+
+### Quick Examples
+
+```javascript
+// Normal spin
+{ bet: 10 }
+
+// Spin with Mega Boost
+{ bet: 10, megaBoost: true }
+
+// Buy Black & Gold Bonus
+{ bet: 10, forceBonusType: 'BLACK_AND_GOLD' }
+
+// Buy Golden Hit Bonus
+{ bet: 10, forceBonusType: 'GOLDEN_HIT' }
 ```
-1. Client -> Server: Login (type 0)
-2. Server -> Client: Login Response (type 1)
-3. Client -> Server: Lobby Request (type 2)
-4. Server -> Client: Lobby Response (type 3)
-5. Client -> Server: Join Room (type 100000, subType 100004)
-6. Server -> Client: Join Room Response (type 100000, subType 100005)
-7. Client -> Server: Sync Room Info (type 100000, subType 100070, opCode: SyncRoomInfo)
-8. [Every 20s] Client -> Server: Ping/Sync Room Info
-9. [On Spin] Client -> Server: SetBet (type 100000, subType 100070, opCode: SetBet)
-10. Server -> Client: Spin Result (type 100000, subType 100071, opCode: SetBet)
-```
-
-## Data Format
-
-### Spin Result (SetBet Response)
-
-```json
-{
-  "opCode": "SetBet",
-  "betInfo": [{
-    "bet": 10,
-    "line": 14,
-    "gameResult": {
-      "grid": [
-        ["SYM_1", "WILD", "SYM_3", "SYM_2", "SYM_5"],
-        ["SYM_4", "SYM_1", "WILD", "SYM_3", "SYM_6"],
-        ["SYM_7", "SYM_2", "SYM_1", "WILD", "SYM_4"],
-        ["SYM_5", "SYM_3", "SYM_2", "SYM_1", "SYM_8"]
-      ],
-      "totalWinAmount": 50,
-      "lineWins": [
-        {
-          "positions": [[0,0], [0,1], [0,2]],
-          "info": [0, "SYM_1", 3, 30]
-        }
-      ]
-    },
-    "roundId": "xxx",
-    "balance": 1000,
-    "finalBalance": 1050
-  }]
-}
-```
-
-## Symbols
-
-| Symbol | Emoji | Name |
-|--------|-------|------|
-| WILD | 💎 | Wild |
-| SYM_1 | 👑 | Crown |
-| SYM_2 | 💍 | Ring |
-| SYM_3 | 🏆 | Trophy |
-| SYM_4 | 💵 | Cash |
-| SYM_5 | 🎲 | Dice |
-| SYM_6 | 🎯 | Dart |
-| SYM_7 | 🎰 | Slot |
-| SYM_8 | 🪙 | Coin |
-| SYM_9 | 💠 | Gem |
-
-## Paylines
-
-The game has 14 paylines on a 4x5 grid:
-- Lines 1-4: Horizontal lines
-- Lines 5-6: Diagonal V-patterns
-- Lines 7-14: Various zigzag patterns
 
 ## Development
 
+### Testing Locally
+
+Use the fake server for development without AWS:
+
+```bash
+node fake-server.js  # Runs on port 3001 (HTTP) and 3002 (WebSocket)
+```
+
+The fake server simulates:
+- Login/authentication
+- Room joining
+- Spin results
+- Bonus games
+- Mega Boost mode
+- Balance updates
+
 ### Adding New Features
 
-1. **New UI Elements**: Add to `index.html`
+1. **UI Elements**: Edit `index.html`
 2. **Styling**: Update `styles.css`
-3. **Logic**: Modify `app.js`
-4. **WebSocket Handling**: Update `ws-client.js`
+3. **Game Logic**: Modify `app.js`
+4. **API Changes**: Update `API.md`
 
-### Testing
+### Debug Mode
 
-Open browser DevTools (F12) to see:
-- Console logs
-- Network WebSocket frames
-- Message logs in the UI
+Open browser DevTools (F12):
+- Console: View WebSocket messages and game events
+- Network → WS: Inspect WebSocket frames
+- Elements: DOM inspection
+
+## Game Modes
+
+### Normal Mode
+- Standard spins at 1x bet cost
+- Can randomly trigger bonus games
+
+### Mega Boost Mode
+- Spins cost 10x bet
+- 10x increased chance for bonus entry
+- Toggle on/off with the switch
+
+### Buy Bonus
+- **Black & Gold**: 80x bet, 10 spins with sticky frames
+- **Golden Hit**: 200x bet, 10 spins with doubled multipliers
 
 ## Backend Integration
 
-This frontend connects to the minesweeper_login_lambda backend. Make sure:
+This frontend connects to `minesweeper_login_lambda` backend.
 
-1. Backend is running and accessible
-2. WebSocket URL is correct in `config.js`
-3. Game type "theluxe" is registered in the backend
+Required endpoints:
+- `POST /mock-wallet/sid` - Get WebSocket token
+- `POST /rest/game/launch` - Launch game
+- `wss://...` - WebSocket for game actions
+
+## Scripts
+
+```bash
+npm start              # Start frontend server (port 3000)
+node fake-server.js    # Start fake backend (ports 3001/3002)
+node server.js         # Start production server
+```
 
 ## License
 
