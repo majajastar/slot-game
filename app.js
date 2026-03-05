@@ -824,8 +824,16 @@ function handleSpinResult(data) {
         if (result.lineWins && result.lineWins.length > 0) {
             console.log('[FRONTEND DEBUG] Winning lines:', result.lineWins.length);
             result.lineWins.forEach((lw, idx) => {
-                const [lineIdx, symbol, count, win] = lw.info;
-                console.log(`  Line ${lineIdx + 1}: ${symbol} x${count} = $${win}`);
+                // New LineWin format: [lineIdx, symbol, count, finalWin, baseWin, multiplier]
+                const info = lw.info;
+                const lineIdx = info[0];
+                const symbol = info[1];
+                const count = info[2];
+                const finalWin = info[3];
+                const baseWin = info[4];
+                const multiplier = info[5];
+                const multiplierInfo = multiplier > 1 ? ` (base: ${baseWin} × ${multiplier}x)` : '';
+                console.log(`  Line ${lineIdx + 1}: ${symbol} x${count} = $${finalWin}${multiplierInfo}`);
             });
         } else {
             console.log('[FRONTEND DEBUG] No winning lines');
@@ -1055,17 +1063,30 @@ function showWins(lineWins, totalWin) {
         `;
         
         lineWins.forEach((lw, idx) => {
-            const [lineIdx, symbol, count, win] = lw.info;
+            // New LineWin format: [lineIdx, symbol, count, finalWin, baseWin, multiplier]
+            const info = lw.info;
+            const lineIdx = info[0];
+            const symbol = info[1];
+            const count = info[2];
+            const finalWin = info[3];    // Total win after multipliers
+            const baseWin = info[4];     // Win before multipliers
+            const multiplier = info[5];  // Frame multiplier applied
+            
             const symbolName = SYMBOLS[symbol]?.name || symbol;
             const symbolDisplay = CONFIG.symbols[symbol] || symbol;
             const fc = lw.frameContribution;
+            
+            // Build win breakdown display
+            let winBreakdown = '';
+            if (multiplier > 1) {
+                winBreakdown = `<span style="color:#888;">Base: ${baseWin.toLocaleString()}</span> <span style="color:#ff6b6b;">× ${multiplier}x</span> = <span style="color:#2ecc71;font-weight:bold;">${finalWin.toLocaleString()}</span>`;
+            }
             
             let boostInfo = '';
             if (fc) {
                 const parts = [];
                 if (fc.multipliers.length > 0) {
-                    const multTotal = fc.multipliers.reduce((a, b) => a * b, 1);
-                    parts.push(`🔥 ${fc.multipliers.join('×')}× = ${multTotal}x`);
+                    parts.push(`🔥 ${fc.multipliers.join('×')}× = ${multiplier}x`);
                 }
                 if (fc.jackpotWins.length > 0) {
                     parts.push(`💎 Jackpot: ${fc.jackpotWins.join('x, ')}x`);
@@ -1079,13 +1100,14 @@ function showWins(lineWins, totalWin) {
                 <div class="win-way-item" style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;margin:8px 0;border-left:3px solid #2ecc71;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <span style="color:#888;font-size:0.8rem;">Line ${lineIdx + 1}</span>
-                        <span style="color:#2ecc71;font-weight:bold;">+$${win.toLocaleString()}</span>
+                        <span style="color:#2ecc71;font-weight:bold;">+$${finalWin.toLocaleString()}</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
                         <span style="font-size:1.5rem;">${symbolDisplay}</span>
                         <span style="color:#fff;font-size:0.9rem;">${symbolName}</span>
                         <span style="color:#ffd700;font-size:0.85rem;font-weight:bold;">${count} of a kind</span>
                     </div>
+                    ${winBreakdown ? `<div style="margin-top:6px;font-size:0.85rem;">${winBreakdown}</div>` : ''}
                     ${boostInfo}
                 </div>
             `;
