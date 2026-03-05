@@ -98,6 +98,35 @@ slot-game/
 
 See [API.md](API.md) for complete documentation.
 
+### LineWin Format
+
+Each winning line includes detailed win breakdown:
+
+```javascript
+{
+    positions: [[row, col], ...],  // Winning symbol positions
+    info: [
+        lineIndex,    // [0] Payline index (0-13, -1 for collect)
+        symbolId,     // [1] Symbol ID (e.g., '201')
+        matchCount,   // [2] 3, 4, or 5 matches
+        finalWin,     // [3] Total win after multipliers
+        baseWin,      // [4] Win before multipliers (payout × bet)
+        multiplier    // [5] Frame multiplier applied
+    ],
+    frameContribution: {
+        multipliers: [2, 5],           // Individual frame multiplier values
+        jackpotWins: [25, 100],        // Jackpot values hit
+        totalFrameMultiplier: 10,      // Product of all frame multipliers
+        totalJackpotWin: 125           // Sum of jackpot wins
+    }
+}
+```
+
+**Win Calculation:**
+```
+finalWin = (baseWin × multiplier) + jackpotWin
+```
+
 ### Quick Examples
 
 ```javascript

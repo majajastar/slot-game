@@ -936,6 +936,105 @@ buyBonus(10, 'GOLDEN_HIT');      // Buy Golden Hit
 
 ---
 
+## LineWin Data Structure
+
+Each object in the `lineWins` array represents a winning payline with detailed win information.
+
+### LineWin Format
+
+```javascript
+{
+    positions: [[row, col], [row, col], ...],  // Grid positions of winning symbols (0-indexed)
+    info: [
+        lineIndex,    // [0] Payline index (0-13 for regular lines, -1 for collect symbol)
+        symbolId,     // [1] Symbol ID that formed the win (e.g., '201' for Crown)
+        matchCount,   // [2] Number of consecutive matches (3, 4, or 5)
+        finalWin,     // [3] Total win amount after all multipliers applied
+        baseWin,      // [4] Win before frame multipliers (payout × bet)
+        multiplier    // [5] Total frame multiplier applied (product of all frame multipliers)
+    ],
+    frameContribution: {
+        multipliers: [2, 5],           // Array of individual frame multiplier values on winning positions
+        jackpotWins: [25],             // Array of jackpot values hit (if any)
+        totalFrameMultiplier: 10,      // Product of all frame multipliers (2 × 5 = 10)
+        totalJackpotWin: 25            // Sum of all jackpot wins
+    }
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `positions` | `number[][]` | Array of [row, col] pairs showing winning symbol positions |
+| `info[0]` | `number` | Payline index (0-13 for regular lines, -1 for collect symbol wins) |
+| `info[1]` | `string` | Symbol ID (e.g., '1' for WILD, '201' for Crown, '777' for COLLECT) |
+| `info[2]` | `number` | Number of consecutive matching symbols (3, 4, or 5) |
+| `info[3]` | `number` | **finalWin** - Total win after all frame multipliers and jackpots |
+| `info[4]` | `number` | **baseWin** - Win before frame multipliers (symbol payout × bet) |
+| `info[5]` | `number` | **multiplier** - Total frame multiplier applied (product of all frame multipliers) |
+| `frameContribution.multipliers` | `number[]` | Individual multiplier frame values on winning positions |
+| `frameContribution.jackpotWins` | `number[]` | Jackpot values hit on winning positions |
+| `frameContribution.totalFrameMultiplier` | `number` | Product of all frame multipliers |
+| `frameContribution.totalJackpotWin` | `number` | Sum of all jackpot wins |
+
+### Win Calculation
+
+```
+lineWin = baseWin × multiplier
+finalWin = lineWin + jackpotWin
+         = (baseWin × multiplier) + totalJackpotWin
+```
+
+Where:
+- `baseWin = payoutTable[symbol][matchCount] × bet`
+- `multiplier = product of all frame multipliers on winning positions`
+- `jackpotWin = sum of all jackpot frame values × bet`
+
+### Example LineWin
+
+```javascript
+{
+    positions: [[1, 0], [1, 1], [1, 2], [1, 3]],
+    info: [0, "201", 4, 100, 50, 2],
+    frameContribution: {
+        multipliers: [2],
+        jackpotWins: [],
+        totalFrameMultiplier: 2,
+        totalJackpotWin: 0
+    }
+}
+```
+
+**Interpretation:**
+- Line 1 (index 0, middle row) won
+- Crown symbol (ID: 201) matched 4 times
+- Base win: 50 × bet (Crown 4-match payout × bet)
+- Frame multiplier: 2x (from a 2x frame on one of the winning positions)
+- Final win: 100 × bet (50 base × 2 multiplier)
+
+### Collect Symbol Example
+
+```javascript
+{
+    positions: [[2, 3]],
+    info: [-1, "777", 1, 75, 0, 1],
+    frameContribution: {
+        multipliers: [],
+        jackpotWins: [],
+        totalFrameMultiplier: 0,
+        totalJackpotWin: 75
+    }
+}
+```
+
+**Interpretation:**
+- Collect symbol (🍀) appeared at position [2, 3]
+- baseWin is 0 (collect doesn't have line payouts)
+- Final win: 75 × bet (sum of all frame values on the grid)
+
+---
+
 ## Error Handling
 
 Common error codes from server:
