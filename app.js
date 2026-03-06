@@ -547,8 +547,10 @@ function handleJoinRoom(data) {
                 CURRENT_BET_INDEX = BET_SIZE_LIST.indexOf(defaultBet);
                 if (CURRENT_BET_INDEX === -1) CURRENT_BET_INDEX = 0;
                 display.textContent = '$' + formatBet(defaultBet);
+                display.dataset.baseBet = String(defaultBet); // Fix: Set baseBet for spin()
             } else {
                 CURRENT_BET_INDEX = currentIdx;
+                display.dataset.baseBet = String(currentBet); // Fix: Set baseBet for spin()
             }
         }
         updateBetSizeListDisplay();
@@ -621,7 +623,9 @@ function handleSubData(subData) {
                     // Update display to ensure it matches the tracked index
                     const display = document.getElementById('betDisplay');
                     if (display && BET_SIZE_LIST.length > 0) {
-                        display.textContent = '$' + formatBet(BET_SIZE_LIST[CURRENT_BET_INDEX]);
+                        const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+                        display.textContent = '$' + formatBet(bet);
+                        display.dataset.baseBet = String(bet); // Fix: Set baseBet for spin()
                     }
                     updateBetSizeListDisplay();
                 }
