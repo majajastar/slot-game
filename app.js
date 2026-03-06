@@ -646,7 +646,7 @@ function handleSubData(subData) {
                         fakeState.bonusType = lastResumeInfo.bonusGameState.type;
                         fakeState.bonusSpinsLeft = lastResumeInfo.bonusGameState.spinsLeft;
                         fakeState.totalWin = lastResumeInfo.bonusGameState.totalWin || 0;
-                        showBonusBanner(lastResumeInfo.bonusGameState.type, lastResumeInfo.bonusGameState.spinsLeft, fakeState.totalWin);
+                        showBonusBanner(lastResumeInfo.bonusGameState.type, lastResumeInfo.bonusGameState.spinsLeft, lastResumeInfo.bonusGameState.totalSpins, fakeState.totalWin);
                         log('Bonus game restored: ' + lastResumeInfo.bonusGameState.type + ' with ' + lastResumeInfo.bonusGameState.spinsLeft + ' spins left, total win: $' + fakeState.totalWin);
                     }
                 }
@@ -901,7 +901,7 @@ function handleSpinResult(data) {
             showBonusTrigger(result.bonusType, result.grid, result.lineWins, result.totalWinAmount);
             
             // Also show banner for in-game display
-            showBonusBanner(result.bonusType, spinsLeft);
+            showBonusBanner(result.bonusType, spinsLeft, result.bonusGameState?.totalSpins || 10);
             log('BONUS TRIGGERED: ' + result.bonusType + '!', 'info');
             
             // Also highlight winning paylines when bonus triggers
@@ -910,15 +910,28 @@ function handleSpinResult(data) {
             }
         } else if (fakeState.inBonus) {
             // Continue bonus
+            const prevSpinsLeft = fakeState.bonusSpinsLeft;
+            const prevTotalSpins = fakeState.bonusTotalSpins || 0;
             fakeState.bonusSpinsLeft = spinsLeft;
+            fakeState.bonusTotalSpins = result.bonusGameState?.totalSpins || 0;
+            
+            // Check for retrigger (extra spins added)
+            const extraSpins = fakeState.bonusTotalSpins - prevTotalSpins;
+            if (extraSpins > 0 && prevTotalSpins > 0) {
+                // Retrigger detected!
+                showRetriggerNotification(extraSpins, fakeState.bonusTotalSpins);
+                log(`BONUS RETRIGGER! +${extraSpins} free spins! Total: ${fakeState.bonusTotalSpins}`, 'highlight');
+            }
+            
             const bonusTotalWin = result.bonusGameState?.totalWin || 0;
-            updateBonusBanner(spinsLeft, bonusTotalWin);
+            updateBonusBanner(spinsLeft, fakeState.bonusTotalSpins, bonusTotalWin);
 
             if (result.lastFreeSpin || spinsLeft <= 0) {
                 hideBonusBanner();
                 fakeState.inBonus = false;
                 fakeState.bonusType = null;
                 fakeState.bonusSpinsLeft = 0;
+                fakeState.bonusTotalSpins = 0;
                 currentStickyFrames = null; // Clear sticky frames when bonus ends
                 log('Bonus completed!', 'info');
             }
@@ -1175,11 +1188,12 @@ function addToHistory(bet, win, isBonus) {
 
 // ==================== BONUS GAME UI ====================
 
-function showBonusBanner(bonusType, spinsLeft, totalWin = 0) {
+function showBonusBanner(bonusType, spinsLeft, totalSpins = 10, totalWin = 0) {
     const banner = document.getElementById('bonusBanner');
     const nameEl = document.getElementById('bonusName');
     const descEl = document.getElementById('bonusDesc');
     const spinsEl = document.getElementById('spinsLeft');
+    const totalSpinsEl = document.getElementById('totalSpins');
     const winEl = document.getElementById('bonusTotalWin');
 
     const name = bonusType === 'BLACK_AND_GOLD' ? 'BLACK AND GOLD' : 
@@ -1193,6 +1207,7 @@ function showBonusBanner(bonusType, spinsLeft, totalWin = 0) {
     nameEl.textContent = name + ' BONUS!';
     descEl.textContent = desc;
     spinsEl.textContent = spinsLeft;
+    if (totalSpinsEl) totalSpinsEl.textContent = totalSpins;
     if (winEl) winEl.textContent = '$' + totalWin.toLocaleString();
 
     // Show bonus mode content, hide normal mode text
@@ -1211,15 +1226,58 @@ function showBonusBanner(bonusType, spinsLeft, totalWin = 0) {
     }, 10);
 }
 
-function updateBonusBanner(spinsLeft, totalWin) {
+function updateBonusBanner(spinsLeft, totalSpins, totalWin) {
     const spinsEl = document.getElementById('spinsLeft');
+    const totalSpinsEl = document.getElementById('totalSpins');
     if (spinsEl) {
         spinsEl.textContent = spinsLeft;
+    }
+    if (totalSpinsEl && totalSpins !== undefined) {
+        totalSpinsEl.textContent = totalSpins;
     }
     const winEl = document.getElementById('bonusTotalWin');
     if (winEl && totalWin !== undefined) {
         winEl.textContent = '$' + totalWin.toLocaleString();
     }
+}
+
+// Show retrigger notification when extra spins are won
+function showRetriggerNotification(extraSpins, newTotalSpins) {
+    // Create or get retrigger notification element
+    let notif = document.getElementById('retriggerNotification');
+    if (!notif) {
+        notif = document.createElement('div');
+        notif.id = 'retriggerNotification';
+        notif.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            color: #000;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            animation: pulse 0.5s ease-in-out;
+        `;
+        document.body.appendChild(notif);
+    }
+    
+    notif.innerHTML = `
+        <div style="font-size: 2rem;">🎉 RETRIGGER! 🎉</div>
+        <div style="margin-top: 10px;">+${extraSpins} Free Spins!</div>
+        <div style="font-size: 1rem; margin-top: 5px; opacity: 0.8;">Total: ${newTotalSpins} spins</div>
+    `;
+    notif.classList.remove('hidden');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notif.classList.add('hidden');
+    }, 3000);
 }
 
 function hideBonusBanner() {

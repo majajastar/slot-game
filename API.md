@@ -923,8 +923,8 @@ buyBonus(10, 'GOLDEN_HIT');      // Buy Golden Hit
             info: {
                 bonusGameState: {
                     type: 'BLACK_AND_GOLD',
-                    spinsLeft: 10,       // Remaining spins
-                    totalSpins: 0        // Spins already played (0 at start)
+                    spinsLeft: 10,       // Remaining spins (decrements)
+                    totalSpins: 10       // Total free spins given (constant)
                 },
                 stickyFrames: [...],  // Initial frames
                 isInBonus: true
@@ -939,17 +939,46 @@ buyBonus(10, 'GOLDEN_HIT');      // Buy Golden Hit
 | Field | Type | Description |
 |-------|------|-------------|
 | `type` | `string` | Bonus type: `'BLACK_AND_GOLD'` or `'GOLDEN_HIT'` |
-| `spinsLeft` | `number` | Number of remaining spins in the bonus |
-| `totalSpins` | `number` | Number of spins already played in this bonus (increments after each spin) |
+| `spinsLeft` | `number` | Number of remaining spins in the bonus (decrements after each spin) |
+| `totalSpins` | `number` | Total free spins given (constant: 10 for both bonus types) |
 | `stickyFrames` | `array` | Current sticky frame overlay on the grid |
 | `initialFrames` | `boolean` | Whether this is the initial frame setup (Golden Hit only) |
 | `totalWin` | `number` | Cumulative win amount from all bonus spins so far |
 
 **Example Progression:**
-- Buy bonus: `spinsLeft: 10, totalSpins: 0`
-- After 1st spin: `spinsLeft: 9, totalSpins: 1`
-- After 5th spin: `spinsLeft: 5, totalSpins: 5`
+- Buy bonus: `spinsLeft: 10, totalSpins: 10`
+- After 1st spin: `spinsLeft: 9, totalSpins: 10`
+- After 5th spin: `spinsLeft: 5, totalSpins: 10`
 - After last spin: `spinsLeft: 0, totalSpins: 10`
+
+### Bonus Retrigger (Extra Free Spins)
+
+During bonus spins, there's a chance to win additional free spins:
+
+| Chance | Extra Spins | Scatters Placed |
+|--------|-------------|-----------------|
+| 5%     | +2 spins    | 2 scatters      |
+| 3%     | +4 spins    | 3 scatters      |
+
+**How it works:**
+1. At the start of each bonus spin, retrigger chance is checked
+2. If triggered, scatters are placed on the grid (2 or 3 depending on tier)
+3. Extra spins are added to both `spinsLeft` and `totalSpins`
+4. Win calculation proceeds normally
+
+**Configuration (in `bonus-config.ts`):**
+```typescript
+retrigger: {
+  twoSpins: { chance: 0.05, spins: 2, scatterCount: 2 },
+  fourSpins: { chance: 0.03, spins: 4, scatterCount: 3 }
+}
+```
+
+**Example with retrigger:**
+- Buy bonus: `spinsLeft: 10, totalSpins: 10`
+- Spin 3 triggers +2 spins: `spinsLeft: 9, totalSpins: 12` (after decrement and add)
+- Spin 7 triggers +4 spins: `spinsLeft: 6, totalSpins: 16`
+- Final: `spinsLeft: 0, totalSpins: 16`
 
 ---
 
