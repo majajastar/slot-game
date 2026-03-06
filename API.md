@@ -373,6 +373,7 @@ send({
 | Mega Boost | `megaBoost: true` | `true` / `false` | 10x bet |
 | Buy Black & Gold | `forceBonusType` | `'BLACK_AND_GOLD'` | 80x bet |
 | Buy Golden Hit | `forceBonusType` | `'GOLDEN_HIT'` | 200x bet |
+| Bonus Retrigger | (automatic) | 5%/+2 spins, 3%/+4 spins | Free |
 
 ---
 
@@ -1040,6 +1041,21 @@ Where:
 - `multiplier = product of all frame multipliers on winning positions`
 - `jackpotWin = sum of all jackpot frame values × bet`
 
+### Win Amount Rounding
+
+All win amounts are rounded to **6 decimal places** to avoid floating point precision issues:
+
+```javascript
+round6 = (n: number) => Math.round(n * 1000000) / 1000000
+```
+
+This applies to:
+- `finalWin` in LineWin info (`info[3]`)
+- `baseWin` in LineWin info (`info[4]`)
+- `totalJackpotWin` in frameContribution
+- `totalWinAmount` in spin result
+- `collectWin` in collect symbol payouts
+
 ### Example LineWin
 
 ```javascript
@@ -1081,6 +1097,23 @@ Where:
 - Collect symbol (🍀) appeared at position [2, 3]
 - baseWin is 0 (collect doesn't have line payouts)
 - Final win: 75 × bet (sum of all frame values on the grid)
+
+---
+
+## Scatter Placement Rules
+
+Scatters are placed differently depending on the game scenario:
+
+| Scenario | Scatters Placed | Notes |
+|----------|-----------------|-------|
+| Normal spin | 0, 1, or 2 | Random 0-2 scatters for visual variety |
+| Bonus spin (no retrigger) | 0 or 1 | For visual variety during bonus |
+| Bonus retrigger (+2 spins) | 2 | 5% chance - triggers retrigger |
+| Bonus retrigger (+4 spins) | 3 | 3% chance - triggers retrigger |
+| Bonus trigger (BG) | 3 | Exactly 3 for Black & Gold bonus entry |
+| Bonus trigger (GH) | 4 | Exactly 4 for Golden Hit bonus entry |
+
+**Important Constraint**: Each reel (column) can have at most 1 scatter. Scatters are distributed across different columns to ensure no column has more than 1 scatter.
 
 ---
 
