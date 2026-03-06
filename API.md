@@ -984,6 +984,44 @@ retrigger: {
 - Spin 7 triggers +4 spins: `spinsLeft: 6, totalSpins: 16`
 - Final: `spinsLeft: 0, totalSpins: 16`
 
+### Bonus Mechanics
+
+#### Black & Gold
+- Starts with **1 sticky frame** position
+- Frame positions are sticky, but values get refilled each spin
+- 70% chance for multiplier, 30% chance for jackpot on refill
+- All frames (multipliers and jackpots) contribute to wins
+
+#### Golden Hit (Special Mechanics)
+
+**1. Multiplier Doubling on Winning Lines**
+- Multiplier frames that participate in winning lines get doubled for next spin
+- Example: 5x → 10x, 10x → 20x (max 100x)
+- Check `stickyFrames` after spin to see new values
+
+**2. Collect Symbol Doubles ALL Multipliers**
+- When 🍀 COLLECT (777) appears, ALL multiplier frames on grid are doubled
+- This happens once per spin (either from collect OR winning lines)
+- Check if `lineWins` contains collect symbol (symbol ID '777')
+
+**3. Jackpot Refill on Win**
+- Jackpot frames that participate in wins get refilled with new random jackpot value
+- This happens alongside multiplier doubling
+
+**Frontend Implementation:**
+```javascript
+// Check for collect symbol doubling
+const hasCollect = result.lineWins?.some(lw => lw.info[1] === '777');
+if (hasCollect && result.bonusType === 'GOLDEN_HIT') {
+  showCollectDoublingAnimation();
+}
+
+// Check for retrigger
+if (result.bonusGameState?.isRetrigger) {
+  showRetriggerNotification(result.bonusGameState.retriggerSpins);
+}
+```
+
 ---
 
 ## LineWin Data Structure
