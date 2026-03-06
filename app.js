@@ -910,17 +910,16 @@ function handleSpinResult(data) {
             }
         } else if (fakeState.inBonus) {
             // Continue bonus
-            const prevSpinsLeft = fakeState.bonusSpinsLeft;
-            const prevTotalSpins = fakeState.bonusTotalSpins || 0;
             fakeState.bonusSpinsLeft = spinsLeft;
             fakeState.bonusTotalSpins = result.bonusGameState?.totalSpins || 0;
             
-            // Check for retrigger (extra spins added)
-            const extraSpins = fakeState.bonusTotalSpins - prevTotalSpins;
-            if (extraSpins > 0 && prevTotalSpins > 0) {
+            // Check for retrigger using server flag
+            const isRetrigger = result.bonusGameState?.isRetrigger || false;
+            const retriggerSpins = result.bonusGameState?.retriggerSpins || 0;
+            if (isRetrigger && retriggerSpins > 0) {
                 // Retrigger detected!
-                showRetriggerNotification(extraSpins, fakeState.bonusTotalSpins);
-                log(`BONUS RETRIGGER! +${extraSpins} free spins! Total: ${fakeState.bonusTotalSpins}`, 'highlight');
+                showRetriggerNotification(retriggerSpins, fakeState.bonusTotalSpins);
+                log(`BONUS RETRIGGER! +${retriggerSpins} free spins! Total: ${fakeState.bonusTotalSpins}`, 'highlight');
             }
             
             const bonusTotalWin = result.bonusGameState?.totalWin || 0;

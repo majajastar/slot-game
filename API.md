@@ -940,16 +940,19 @@ buyBonus(10, 'GOLDEN_HIT');      // Buy Golden Hit
 |-------|------|-------------|
 | `type` | `string` | Bonus type: `'BLACK_AND_GOLD'` or `'GOLDEN_HIT'` |
 | `spinsLeft` | `number` | Number of remaining spins in the bonus (decrements after each spin) |
-| `totalSpins` | `number` | Total free spins given (constant: 10 for both bonus types) |
+| `totalSpins` | `number` | Total free spins given (10 initially, increases on retrigger) |
 | `stickyFrames` | `array` | Current sticky frame overlay on the grid |
 | `initialFrames` | `boolean` | Whether this is the initial frame setup (Golden Hit only) |
 | `totalWin` | `number` | Cumulative win amount from all bonus spins so far |
+| `isRetrigger` | `boolean` | `true` if this spin triggered a retrigger (won extra spins) |
+| `retriggerSpins` | `number` | Number of extra spins won on this spin (0 if no retrigger) |
 
 **Example Progression:**
-- Buy bonus: `spinsLeft: 10, totalSpins: 10`
-- After 1st spin: `spinsLeft: 9, totalSpins: 10`
-- After 5th spin: `spinsLeft: 5, totalSpins: 10`
-- After last spin: `spinsLeft: 0, totalSpins: 10`
+- Buy bonus: `spinsLeft: 10, totalSpins: 10, isRetrigger: false`
+- After 1st spin: `spinsLeft: 9, totalSpins: 10, isRetrigger: false`
+- Spin 3 triggers +2: `spinsLeft: 10, totalSpins: 12, isRetrigger: true, retriggerSpins: 2`
+- After retrigger spin: `spinsLeft: 9, totalSpins: 12, isRetrigger: false`
+- Final: `spinsLeft: 0, totalSpins: 12, isRetrigger: false`
 
 ### Bonus Retrigger (Extra Free Spins)
 
