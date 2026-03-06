@@ -923,8 +923,8 @@ buyBonus(10, 'GOLDEN_HIT');      // Buy Golden Hit
             info: {
                 bonusGameState: {
                     type: 'BLACK_AND_GOLD',
-                    spinsLeft: 10,
-                    totalSpins: 10
+                    spinsLeft: 10,       // Remaining spins
+                    totalSpins: 0        // Spins already played (0 at start)
                 },
                 stickyFrames: [...],  // Initial frames
                 isInBonus: true
@@ -933,6 +933,23 @@ buyBonus(10, 'GOLDEN_HIT');      // Buy Golden Hit
     }]
 }
 ```
+
+### Bonus Game State Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | `string` | Bonus type: `'BLACK_AND_GOLD'` or `'GOLDEN_HIT'` |
+| `spinsLeft` | `number` | Number of remaining spins in the bonus |
+| `totalSpins` | `number` | Number of spins already played in this bonus (increments after each spin) |
+| `stickyFrames` | `array` | Current sticky frame overlay on the grid |
+| `initialFrames` | `boolean` | Whether this is the initial frame setup (Golden Hit only) |
+| `totalWin` | `number` | Cumulative win amount from all bonus spins so far |
+
+**Example Progression:**
+- Buy bonus: `spinsLeft: 10, totalSpins: 0`
+- After 1st spin: `spinsLeft: 9, totalSpins: 1`
+- After 5th spin: `spinsLeft: 5, totalSpins: 5`
+- After last spin: `spinsLeft: 0, totalSpins: 10`
 
 ---
 
