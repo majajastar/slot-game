@@ -123,12 +123,12 @@ function renderPaytable() {
 function renderPaylines() {
     const container = document.getElementById('paylinesDisplay');
     if (!container) return;
-    
+
     if (PAYLINES.length === 0) {
         container.innerHTML = '<div style="color:#888;padding:10px;">Loading paylines...</div>';
         return;
     }
-    
+
     // Render paylines as mini grids showing the pattern
     container.innerHTML = PAYLINES.map((line, idx) => `
         <div class="payline-item" style="background:rgba(0,0,0,0.3);padding:6px;border-radius:6px;text-align:center;">
@@ -149,7 +149,7 @@ function renderPaylines() {
 function renderJackpots() {
     const container = document.getElementById('jackpotDisplay');
     if (!container || !JACKPOTS.display) return;
-    
+
     container.innerHTML = Object.entries(JACKPOTS.display).map(([value, data]) => `
         <div class="jackpot-item ${data.name.toLowerCase()}">
             ${data.icon}<br>
@@ -176,7 +176,7 @@ function renderBonusInfo() {
             goldenHitCost.textContent = `${BONUSES.goldenHit.scatterCount} scatters • ${cost}`;
         }
     }
-    
+
     // Update Mega Boost display from server config
     if (BONUSES.megaBoost) {
         // Initialize the full display
@@ -190,13 +190,13 @@ function toggleMegaBoost() {
     if (!toggle) return;
 
     megaBoostEnabled = toggle.checked;
-    
+
     // Update all Mega Boost display elements
     updateMegaBoostDisplay();
-    
+
     // Update main bet display to show boosted amount
     updateBetDisplayWithBoost();
-    
+
     log(megaBoostEnabled ? '⚡ MEGA BOOST ENABLED! Spins cost 10x with 10x bonus entry chance!' : '⚡ Mega Boost disabled', megaBoostEnabled ? 'highlight' : 'info');
 }
 
@@ -206,12 +206,12 @@ function updateMegaBoostDisplay() {
     const costEl = document.getElementById('megaBoostCost');
     const chanceEl = document.getElementById('megaBoostChance');
     const descEl = document.getElementById('megaBoostDesc');
-    
+
     const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 5;
     const entryMult = BONUSES.megaBoost?.bonusEntryMultiplier || 10;
     const baseChance = BONUSES.bonusEntryChance || 0.01;
     const boostedChance = (baseChance * entryMult * 100).toFixed(1);
-    
+
     if (megaBoostEnabled) {
         if (statusEl) {
             statusEl.textContent = 'ENABLED ⚡';
@@ -229,7 +229,7 @@ function updateMegaBoostDisplay() {
         if (chanceEl) chanceEl.textContent = `${(baseChance * 100).toFixed(1)}% (normal)`;
         if (descEl) descEl.textContent = `When enabled, each spin costs ${boostMultiplier}x more but has ${entryMult}x higher chance to trigger Black & Gold or Golden Hit bonus games.`;
     }
-    
+
     // Update the boosted bet display
     updateMegaBoostBetDisplay();
 }
@@ -259,19 +259,19 @@ function updateMegaBoostBetDisplay() {
 function updateBetDisplayWithBoost() {
     const betDisplay = document.getElementById('betDisplay');
     if (!betDisplay) return;
-    
+
     // Get current bet from display
     let currentBet = parseFloat(betDisplay.dataset.baseBet || betDisplay.textContent.replace('$', '')) || 10;
-    
+
     // Store base bet if not already stored
     if (!betDisplay.dataset.baseBet) {
         betDisplay.dataset.baseBet = currentBet;
     } else {
         currentBet = parseFloat(betDisplay.dataset.baseBet);
     }
-    
+
     const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
-    
+
     if (megaBoostEnabled) {
         const boostedBet = currentBet * boostMultiplier;
         betDisplay.textContent = '$' + formatBet(boostedBet);
@@ -305,7 +305,7 @@ function renderFrameInfo() {
     const maxMultiplierEl = document.getElementById('maxMultiplier');
     const maxMultiplierFinalEl = document.getElementById('maxMultiplierFinal');
     const maxJackpotEl = document.getElementById('maxJackpot');
-    
+
     if (maxMultiplierEl && FRAME_CONFIG.goldenHitMaxMultiplier) {
         maxMultiplierEl.textContent = FRAME_CONFIG.goldenHitMaxMultiplier;
     }
@@ -362,7 +362,7 @@ function updateBetSizeListDisplay() {
 
 async function connect() {
     updateLoading('Fetching token...');
-    
+
     try {
         // Step 1: Get SID
         const sidRes = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
@@ -372,7 +372,7 @@ async function connect() {
         });
         const { sid } = await sidRes.json();
         log('SID fetched');
-        
+
         // Step 2: Launch API
         updateLoading('Launching game...');
         const launchRes = await fetch(CONFIG.launchUrl, {
@@ -398,34 +398,36 @@ async function connect() {
         const token = url.searchParams.get('token');
         const lang = url.searchParams.get('lang') || 'en';
         log('Token received');
-        
+
         // Step 3: WebSocket
         updateLoading('Connecting to game...');
         const wsUrl = `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-        
+        const localWsUrl = `ws://xxx:3002`;
+
         socket = new WebSocket(wsUrl);
-        
+
         socket.onopen = () => {
             log('WebSocket connected');
             send({ type: '0', data: [{ subType: 0 }] }); // Login
         };
-        
+
         socket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
+            console.log(`msg = ${JSON.stringify(msg)}`)
             handleMessage(msg);
         };
-        
+
         socket.onerror = (err) => {
             log('WebSocket error', 'error');
             updateLoading('Connection failed - retry?', true);
         };
-        
+
         socket.onclose = () => {
             log('WebSocket closed');
             updateLoading('Disconnected', true);
             clearInterval(pingInterval);
         };
-        
+
     } catch (err) {
         log('Connection failed: ' + err.message, 'error');
         updateLoading('Failed - Click to retry', true);
@@ -486,7 +488,7 @@ function handleLobby(data) {
 function handleGameMessage(data) {
     const subType = data.subType;
     const subData = data.subData?.[0];
-    
+
     switch (subType) {
         case 100005: // Join room
             handleJoinRoom(subData);
@@ -555,7 +557,7 @@ function handleJoinRoom(data) {
         }
         updateBetSizeListDisplay();
     }
-    
+
     // Render paytable/paylines now that we have data and DOM is visible
     if (Object.keys(SYMBOLS).length > 0) {
         renderPaytable();
@@ -668,10 +670,10 @@ function spin() {
     }
 
     const betDisplay = document.getElementById('betDisplay');
-    
+
     // Use base bet if available (when boost is enabled), otherwise parse from display
     let bet = parseFloat(betDisplay?.dataset.baseBet) || 10;
-    
+
     console.log('[BET DEBUG] Base bet:', bet);
     console.log('[BET DEBUG] Mega Boost enabled:', megaBoostEnabled);
     console.log('[BET DEBUG] BET_SIZE_LIST:', BET_SIZE_LIST);
@@ -691,11 +693,11 @@ function spin() {
             }
         }
     }
-    
+
     // Calculate the actual cost for balance deduction
     const boostMultiplier = megaBoostEnabled ? (BONUSES.megaBoost?.costMultiplier || 10) : 1;
     const actualCost = bet * boostMultiplier;
-    
+
     console.log('[BET DEBUG] Final base bet to send:', bet);
     console.log('[BET DEBUG] Actual cost (with boost):', actualCost);
 
@@ -726,7 +728,7 @@ function spin() {
     document.getElementById('winAmount').classList.add('hidden');
     document.getElementById('winDetails').textContent = '';
     document.getElementById('winWays').innerHTML = '<div class="no-win">Spin to see your wins...</div>';
-    
+
     // Reset payline highlights
     renderPaylines();
 
@@ -737,13 +739,13 @@ function spin() {
             const r = Math.floor(idx / 5);
             const col = idx % 5;
             c.textContent = displays[Math.floor(Math.random() * displays.length)];
-            
+
             // During bonus game, keep showing sticky frames
             if (fakeState.inBonus && currentStickyFrames && currentStickyFrames[r] && currentStickyFrames[r][col] && currentStickyFrames[r][col].value > 0) {
                 const frame = currentStickyFrames[r][col];
                 const isJackpot = frame.type === 'jackpot';
                 let label, color;
-                
+
                 if (isJackpot) {
                     const jackpotDisplay = getJackpotFrameDisplay(frame.value);
                     label = jackpotDisplay.label;
@@ -752,7 +754,7 @@ function spin() {
                     label = frame.value >= 100 ? '99' : frame.value.toString();
                     color = '#ffd700';
                 }
-                
+
                 const fontSize = isJackpot ? '0.7rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
                 c.innerHTML += `<div class="frame-overlay jackpot-frame" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
             }
@@ -842,29 +844,29 @@ function handleSpinResult(data) {
         } else {
             console.log('[FRONTEND DEBUG] No winning lines');
         }
-        
+
         // Update balance from server result
         currentBalance = betInfo.finalBalance;
         const balanceEl = document.getElementById('balance');
         if (balanceEl) {
             balanceEl.textContent = '$' + (betInfo.finalBalance || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
-        
+
         // Log win if applicable
         if (winAmount > 0) {
             log('Win: +$' + winAmount + ' (Balance: $' + (betInfo.finalBalance || 0) + ')', 'success');
         }
-        
+
         // Update fake state
         fakeState.spinCount++;
         fakeState.totalWin += winAmount;
-        
+
         const spinCountEl = document.getElementById('spinCount');
         if (spinCountEl) spinCountEl.textContent = fakeState.spinCount;
-        
+
         const totalWinEl = document.getElementById('totalWin');
         if (totalWinEl) totalWinEl.textContent = '$' + fakeState.totalWin.toLocaleString();
-        
+
         // Render grid with frames (golden/jackpot frames can appear in any spin)
         if (result.grid) {
             // Store sticky frames for bonus game persistence
@@ -873,7 +875,7 @@ function handleSpinResult(data) {
             }
             renderGrid(result.grid, result.stickyFrames);
         }
-        
+
         // Stop spin animation
         if (window.spinAnimInterval) {
             clearInterval(window.spinAnimInterval);
@@ -887,7 +889,7 @@ function handleSpinResult(data) {
         } else if (winWaysEl) {
             winWaysEl.innerHTML = '<div class="no-win">No win this spin</div>';
         }
-    
+
     // Handle bonus game
     const spinsLeft = result.bonusGameState?.spinsLeft;
     if (result.isBonus && spinsLeft !== undefined) {
@@ -896,14 +898,14 @@ function handleSpinResult(data) {
             fakeState.inBonus = true;
             fakeState.bonusType = result.bonusType;
             fakeState.bonusSpinsLeft = spinsLeft;
-            
+
             // Show trigger overlay with the triggering grid
             showBonusTrigger(result.bonusType, result.grid, result.lineWins, result.totalWinAmount);
-            
+
             // Also show banner for in-game display
             showBonusBanner(result.bonusType, spinsLeft, result.bonusGameState?.totalSpins || 10);
             log('BONUS TRIGGERED: ' + result.bonusType + '!', 'info');
-            
+
             // Also highlight winning paylines when bonus triggers
             if (result.lineWins?.length > 0) {
                 highlightWinningPaylines(result.lineWins);
@@ -912,7 +914,7 @@ function handleSpinResult(data) {
             // Continue bonus
             fakeState.bonusSpinsLeft = spinsLeft;
             fakeState.bonusTotalSpins = result.bonusGameState?.totalSpins || 0;
-            
+
             // Check for retrigger using server flag
             const isRetrigger = result.bonusGameState?.isRetrigger || false;
             const retriggerSpins = result.bonusGameState?.retriggerSpins || 0;
@@ -921,7 +923,7 @@ function handleSpinResult(data) {
                 showRetriggerNotification(retriggerSpins, fakeState.bonusTotalSpins);
                 log(`BONUS RETRIGGER! +${retriggerSpins} free spins! Total: ${fakeState.bonusTotalSpins}`, 'highlight');
             }
-            
+
             const bonusTotalWin = result.bonusGameState?.totalWin || 0;
             updateBonusBanner(spinsLeft, fakeState.bonusTotalSpins, bonusTotalWin);
 
@@ -944,16 +946,16 @@ function handleSpinResult(data) {
         currentStickyFrames = null; // Clear sticky frames when bonus ends
         log('Bonus completed!', 'info');
     }
-    
+
         // Add to history
         addToHistory(betInfo.bet, winAmount, fakeState.inBonus);
-        
+
         log('Win: ' + winAmount + ', Balance: ' + betInfo.finalBalance);
     } catch (err) {
         console.error('Error in handleSpinResult:', err);
         log('Error processing spin: ' + err.message, 'error');
     }
-    
+
     resetSpin();
 }
 
@@ -966,14 +968,14 @@ function getJackpotFrameDisplay(value) {
             color: value === 25 ? '#87ceeb' : value === 100 ? '#ffa500' : value === 500 ? '#ff69b4' : '#ffd700'
         };
     }
-    
+
     // Find matching jackpot from JACKPOTS.display
     const jackpotEntry = Object.entries(JACKPOTS.display).find(([k, v]) => v.multiplier === `${value}x`);
     if (jackpotEntry) {
         const [key, data] = jackpotEntry;
         return { label: data.icon, color: getJackpotColor(data.name) };
     }
-    
+
     // Fallback
     return {
         label: value === 25 ? 'M' : value === 100 ? 'J' : value === 500 ? 'E' : 'X',
@@ -1006,13 +1008,13 @@ function renderGrid(grid, frames) {
             const display = getSymbolDisplay(symbol);
 
             let html = display;
-            
+
             // Add frame overlay if present (only during bonus)
             if (frames && Array.isArray(frames) && frames[r] && frames[r][c] && frames[r][c].value > 0) {
                 const frame = frames[r][c];
                 const isJackpot = frame.type === 'jackpot';
                 let label, color;
-                
+
                 if (isJackpot) {
                     const jackpotDisplay = getJackpotFrameDisplay(frame.value);
                     label = jackpotDisplay.label;
@@ -1021,11 +1023,11 @@ function renderGrid(grid, frames) {
                     label = frame.value >= 100 ? '99' : frame.value.toString();
                     color = '#ffd700';
                 }
-                
+
                 const fontSize = isJackpot ? '0.7rem' : (label.length > 1 ? '0.5rem' : '0.55rem');
                 html += `<div class="frame-overlay jackpot-frame" style="border-color:${color};color:${color};font-size:${fontSize};">${label}</div>`;
             }
-            
+
             cell.innerHTML = html;
             cell.className = `reel-cell symbol-${symbol}`;
         }
@@ -1077,7 +1079,7 @@ function showWins(lineWins, totalWin) {
             ${hasJackpot ? `<div style="color:#ffd700;font-size:0.85rem;margin-top:4px;font-weight:bold;">💎 Jackpot Win!</div>` : ''}
         </div>
         `;
-        
+
         lineWins.forEach((lw, idx) => {
             // New LineWin format: [lineIdx, symbol, count, finalWin, baseWin, multiplier]
             const info = lw.info;
@@ -1087,17 +1089,17 @@ function showWins(lineWins, totalWin) {
             const finalWin = info[3];    // Total win after multipliers
             const baseWin = info[4];     // Win before multipliers
             const multiplier = info[5];  // Frame multiplier applied
-            
+
             const symbolName = SYMBOLS[symbol]?.name || symbol;
             const symbolDisplay = CONFIG.symbols[symbol] || symbol;
             const fc = lw.frameContribution;
-            
+
             // Build win breakdown display
             let winBreakdown = '';
             if (multiplier > 1) {
                 winBreakdown = `<span style="color:#888;">Base: ${baseWin.toLocaleString()}</span> <span style="color:#ff6b6b;">× ${multiplier}x</span> = <span style="color:#2ecc71;font-weight:bold;">${finalWin.toLocaleString()}</span>`;
             }
-            
+
             let boostInfo = '';
             if (fc) {
                 const parts = [];
@@ -1111,7 +1113,7 @@ function showWins(lineWins, totalWin) {
                     boostInfo = `<div style="color:#ff6b6b;font-size:0.75rem;margin-top:4px;font-weight:bold;">${parts.join(' • ')}</div>`;
                 }
             }
-            
+
             html += `
                 <div class="win-way-item" style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;margin:8px 0;border-left:3px solid #2ecc71;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1136,10 +1138,10 @@ function showWins(lineWins, totalWin) {
 function highlightWinningPaylines(lineWins) {
     const container = document.getElementById('paylinesDisplay');
     if (!container || PAYLINES.length === 0) return;
-    
+
     // Get winning line indices
     const winningLineIndices = lineWins.map(lw => lw.info[0]);
-    
+
     // Re-render paylines with winning ones highlighted
     container.innerHTML = PAYLINES.map((line, idx) => {
         const isWinning = winningLineIndices.includes(idx);
@@ -1151,8 +1153,8 @@ function highlightWinningPaylines(lineWins) {
                         const r = Math.floor(i / 5);
                         const c = i % 5;
                         const isActive = line.pattern[c] === r;
-                        const bgColor = isActive 
-                            ? (isWinning ? '#2ecc71' : 'rgba(255,255,255,0.3)') 
+                        const bgColor = isActive
+                            ? (isWinning ? '#2ecc71' : 'rgba(255,255,255,0.3)')
                             : 'rgba(255,255,255,0.05)';
                         return `<div style="width:10px;height:10px;background:${bgColor};border-radius:2px;"></div>`;
                     }).join('')}
@@ -1160,7 +1162,7 @@ function highlightWinningPaylines(lineWins) {
             </div>
         `;
     }).join('');
-    
+
     // Reset after 3 seconds
     setTimeout(() => {
         renderPaylines();
@@ -1195,7 +1197,7 @@ function showBonusBanner(bonusType, spinsLeft, totalSpins = 10, totalWin = 0) {
     const totalSpinsEl = document.getElementById('totalSpins');
     const winEl = document.getElementById('bonusTotalWin');
 
-    const name = bonusType === 'BLACK_AND_GOLD' ? 'BLACK AND GOLD' : 
+    const name = bonusType === 'BLACK_AND_GOLD' ? 'BLACK AND GOLD' :
                  bonusType === 'MEGA_BONUS' ? 'MEGA BONUS' : 'GOLDEN HIT';
     const desc = bonusType === 'BLACK_AND_GOLD'
         ? '10 free spins with sticky golden frames'
@@ -1265,14 +1267,14 @@ function showRetriggerNotification(extraSpins, newTotalSpins) {
         `;
         document.body.appendChild(notif);
     }
-    
+
     notif.innerHTML = `
         <div style="font-size: 2rem;">🎉 RETRIGGER! 🎉</div>
         <div style="margin-top: 10px;">+${extraSpins} Free Spins!</div>
         <div style="font-size: 1rem; margin-top: 5px; opacity: 0.8;">Total: ${newTotalSpins} spins</div>
     `;
     notif.classList.remove('hidden');
-    
+
     // Hide after 3 seconds
     setTimeout(() => {
         notif.classList.add('hidden');
@@ -1301,7 +1303,7 @@ function showBonusTrigger(bonusType, grid, lineWins, totalWin) {
     const winEl = document.getElementById('triggerWin');
 
     // Set text based on bonus type
-    const bonusName = bonusType === 'BLACK_AND_GOLD' ? 'Black & Gold' : 
+    const bonusName = bonusType === 'BLACK_AND_GOLD' ? 'Black & Gold' :
                       bonusType === '' ? 'Mega Bonus' : 'Golden Hit';
     const scatterCount = bonusType === 'GOLDEN_HIT' ? '4' : '3';
     textEl.textContent = `${scatterCount} Scatters! You won ${bonusName} Bonus!`;
@@ -1379,10 +1381,10 @@ function changeBet(dir) {
 
     CURRENT_BET_INDEX = newIdx;
     const newBet = BET_SIZE_LIST[newIdx];
-    
+
     // Store base bet for boost calculation
     display.dataset.baseBet = newBet;
-    
+
     // Update display with boost if enabled
     if (megaBoostEnabled) {
         const boostMultiplier = BONUSES.megaBoost?.costMultiplier || 10;
@@ -1395,10 +1397,10 @@ function changeBet(dir) {
         display.style.color = '';
         display.style.textShadow = '';
     }
-    
+
     // Update the boost details panel
     updateMegaBoostBetDisplay();
-    
+
     log('Bet changed to $' + formatBet(newBet) + (megaBoostEnabled ? ' (Boosted: $' + formatBet(newBet * (BONUSES.megaBoost?.costMultiplier || 10)) + ')' : '') + ' [index=' + newIdx + ']');
 }
 
