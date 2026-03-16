@@ -22,7 +22,7 @@ const server = http.createServer((req, res) => {
   // Security: prevent directory traversal
   let filePath = path.normalize('.' + req.url);
   if (filePath === './' || filePath === '.') {
-    filePath = './index.html';
+    filePath = './lobby.html';  // Default to lobby page
   }
   
   // Ensure file is within current directory

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Lobby - Select a Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            color: #fff;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-10px);
+            border-color: #ffd700;
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.2);
+        }
+        
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .game-card:hover::before {
+            opacity: 1;
+        }
+        
+        .game-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .game-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .game-description {
+            color: #aaa;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .game-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .play-button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #ffd700, #ff6b6b);
+            border: none;
+            border-radius: 25px;
+            color: #1a1a2e;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        
+        .play-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .new-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff6b6b;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .coming-soon {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .coming-soon:hover {
+            transform: none;
+            border-color: transparent;
+        }
+        
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎰 Game Lobby</h1>
+        <p>Select a game to start playing</p>
+    </div>
+    
+    <div class="games-grid" id="gamesGrid">
+        <!-- Games will be loaded dynamically -->
+    </div>
+    
+    <div class="footer">
+        <p>More games coming soon!</p>
+    </div>
+    
+    <script>
+        // Game registry - easy to add new games
+        const GAMES = [
+            {
+                id: 'theluxe',
+                name: 'TheLuxe',
+                icon: '💎',
+                description: '4x5 grid slot with 14 paylines. Features Black & Gold and Golden Hit bonus games with sticky multiplier frames.',
+                stats: {
+                    rtp: '96%',
+                    volatility: 'High',
+                    lines: '14'
+                },
+                path: '/index.html',
+                isNew: false,
+                isAvailable: true
+            }
+            // Add new games here:
+            // {
+            //     id: 'newgame',
+            //     name: 'New Game',
+            //     icon: '🎮',
+            //     description: 'Description here',
+            //     stats: { rtp: '95%', volatility: 'Medium', lines: '20' },
+            //     path: '/newgame/index.html',
+            //     isNew: true,
+            //     isAvailable: false // Set to true when ready
+            // }
+        ];
+        
+        function renderGames() {
+            const grid = document.getElementById('gamesGrid');
+            
+            GAMES.forEach(game => {
+                const card = document.createElement('div');
+                card.className = `game-card ${!game.isAvailable ? 'coming-soon' : ''}`;
+                
+                if (game.isNew) {
+                    card.innerHTML += '<span class="new-badge">NEW</span>';
+                }
+                
+                card.innerHTML += `
+                    <span class="game-icon">${game.icon}</span>
+                    <h2 class="game-name">${game.name}</h2>
+                    <p class="game-description">${game.description}</p>
+                    <div class="game-stats">
+                        <div class="stat">
+                            <div class="stat-value">${game.stats.rtp}</div>
+                            <div class="stat-label">RTP</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${game.stats.volatility}</div>
+                            <div class="stat-label">Volatility</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">${game.stats.lines}</div>
+                            <div class="stat-label">Paylines</div>
+                        </div>
+                    </div>
+                    <button class="play-button" ${!game.isAvailable ? 'disabled' : ''}>
+                        ${game.isAvailable ? '▶ PLAY NOW' : '🔒 COMING SOON'}
+                    </button>
+                `;
+                
+                if (game.isAvailable) {
+                    card.addEventListener('click', () => {
+                        window.location.href = game.path;
+                    });
+                }
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', renderGames);
+    </script>
+</body>
+</html>
