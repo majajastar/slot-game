@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateServerModeDisplay() {
     const modeEl = document.getElementById('serverMode');
     if (!modeEl) return;
-    
+
     if (CONFIG.serverMode === 'fake') {
         modeEl.textContent = '🧪 Fake Server';
         modeEl.className = 'server-mode fake';
@@ -75,10 +75,15 @@ function renderPaytable() {
     const container = document.getElementById('paytable');
     if (!container) return;
 
-    // Use payouts from CONFIG
-    const clusterPayouts = CONFIG.clusterPayouts;
-    const symbols = CONFIG.symbols;
+    // Use payouts from server (CLUSTER_PAYOUTS) or fallback to CONFIG
+    const hasServerData = Object.keys(CLUSTER_PAYOUTS).length > 0;
+    const clusterPayouts = hasServerData ? CLUSTER_PAYOUTS : CONFIG.clusterPayouts;
+    const symbols = Object.keys(SYMBOLS).length > 0 ? SYMBOLS : CONFIG.symbols;
     const names = CONFIG.symbolNames;
+
+    console.log('[renderPaytable] Using server data:', hasServerData);
+    console.log('[renderPaytable] CLUSTER_PAYOUTS keys:', Object.keys(CLUSTER_PAYOUTS));
+    console.log('[renderPaytable] First payout:', Object.values(clusterPayouts)[0]?.payouts);
 
     let html = `
         <div class="cluster-paytable-header">
@@ -95,21 +100,26 @@ function renderPaytable() {
     `;
 
     Object.entries(clusterPayouts).forEach(([id, data]) => {
+        // Skip Wild (id='1') - it has no direct payout, only substitutes
+        if (id === '1') return;
+
+        // Skip symbols with no payouts (like Scatter) - check if all payouts are 0
+        const hasPayout = data.payouts?.some((p, idx) => idx >= 5 && p > 0);
+        if (!hasPayout) return;
+
         const display = symbols[id] || '?';
-        const name = names[id] || 'Unknown';
+        const name = names[id] || data.name || 'Unknown';
         const payouts = data.payouts;
-        const isWild = id === '1';
-        const rowClass = isWild ? 'cluster-paytable-row wild-row' : 'cluster-paytable-row';
         html += `
-            <div class="${rowClass}">
+            <div class="cluster-paytable-row">
                 <span class="paytable-icon">${display}</span>
                 <span class="paytable-name">${name}</span>
                 <span class="paytable-payout">${formatPayout(payouts[5])}</span>
                 <span class="paytable-payout">${formatPayout(payouts[6])}</span>
                 <span class="paytable-payout">${formatPayout(payouts[7])}</span>
                 <span class="paytable-payout">${formatPayout(payouts[8])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[10])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[12])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[9])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[11])}</span>
                 <span class="paytable-payout high">${formatPayout(payouts[13])}</span>
             </div>
         `;
@@ -123,15 +133,15 @@ function connect() {
     const wsUrl = getWebSocketUrl(CONFIG.authToken, 'en');
     const modeText = CONFIG.serverMode === 'fake' ? 'FAKE' : 'REAL';
     console.log(`[LeBandit] Connecting to ${modeText} server:`, wsUrl);
-    
+
     socket = new WebSocket(wsUrl);
-    
+
     socket.onopen = () => {
         console.log(`[LeBandit] Connected to ${modeText} server`);
         hideLoading();
         sendLogin();
     };
-    
+
     socket.onmessage = (event) => {
         try {
             const msg = JSON.parse(event.data);
@@ -140,13 +150,13 @@ function connect() {
             console.error('Failed to parse message:', e);
         }
     };
-    
+
     socket.onclose = () => {
         console.log('WebSocket closed');
         showLoading('Reconnecting...');
         setTimeout(connect, 3000);
     };
-    
+
     socket.onerror = (err) => {
         console.error('WebSocket error:', err);
     };
@@ -158,7 +168,7 @@ function send(type, data) {
         console.error('Socket not ready');
         return;
     }
-    
+
     const msg = { type: String(type), data: data || [] };
     console.log('→ Sending:', msg);
     socket.send(JSON.stringify(msg));
@@ -166,13 +176,14 @@ function send(type, data) {
 
 // Message handlers
 function handleMessage(msg) {
-    console.log('← Received:', msg);
-    
+
     if (!msg.vals) return;
-    
+    console.log()
     const type = msg.vals.type;
     const data = msg.vals.data;
-    
+    console.log(`type = ${type}`)
+    console.log(`data = ${JSON.stringify(data)}`)
+
     switch (type) {
         case 1: // Login response
             handleLoginResponse(data);
@@ -193,16 +204,17 @@ function handleLoginResponse(data) {
 function handleRoomMessage(data) {
     const subType = data.subType;
     const subData = data.subData?.[0];
-    
+
     switch (subType) {
         case 100005: // Join room response
             handleJoinRoom(subData);
             break;
-        case 100071: // Sync room info
-            handleSyncRoom(subData);
-            break;
-        case 100012: // Set bet response (includes spin result)
-            handleSpinResult(subData);
+        case 100071: // Sync room info AND SetBet response (same as TheLuxe)
+            if (subData?.opCode === 'SyncRoomInfo') {
+                handleSyncRoom(subData);
+            } else if (subData?.opCode === 'SetBet') {
+                handleSpinResult(subData);
+            }
             break;
     }
 }
@@ -213,7 +225,7 @@ function sendLogin() {
 }
 
 function joinRoom() {
-    send('100000', [{ 
+    send('100000', [{
         subType: 100004,
         subData: [{ roomId: 'lebandit-room-001' }]
     }]);
@@ -227,12 +239,11 @@ function sendSyncRoom() {
 }
 
 function sendSetBet(bet) {
-    const betIndex = BET_SIZE_LIST.indexOf(bet);
     send('100000', [{
-        subType: 100012,
-        subData: [{ 
+        subType: 100070,
+        subData: [{
             opCode: 'SetBet',
-            message: { betSizeListIndex: betIndex }
+            message: { bet: bet }  // Send bet value directly, not index
         }]
     }]);
 }
@@ -242,9 +253,28 @@ function handleJoinRoom(data) {
     console.log('Joined room:', data);
     if (data.betInfo?.[0]) {
         const info = data.betInfo[0];
+
+        // Store server config
         if (info.betSizeList) {
             BET_SIZE_LIST = info.betSizeList;
+            console.log('[JoinRoom] Bet sizes:', BET_SIZE_LIST);
         }
+        if (info.clusterPayouts) {
+            CLUSTER_PAYOUTS = info.clusterPayouts;
+            console.log('[JoinRoom] Received clusterPayouts:', CLUSTER_PAYOUTS);
+            // Check first symbol's payouts
+            const firstKey = Object.keys(CLUSTER_PAYOUTS)[0];
+            console.log('[JoinRoom] First symbol payouts:', firstKey, CLUSTER_PAYOUTS[firstKey]?.payouts);
+        }
+        if (info.symbols) {
+            // Convert array to id -> display mapping
+            SYMBOLS = {};
+            info.symbols.forEach(s => {
+                SYMBOLS[s.id] = s.display;
+            });
+            console.log('[JoinRoom] Symbols received:', info.symbols.map(s => s.display).join(', '));
+        }
+
         renderPaytable();
         updateBetDisplay();
     }
@@ -255,7 +285,7 @@ function handleSyncRoom(data) {
     if (data.roomInfo) {
         currentBalance = data.roomInfo.balance || 0;
         updateBalance();
-        
+
         // Restore grid if in middle of game
         if (data.roomInfo.gameState?.grid) {
             renderGrid(data.roomInfo.gameState.grid);
@@ -266,17 +296,104 @@ function handleSyncRoom(data) {
 function handleSpinResult(data) {
     isSpinning = false;
     document.getElementById('spinButton').disabled = false;
-    
-    if (!data.result) return;
-    
-    const result = data.result;
-    
-    // Update balance
-    if (data.balance !== undefined) {
-        currentBalance = data.balance;
-        updateBalance();
+
+    console.log('[handleSpinResult] Raw data:', data);
+
+    // Match TheLuxe structure - betInfo contains the result
+    const betInfo = data.betInfo?.[0];
+    console.log('[handleSpinResult] betInfo:', betInfo);
+
+    if (!betInfo) {
+        console.error('No betInfo in SetBet response', data);
+        return;
     }
-    
+
+    console.log('[handleSpinResult] bet:', betInfo.bet, 'finalBalance:', betInfo.finalBalance);
+
+    const result = betInfo.gameResult;
+    if (!result) {
+        console.error('No gameResult in betInfo', betInfo);
+        return;
+    }
+
+    // Pretty print grid for debugging (show symbol IDs)
+    console.log('%c[Grid Result]', 'color: #4ecdc4; font-weight: bold;');
+    if (result.grid) {
+        console.log('Final Grid:');
+        result.grid.forEach((row, i) => {
+            console.log(`  Row ${i}: ${row.join(' | ')}`);
+        });
+    }
+
+    // Pretty print cascade steps if present
+    if (result.cascadeSteps && result.cascadeSteps.length > 0) {
+        console.log(`%c[Cascade: ${result.cascadeSteps.length} steps]`, 'color: #ffd700; font-weight: bold;');
+        result.cascadeSteps.forEach((step, idx) => {
+            console.log(`%c  Step ${idx + 1}:`, 'color: #4ecdc4; font-weight: bold;', `${step.winningClusters.length} clusters, win: ${step.totalWin}`);
+
+            // Print grid BEFORE (initial state for this step)
+            if (step.gridBefore) {
+                console.log('  Before:');
+                step.gridBefore.forEach((row, i) => {
+                    const rowStr = row.join(' | ');
+                    console.log(`    Row ${i}: ${rowStr}`);
+                });
+            }
+
+            // Print grid AFTER REMOVAL (winning symbols removed)
+            if (step.gridAfterRemoval) {
+                console.log('  After Removal:');
+                step.gridAfterRemoval.forEach((row, i) => {
+                    const rowStr = row.map(s => s === '' ? '·' : s).join(' | ');
+                    console.log(`    Row ${i}: ${rowStr}`);
+                });
+            }
+
+            // Print grid AFTER DROP (symbols fell down)
+            if (step.gridAfterDrop) {
+                console.log('  After Drop:');
+                step.gridAfterDrop.forEach((row, i) => {
+                    const rowStr = row.map(s => s === '' ? '·' : s).join(' | ');
+                    console.log(`    Row ${i}: ${rowStr}`);
+                });
+            }
+
+            // Print grid AFTER FILL (symbols dropped, new ones added)
+            if (step.gridAfterFill) {
+                console.log('  After Fill:');
+                step.gridAfterFill.forEach((row, i) => {
+                    const rowStr = row.join(' | ');
+                    console.log(`    Row ${i}: ${rowStr}`);
+                });
+            }
+
+            // Print winning clusters
+            if (step.winningClusters.length > 0) {
+                console.log('  Wins:');
+                step.winningClusters.forEach(c => {
+                    console.log(`    ${c.symbol} cluster x${c.count} = $${c.payout}`);
+                });
+            }
+            console.log(''); // Empty line between steps
+        });
+    }
+
+    // Log rainbow result if present
+    if (result.rainbowResult?.hasRainbow) {
+        console.log('%c[Rainbow Feature!]', 'color: #ff6b6b; font-weight: bold;',
+            `Coin win: ${result.rainbowResult.coinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
+    }
+
+    // Update balance from server
+    currentBalance = betInfo.finalBalance || 0;
+    updateBalance();
+
+    // Log win
+    const winAmount = result.totalWinAmount || 0;
+    if (winAmount > 0) {
+        console.log('[SpinResult] Win: +$' + winAmount.toFixed(2));
+    }
+
     // Render cascade if present
     if (result.cascadeSteps && result.cascadeSteps.length > 0) {
         renderCascade(result.cascadeSteps, result.totalWinAmount);
@@ -285,16 +402,16 @@ function handleSpinResult(data) {
         renderGrid(result.grid);
         showWin(result.totalWinAmount);
     }
-    
+
     // Render rainbow feature if present
     if (result.rainbowResult && result.rainbowResult.hasRainbow) {
         renderRainbowFeature(result.rainbowResult);
     }
-    
+
     // Update history
     fakeState.history.unshift({
         win: result.totalWinAmount,
-        bet: result.bet,
+        bet: betInfo.bet,
         timestamp: new Date().toLocaleTimeString()
     });
 }
@@ -302,20 +419,28 @@ function handleSpinResult(data) {
 // Grid Rendering
 function renderGrid(grid) {
     if (!grid || !grid.length) return;
-    
+
     currentGrid = grid;
-    
+
     for (let r = 0; r < CONFIG.rows; r++) {
         for (let c = 0; c < CONFIG.cols; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
-            if (cell && grid[r] && grid[r][c]) {
-                const symbolId = grid[r][c];
-                cell.textContent = CONFIG.symbols[symbolId] || symbolId;
-                cell.dataset.symbol = symbolId;
-                cell.classList.remove('wild', 'scatter', 'highlight');
-                
-                if (symbolId === '1') cell.classList.add('wild');
-                if (symbolId === '2') cell.classList.add('scatter');
+            if (cell){
+                if ( grid[r] && grid[r][c]) {
+                    const symbolId = grid[r][c];
+                    cell.textContent = CONFIG.symbols[symbolId] || symbolId;
+                    cell.dataset.symbol = symbolId;
+
+                    // Clear animation/transform styles from previous cascade
+                    cell.style.transform = '';
+                    cell.style.animation = '';
+                    cell.classList.remove('wild', 'scatter', 'highlight', 'removing');
+
+                    if (symbolId === '1') cell.classList.add('wild');
+                    if (symbolId === '2') cell.classList.add('scatter');
+                }
+            } else {
+                cell.style.transform = 'scale(0)';
             }
         }
     }
@@ -327,41 +452,41 @@ async function renderCascade(steps, totalWin) {
     const cascadeStepEl = document.getElementById('cascadeStep');
     const cascadeHistory = document.getElementById('cascadeHistory');
     const cascadeStepsList = document.getElementById('cascadeStepsList');
-    
+
     cascadeInfo.classList.remove('hidden');
     cascadeHistory.classList.remove('hidden');
     cascadeStepsList.innerHTML = '';
-    
+
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         cascadeStepEl.textContent = step.step;
-        
+
         // Render grid before removal
         renderGrid(step.gridBefore);
         highlightWinningSymbols(step.winningClusters);
-        
-        await sleep(800);
-        
+
+        await sleep(1000);
+
         // Show removal animation
         highlightRemovedSymbols(step.removedSymbols);
-        
-        await sleep(500);
-        
+
+        await sleep(1000);
+
         // Render after removal
         renderGrid(step.gridAfterRemoval);
-        
-        await sleep(300);
-        
+
+        await sleep(1000);
+
         // Render after drop
         renderGrid(step.gridAfterDrop);
         animateDrops(step.movements);
         
         await sleep(500);
-        
+
         // Render final with new symbols
         renderGrid(step.gridAfterFill);
         animateNewSymbols(step.newSymbols);
-        
+
         // Add to history
         const stepDiv = document.createElement('div');
         stepDiv.className = 'cascade-step-item';
@@ -370,10 +495,10 @@ async function renderCascade(steps, totalWin) {
             <span class="step-win">+$${step.totalWin.toFixed(2)}</span>
         `;
         cascadeStepsList.appendChild(stepDiv);
-        
+
         await sleep(600);
     }
-    
+
     cascadeInfo.classList.add('hidden');
     showWin(totalWin);
 }
@@ -384,10 +509,10 @@ async function renderRainbowFeature(rainbowResult) {
     const rainbowContent = document.getElementById('rainbowContent');
     const rainbowHistory = document.getElementById('rainbowHistory');
     const rainbowRoundsList = document.getElementById('rainbowRoundsList');
-    
+
     rainbowOverlay.classList.remove('hidden');
     rainbowHistory.classList.remove('hidden');
-    
+
     // Highlight rainbow position
     if (rainbowResult.rainbowPosition) {
         const { row, col } = rainbowResult.rainbowPosition;
@@ -397,11 +522,11 @@ async function renderRainbowFeature(rainbowResult) {
             cell.classList.add('rainbow');
         }
     }
-    
+
     // Render each round
     for (const round of rainbowResult.rounds) {
         let roundHtml = `<div class="rainbow-round"><div class="round-title">Round ${round.round}</div>`;
-        
+
         // Show coins
         if (round.coins.length > 0) {
             roundHtml += `<div class="round-coins">`;
@@ -416,7 +541,7 @@ async function renderRainbowFeature(rainbowResult) {
             }
             roundHtml += `</div>`;
         }
-        
+
         // Show clovers
         if (round.clovers.length > 0) {
             roundHtml += `<div class="round-clovers">`;
@@ -430,7 +555,7 @@ async function renderRainbowFeature(rainbowResult) {
             }
             roundHtml += `</div>`;
         }
-        
+
         // Show pots
         if (round.pots.length > 0) {
             roundHtml += `<div class="round-pots">`;
@@ -444,16 +569,16 @@ async function renderRainbowFeature(rainbowResult) {
             }
             roundHtml += `</div>`;
         }
-        
+
         roundHtml += `</div>`;
-        
+
         const roundDiv = document.createElement('div');
         roundDiv.innerHTML = roundHtml;
         rainbowRoundsList.appendChild(roundDiv);
-        
+
         await sleep(1000);
     }
-    
+
     await sleep(2000);
     rainbowOverlay.classList.add('hidden');
 }
@@ -461,7 +586,7 @@ async function renderRainbowFeature(rainbowResult) {
 // Animation Helpers
 function highlightWinningSymbols(clusters) {
     if (!clusters) return;
-    
+
     for (const cluster of clusters) {
         for (const pos of cluster.positions) {
             const cell = document.getElementById(`cell-${pos.row}-${pos.col}`);
@@ -515,7 +640,7 @@ function updateBetDisplay() {
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     const el = document.getElementById('currentBet');
     if (el) el.textContent = '$' + bet;
-    
+
     // Update quick bet button active states
     document.querySelectorAll('.quick-bet').forEach(btn => {
         btn.classList.remove('active');
@@ -530,7 +655,7 @@ function changeBet(delta) {
     CURRENT_BET_INDEX += delta;
     if (CURRENT_BET_INDEX < 0) CURRENT_BET_INDEX = 0;
     if (CURRENT_BET_INDEX >= BET_SIZE_LIST.length) CURRENT_BET_INDEX = BET_SIZE_LIST.length - 1;
-    
+
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     updateBetDisplay();
     sendSetBet(bet);
@@ -547,23 +672,23 @@ function setBet(amount) {
 
 function spin() {
     if (isSpinning) return;
-    
+
     isSpinning = true;
     document.getElementById('spinButton').disabled = true;
-    
+
     // Clear previous animations
     document.querySelectorAll('.reel-cell').forEach(cell => {
         cell.classList.remove('highlight', 'removing', 'rainbow');
         cell.style.transform = '';
         cell.style.animation = '';
     });
-    
+
     // Clear history displays
     document.getElementById('cascadeHistory').classList.add('hidden');
     document.getElementById('rainbowHistory').classList.add('hidden');
     document.getElementById('cascadeStepsList').innerHTML = '';
     document.getElementById('rainbowRoundsList').innerHTML = '';
-    
+
     // Send spin (SetBet triggers spin)
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     sendSetBet(bet);

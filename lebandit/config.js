@@ -1,4 +1,6 @@
 // Configuration for LeBandit Frontend
+// This references backend config - CLUSTER_PAYOUT_TABLE is the single source of truth
+
 const CONFIG = {
     // Server Mode: 'real' for AWS backend, 'fake' for local testing
     serverMode: 'fake', // Change to 'real' for production
@@ -23,9 +25,9 @@ const CONFIG = {
     currency: 'USD',
     
     // Symbol emojis for display
-    // Symbol IDs: WILD=1, SCATTER=2, High=201-205, Low=101-103
+    // Symbol IDs: WILD=1, SCATTER=2, High=201-205, Low=101-105
     symbols: {
-        '1': '💎',      // WILD
+        '1': '💎',      // WILD (no payout, substitutes only)
         '2': '🎯',     // SCATTER
         // High payout symbols (201-205)
         '201': '👑',
@@ -33,10 +35,12 @@ const CONFIG = {
         '203': '🏆',
         '204': '💵',
         '205': '🎰',
-        // Low payout symbols (101-103)
+        // Low payout symbols (101-105)
         '101': '♠️',
         '102': '♥️',
         '103': '♦️',
+        '104': '♣️',
+        '105': '🌟',
         // Special symbols for rainbow feature
         'RAINBOW': '🌈',
         'BRONZE': '🥉',
@@ -46,10 +50,8 @@ const CONFIG = {
         'POT': '🏺'
     },
     
-    // Symbol names for paytable
+    // Symbol names for paytable (Wild excluded - no direct payout)
     symbolNames: {
-        '1': 'Wild',
-        '2': 'Scatter',
         '201': 'Crown',
         '202': 'Ring',
         '203': 'Trophy',
@@ -57,24 +59,33 @@ const CONFIG = {
         '205': 'Slot',
         '101': 'Spades',
         '102': 'Hearts',
-        '103': 'Diamonds'
+        '103': 'Diamonds',
+        '104': 'Clubs',
+        '105': 'Star'
     },
     
-    // Cluster payouts: index = cluster size (0-17), value = payout multiplier
-    // Cluster wins require 5+ symbols. Indices 0-4 are unused (0)
+    // CLUSTER PAYOUT TABLE - Single source of truth (matches backend)
+    // Index = cluster size (0-17), value = payout multiplier
+    // Paytable columns: 5, 6, 7, 8, 9-10, 11-12, 13+
+    // Array indices:    5, 6, 7, 8, 9,    11,    13
+    // Wild has NO payout (substitutes only)
+    // 9-10 same value, 11-12 same value
+    // Maximum payout at index 13 (13+ cluster size)
     clusterPayouts: {
-        '1':   { payouts: [0, 0, 0, 0, 0, 500, 1000, 2000, 4000, 8000, 15000, 30000, 50000, 75000, 100000, 150000, 200000, 300000] },
-        '201': { payouts: [0, 0, 0, 0, 0, 400, 800, 1600, 3200, 6000, 12000, 25000, 40000, 60000, 80000, 120000, 160000, 240000] },
-        '202': { payouts: [0, 0, 0, 0, 0, 300, 600, 1200, 2500, 5000, 10000, 20000, 35000, 50000, 70000, 100000, 140000, 200000] },
-        '203': { payouts: [0, 0, 0, 0, 0, 250, 500, 1000, 2000, 4000, 8000, 16000, 30000, 45000, 60000, 90000, 120000, 180000] },
-        '204': { payouts: [0, 0, 0, 0, 0, 200, 400, 800, 1600, 3200, 6400, 12000, 25000, 37500, 50000, 75000, 100000, 150000] },
-        '205': { payouts: [0, 0, 0, 0, 0, 150, 300, 600, 1200, 2400, 4800, 10000, 20000, 30000, 40000, 60000, 80000, 120000] },
-        '101': { payouts: [0, 0, 0, 0, 0, 100, 200, 400, 800, 1600, 3200, 6400, 15000, 22500, 30000, 45000, 60000, 90000] },
-        '102': { payouts: [0, 0, 0, 0, 0, 100, 200, 400, 800, 1600, 3200, 6400, 15000, 22500, 30000, 45000, 60000, 90000] },
-        '103': { payouts: [0, 0, 0, 0, 0, 100, 200, 400, 800, 1600, 3200, 6400, 15000, 22500, 30000, 45000, 60000, 90000] }
+        '201': { name: 'Crown',    payouts: [0, 0, 0, 0, 0, 20, 40, 80, 150, 250, 250, 400, 400, 800, 800, 800, 800, 800] },
+        '202': { name: 'Ring',     payouts: [0, 0, 0, 0, 0, 15, 30, 60, 120, 200, 200, 320, 320, 640, 640, 640, 640, 640] },
+        '203': { name: 'Trophy',   payouts: [0, 0, 0, 0, 0, 12, 25, 50, 100, 160, 160, 260, 260, 520, 520, 520, 520, 520] },
+        '204': { name: 'Cash',     payouts: [0, 0, 0, 0, 0, 10, 20, 40, 80, 140, 140, 220, 220, 440, 440, 440, 440, 440] },
+        '205': { name: 'Slot',     payouts: [0, 0, 0, 0, 0, 8, 16, 32, 64, 120, 120, 200, 200, 400, 400, 400, 400, 400] },
+        '101': { name: 'Spades',   payouts: [0, 0, 0, 0, 0, 6, 12, 24, 48, 100, 100, 180, 180, 360, 360, 360, 360, 360] },
+        '102': { name: 'Hearts',   payouts: [0, 0, 0, 0, 0, 6, 12, 24, 48, 100, 100, 180, 180, 360, 360, 360, 360, 360] },
+        '103': { name: 'Diamonds', payouts: [0, 0, 0, 0, 0, 6, 12, 24, 48, 100, 100, 180, 180, 360, 360, 360, 360, 360] },
+        '104': { name: 'Clubs',    payouts: [0, 0, 0, 0, 0, 5, 10, 20, 40, 80, 80, 160, 160, 320, 320, 320, 320, 320] },
+        '105': { name: 'Star',     payouts: [0, 0, 0, 0, 0, 5, 10, 20, 40, 80, 80, 160, 160, 320, 320, 320, 320, 320] }
     },
     
-    // Cluster size labels for display
+    // Cluster size labels for paytable columns
+    // Maps to array indices: 5, 6, 7, 8, 10, 12, 13+
     clusterSizeLabels: ['5', '6', '7', '8', '9-10', '11-12', '13+'],
     
     // Grid dimensions - LeBandit is 6x5
@@ -93,7 +104,7 @@ function getWebSocketUrl(token, lang) {
     return `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
 }
 
-// Helper to format large numbers
+// Helper to format large numbers (K, M)
 function formatPayout(value) {
     if (value >= 1000000) {
         return (value / 1000000).toFixed(1) + 'M';

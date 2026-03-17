@@ -38,9 +38,11 @@
                                 <p>Adjacent = up, down, left, right (no diagonals)</p>
                                 <div class="example-win">
                                     <div class="example-grid lebandit-example">
-                                        <span>👑</span><span>👑</span><span>👑</span><span>💍</span><span>🏆</span><span>💎</span>
-                                        <span>👑</span><span>👑</span><span>💍</span><span>💍</span><span>🏆</span><span>💎</span>
-                                        <span>💎</span><span>👑</span><span>👑</span><span>💍</span><span>🏆</span><span>💎</span>
+                                        <span>👑</span><span>👑</span><span>👑</span><span>💍</span><span>🎰</span><span>♠️</span>
+                                        <span>👑</span><span>👑</span><span>💍</span><span>💍</span><span>🎰</span><span>♥️</span>
+                                        <span>💎</span><span>👑</span><span>👑</span><span>💍</span><span>🎰</span><span>♦️</span>
+                                        <span>💵</span><span>🏆</span><span>🏆</span><span>♣️</span><span>🌟</span><span>🎯</span>
+                                        <span>🎰</span><span>♠️</span><span>♥️</span><span>♦️</span><span>♣️</span><span>🌟</span>
                                     </div>
                                     <div class="example-text">7x Crown cluster = Big Win!</div>
                                 </div>
@@ -51,11 +53,8 @@
                         <div class="rules-subsection">
                             <div class="info-subtitle">🌊 Cascading Reels</div>
                             <div class="rule-detail">
-                                <p>1. Winning symbols are removed</p>
-                                <p>2. Symbols drop down to fill gaps</p>
-                                <p>3. New symbols appear at top</p>
-                                <p>4. New wins are calculated!</p>
-                                <p>5. Continues until no more wins</p>
+                                <p>Winning clusters disappear, symbols fall down, new ones appear!</p>
+                                <p>Multiple wins in a single spin - cascade continues until no more wins.</p>
                             </div>
                         </div>
 
@@ -63,24 +62,23 @@
                         <div class="rules-subsection">
                             <div class="info-subtitle">✨ Golden Squares</div>
                             <div class="rule-detail">
-                                <p>When symbols are removed, they leave golden squares!</p>
-                                <p>Golden squares persist through cascades.</p>
+                                <p>Winning positions turn into golden squares that persist through cascades.</p>
+                                <p>Rainbow can transform them into coins, clovers, or pots!</p>
                             </div>
                         </div>
 
                         <!-- Rainbow Feature -->
                         <div class="rules-subsection bonus-rules">
-                            <div class="info-subtitle">🌈 Rainbow Feature</div>
+                            <div class="info-subtitle">🌈 Rainbow Feature (10% chance)</div>
                             <div class="rule-detail">
-                                <p>After cascade ends, chance for <strong>Rainbow</strong> to appear!</p>
-                                <p>When Rainbow appears:</p>
+                                <p>After cascade ends, rainbow may appear and transform golden squares:</p>
                                 <ul>
-                                    <li>Golden squares become <strong>Coins</strong>, <strong>Clovers</strong>, or <strong>Pots of Gold</strong></li>
-                                    <li><strong>Coins:</strong> Bronze (0.2x-4x), Silver (5x-20x), Gold (25x-500x)</li>
-                                    <li><strong>Clovers:</strong> Multiply adjacent coins/pots (2x, 3x, 4x, 5x, 100x)</li>
-                                    <li><strong>Pot of Gold:</strong> Collects ALL coin values!</li>
+                                    <li><strong>🥉 Bronze Coins:</strong> 0.2x - 4x</li>
+                                    <li><strong>🥈 Silver Coins:</strong> 5x - 20x</li>
+                                    <li><strong>🥇 Gold Coins:</strong> 25x - 500x</li>
+                                    <li><strong>🍀 Clovers:</strong> Multiply adjacent coins (2x, 3x, 4x, 5x, 100x)</li>
+                                    <li><strong>🏺 Pots of Gold:</strong> Collect ALL coin values!</li>
                                 </ul>
-                                <p>If Pots appear, golden squares refill for another round!</p>
                             </div>
                         </div>
 
@@ -88,8 +86,8 @@
                         <div class="rules-subsection">
                             <div class="info-subtitle">💎 Wild Symbol</div>
                             <div class="rule-detail">
-                                <p>Substitutes for ALL symbols (except Scatter)</p>
-                                <p>Helps form clusters with any symbol!</p>
+                                <p>Substitutes for any symbol to help form clusters.</p>
+                                <p>No direct payout - helps other symbols win!</p>
                             </div>
                         </div>
                     </div>
@@ -125,16 +123,8 @@
                     </div>
                 </div>
 
-                <!-- RIGHT: Paytable & Controls -->
+                <!-- RIGHT: Controls Only -->
                 <div class="right-panel">
-                    <!-- Paytable -->
-                    <div class="info-section">
-                        <div class="info-title">📊 Cluster Payouts</div>
-                        <div id="paytable" class="paytable">
-                            <div class="loading-text">Loading...</div>
-                        </div>
-                    </div>
-                    
                     <!-- Controls -->
                     <div class="controls-section">
                         <div class="balance-display">
@@ -162,6 +152,14 @@
                             <button class="quick-bet" onclick="setBet(50)">$50</button>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Paytable Below Grid -->
+            <div class="paytable-section">
+                <div class="info-title">📊 Cluster Payouts</div>
+                <div id="paytable" class="paytable">
+                    <div class="loading-text">Loading...</div>
                 </div>
             </div>
             
