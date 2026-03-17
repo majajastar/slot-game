@@ -402,9 +402,9 @@ async function connect() {
         // Step 3: WebSocket
         updateLoading('Connecting to game...');
         const wsUrl = `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-        const localWsUrl = `ws://xxx:3002`;
+        const localWsUrl = `ws://54.238.168.141:3002`;
 
-        socket = new WebSocket(wsUrl);
+        socket = new WebSocket(localWsUrl);
 
         socket.onopen = () => {
             log('WebSocket connected');
