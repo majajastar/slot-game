@@ -75,18 +75,10 @@ function renderPaytable() {
     const container = document.getElementById('paytable');
     if (!container) return;
 
-    // Default cluster payouts (will be overridden by server data)
-    const clusterPayouts = {
-        '1':   { name: 'Wild',   payouts: [0, 0, 0, 0, 0, 5, 10, 20, 40, 80, 150, 300, 500] },
-        '201': { name: 'Crown',  payouts: [0, 0, 0, 0, 0, 4, 8, 16, 32, 60, 120, 250, 400] },
-        '202': { name: 'Ring',   payouts: [0, 0, 0, 0, 0, 3, 6, 12, 25, 50, 100, 200, 350] },
-        '203': { name: 'Trophy', payouts: [0, 0, 0, 0, 0, 2.5, 5, 10, 20, 40, 80, 160, 300] },
-        '204': { name: 'Cash',   payouts: [0, 0, 0, 0, 0, 2, 4, 8, 16, 32, 64, 120, 250] },
-        '205': { name: 'Slot',   payouts: [0, 0, 0, 0, 0, 1.5, 3, 6, 12, 24, 48, 100, 200] },
-        '101': { name: 'Spades', payouts: [0, 0, 0, 0, 0, 1, 2, 4, 8, 16, 32, 64, 150] },
-        '102': { name: 'Hearts', payouts: [0, 0, 0, 0, 0, 1, 2, 4, 8, 16, 32, 64, 150] },
-        '103': { name: 'Diamonds', payouts: [0, 0, 0, 0, 0, 1, 2, 4, 8, 16, 32, 64, 150] }
-    };
+    // Use payouts from CONFIG
+    const clusterPayouts = CONFIG.clusterPayouts;
+    const symbols = CONFIG.symbols;
+    const names = CONFIG.symbolNames;
 
     let html = `
         <div class="cluster-paytable-header">
@@ -103,21 +95,22 @@ function renderPaytable() {
     `;
 
     Object.entries(clusterPayouts).forEach(([id, data]) => {
-        const display = CONFIG.symbols[id] || '?';
+        const display = symbols[id] || '?';
+        const name = names[id] || 'Unknown';
         const payouts = data.payouts;
         const isWild = id === '1';
         const rowClass = isWild ? 'cluster-paytable-row wild-row' : 'cluster-paytable-row';
         html += `
             <div class="${rowClass}">
                 <span class="paytable-icon">${display}</span>
-                <span class="paytable-name">${data.name}</span>
-                <span class="paytable-payout">${payouts[5]}x</span>
-                <span class="paytable-payout">${payouts[6]}x</span>
-                <span class="paytable-payout">${payouts[7]}x</span>
-                <span class="paytable-payout">${payouts[8]}x</span>
-                <span class="paytable-payout">${payouts[10]}x</span>
-                <span class="paytable-payout">${payouts[12]}x</span>
-                <span class="paytable-payout high">${payouts[13]}x</span>
+                <span class="paytable-name">${name}</span>
+                <span class="paytable-payout">${formatPayout(payouts[5])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[6])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[7])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[8])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[10])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[12])}</span>
+                <span class="paytable-payout high">${formatPayout(payouts[13])}</span>
             </div>
         `;
     });
