@@ -1,6 +1,12 @@
 // Configuration for LeBandit Frontend
 const CONFIG = {
-    // API Endpoints - Same as TheLuxe (shared backend)
+    // Server Mode: 'real' for AWS backend, 'fake' for local testing
+    serverMode: 'fake', // Change to 'real' for production
+    
+    // Fake Server (local testing)
+    fakeWsUrl: 'ws://54.238.168.141:3003',
+    
+    // Real API Endpoints (AWS)
     sidUrl: 'https://lbucmxb2ke.execute-api.ap-southeast-1.amazonaws.com/mock-wallet/sid',
     launchUrl: 'https://1zka52hsdc.execute-api.ap-southeast-1.amazonaws.com/rest/game/launch',
     wsBaseUrl: 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat',
@@ -50,5 +56,8 @@ const CONFIG = {
 
 // Helper to build WebSocket URL
 function getWebSocketUrl(token, lang) {
+    if (CONFIG.serverMode === 'fake') {
+        return CONFIG.fakeWsUrl;
+    }
     return `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
 }

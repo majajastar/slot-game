@@ -3,6 +3,37 @@
  * Extends the base styles.css
  */
 
+/* Server mode indicator */
+.server-mode {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.server-mode.fake {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    color: white;
+}
+
+.server-mode.real {
+    background: linear-gradient(135deg, #51cf66, #40c057);
+    color: white;
+}
+
+.header {
+    position: relative;
+}
+
+.header-center {
+    text-align: center;
+}
+
 /* Grid adjustments for 6x5 */
 .lebandit-grid-container {
     max-width: 720px;
@@ -25,44 +56,353 @@
     grid-template-columns: 280px 1fr 280px;
 }
 
-/* Cluster paytable styles */
-.cluster-paytable-header,
+/* ==========================================
+   IMPROVED PAYTABLE STYLES
+   ========================================== */
+
+.paytable {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+/* Header row */
+.cluster-paytable-header {
+    display: grid;
+    grid-template-columns: 36px 80px repeat(7, 1fr);
+    gap: 2px;
+    padding: 8px 6px;
+    align-items: center;
+    text-align: center;
+    font-size: 0.7rem;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.cluster-paytable-header span:first-child {
+    grid-column: 1;
+}
+
+.cluster-paytable-header span:nth-child(2) {
+    grid-column: 2;
+    text-align: left;
+    padding-left: 5px;
+}
+
+/* Data rows */
 .cluster-paytable-row {
     display: grid;
-    grid-template-columns: 40px 1fr repeat(7, 1fr);
-    gap: 4px;
-    padding: 6px 8px;
+    grid-template-columns: 36px 80px repeat(7, 1fr);
+    gap: 2px;
+    padding: 6px;
     align-items: center;
     text-align: center;
     font-size: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
 }
 
-.cluster-paytable-header {
-    background: rgba(255, 215, 0, 0.2);
-    font-weight: bold;
-    border-radius: 5px;
-    margin-bottom: 5px;
-}
-
-.cluster-paytable-row {
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+.cluster-paytable-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
 }
 
 .cluster-paytable-row:last-child {
     border-bottom: none;
 }
 
+/* Symbol icon cell */
+.cluster-paytable-row .paytable-icon {
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Symbol name cell */
+.cluster-paytable-row .paytable-name {
+    text-align: left;
+    padding-left: 5px;
+    font-size: 0.75rem;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Payout values */
 .cluster-paytable-row .paytable-payout {
     color: #4ecdc4;
+    font-weight: 600;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    padding: 2px 0;
+    background: rgba(78, 205, 196, 0.1);
+    border-radius: 3px;
+    margin: 0 1px;
+}
+
+.cluster-paytable-row .paytable-payout.high {
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.2);
+    font-weight: bold;
+    font-size: 0.75rem;
+}
+
+/* Wild row styling */
+.cluster-paytable-row.wild-row {
+    background: rgba(255, 215, 0, 0.1);
+    border-left: 3px solid #ffd700;
+}
+
+.cluster-paytable-row.wild-row .paytable-name {
+    color: #ffd700;
     font-weight: bold;
 }
 
-.cluster-paytable-row .paytable-payout.highlight {
-    color: #ffd700;
-    font-size: 0.85rem;
+/* ==========================================
+   IMPROVED CONTROLS SECTION
+   ========================================== */
+
+.controls-section {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Golden squares overlay */
+/* Balance display */
+.balance-display {
+    text-align: center;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+    border-radius: 10px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.balance-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.balance-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffd700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Bet controls container */
+.bet-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+/* Bet adjustment buttons */
+.bet-button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.bet-button:hover {
+    background: linear-gradient(145deg, #3a3a5a, #2a2a3e);
+    border-color: rgba(255, 215, 0, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.2);
+}
+
+.bet-button:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.bet-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Bet display */
+.bet-display {
+    min-width: 100px;
+    text-align: center;
+    padding: 10px 20px;
+    background: linear-gradient(145deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2));
+    border-radius: 12px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.bet-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.bet-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================
+   SPIN BUTTON - PREMIUM STYLE
+   ========================================== */
+
+.spin-button {
+    width: 100%;
+    padding: 18px 30px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #1a1a2e;
+    background: linear-gradient(145deg, #ffd700, #ffaa00, #ffd700);
+    background-size: 200% 200%;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 8px 25px rgba(255, 215, 0, 0.4),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    animation: spinButtonShine 3s ease-in-out infinite;
+}
+
+.spin-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    animation: spinButtonGleam 2s ease-in-out infinite;
+}
+
+@keyframes spinButtonShine {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes spinButtonGleam {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.spin-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 
+        0 12px 35px rgba(255, 215, 0, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.spin-button:active {
+    transform: translateY(0);
+    box-shadow: 
+        0 4px 15px rgba(255, 215, 0, 0.3),
+        inset 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.spin-button:disabled {
+    background: linear-gradient(145deg, #555, #333);
+    color: #888;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    animation: none;
+}
+
+.spin-button:disabled::before {
+    display: none;
+}
+
+/* ==========================================
+   QUICK BET BUTTONS
+   ========================================== */
+
+.quick-bets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.quick-bet {
+    padding: 10px 5px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #ccc;
+    background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-variant-numeric: tabular-nums;
+}
+
+.quick-bet:hover {
+    background: linear-gradient(145deg, #3a3a5a, #2a2a3e);
+    border-color: rgba(255, 215, 0, 0.4);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.quick-bet:active {
+    transform: translateY(0);
+}
+
+.quick-bet.active {
+    background: linear-gradient(145deg, #ffd700, #ffaa00);
+    color: #1a1a2e;
+    border-color: #ffd700;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+/* ==========================================
+   GOLDEN SQUARES & RAINBOW STYLES
+   ========================================== */
+
 .golden-squares-overlay {
     position: absolute;
     top: 0;
@@ -373,6 +713,15 @@
     .cluster-paytable-header,
     .cluster-paytable-row {
         font-size: 0.6rem;
-        grid-template-columns: 30px 1fr repeat(7, 1fr);
+        grid-template-columns: 30px 70px repeat(7, 1fr);
+    }
+    
+    .spin-button {
+        font-size: 1.1rem;
+        padding: 15px 20px;
+    }
+    
+    .quick-bets {
+        grid-template-columns: repeat(2, 1fr);
     }
 }

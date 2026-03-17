@@ -33,8 +33,25 @@ let symbolInstances = {}; // Track symbol IDs
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initGrid();
+    renderPaytable();
+    updateBetDisplay();
+    updateServerModeDisplay();
     connect();
 });
+
+// Update server mode display
+function updateServerModeDisplay() {
+    const modeEl = document.getElementById('serverMode');
+    if (!modeEl) return;
+    
+    if (CONFIG.serverMode === 'fake') {
+        modeEl.textContent = '🧪 Fake Server';
+        modeEl.className = 'server-mode fake';
+    } else {
+        modeEl.textContent = '🔴 Real Server';
+        modeEl.className = 'server-mode real';
+    }
+}
 
 // Create 6x5 grid
 function initGrid() {
@@ -88,8 +105,10 @@ function renderPaytable() {
     Object.entries(clusterPayouts).forEach(([id, data]) => {
         const display = CONFIG.symbols[id] || '?';
         const payouts = data.payouts;
+        const isWild = id === '1';
+        const rowClass = isWild ? 'cluster-paytable-row wild-row' : 'cluster-paytable-row';
         html += `
-            <div class="cluster-paytable-row">
+            <div class="${rowClass}">
                 <span class="paytable-icon">${display}</span>
                 <span class="paytable-name">${data.name}</span>
                 <span class="paytable-payout">${payouts[5]}x</span>
@@ -98,7 +117,7 @@ function renderPaytable() {
                 <span class="paytable-payout">${payouts[8]}x</span>
                 <span class="paytable-payout">${payouts[10]}x</span>
                 <span class="paytable-payout">${payouts[12]}x</span>
-                <span class="paytable-payout highlight">${payouts[13]}x</span>
+                <span class="paytable-payout high">${payouts[13]}x</span>
             </div>
         `;
     });
@@ -109,12 +128,13 @@ function renderPaytable() {
 // WebSocket Connection
 function connect() {
     const wsUrl = getWebSocketUrl(CONFIG.authToken, 'en');
-    console.log('Connecting to:', wsUrl);
+    const modeText = CONFIG.serverMode === 'fake' ? 'FAKE' : 'REAL';
+    console.log(`[LeBandit] Connecting to ${modeText} server:`, wsUrl);
     
     socket = new WebSocket(wsUrl);
     
     socket.onopen = () => {
-        console.log('WebSocket connected');
+        console.log(`[LeBandit] Connected to ${modeText} server`);
         hideLoading();
         sendLogin();
     };
@@ -502,6 +522,15 @@ function updateBetDisplay() {
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     const el = document.getElementById('currentBet');
     if (el) el.textContent = '$' + bet;
+    
+    // Update quick bet button active states
+    document.querySelectorAll('.quick-bet').forEach(btn => {
+        btn.classList.remove('active');
+        const btnAmount = parseInt(btn.textContent.replace('$', ''));
+        if (btnAmount === bet) {
+            btn.classList.add('active');
+        }
+    });
 }
 
 function changeBet(delta) {

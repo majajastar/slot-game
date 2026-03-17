@@ -19,13 +19,41 @@ const mimeTypes = {
 const server = http.createServer((req, res) => {
   console.log(`${req.method} ${req.url}`);
   
-  // Security: prevent directory traversal
-  let filePath = path.normalize('.' + req.url);
-  if (filePath === './' || filePath === '.') {
-    filePath = './lobby.html';  // Default to lobby page
+  // Parse URL
+  let urlPath = req.url;
+  
+  // Remove query string
+  const queryIndex = urlPath.indexOf('?');
+  if (queryIndex !== -1) {
+    urlPath = urlPath.substring(0, queryIndex);
   }
   
-  // Ensure file is within current directory
+  // Map URLs to file paths
+  let filePath;
+  
+  if (urlPath === '/' || urlPath === '') {
+    // Default to lobby
+    filePath = './lobby/index.html';
+  } else if (urlPath === '/theluxe' || urlPath === '/theluxe/') {
+    filePath = './theluxe/index.html';
+  } else if (urlPath === '/lebandit' || urlPath === '/lebandit/') {
+    filePath = './lebandit/index.html';
+  } else if (urlPath === '/lobby' || urlPath === '/lobby/') {
+    filePath = './lobby/index.html';
+  } else if (urlPath.startsWith('/theluxe/')) {
+    filePath = '.' + urlPath;
+  } else if (urlPath.startsWith('/lebandit/')) {
+    filePath = '.' + urlPath;
+  } else if (urlPath.startsWith('/lobby/')) {
+    filePath = '.' + urlPath;
+  } else if (urlPath.startsWith('/shared/')) {
+    filePath = '.' + urlPath;
+  } else {
+    // Static files in game folders
+    filePath = '.' + urlPath;
+  }
+  
+  // Security: prevent directory traversal
   const resolvedPath = path.resolve(filePath);
   const currentDir = path.resolve('.');
   
@@ -42,7 +70,7 @@ const server = http.createServer((req, res) => {
     if (error) {
       if (error.code === 'ENOENT') {
         res.writeHead(404, { 'Content-Type': 'text/html' });
-        res.end('<h1>404 Not Found</h1>', 'utf-8');
+        res.end(`<h1>404 Not Found</h1><p>${req.url}</p>`, 'utf-8');
       } else {
         res.writeHead(500);
         res.end('Server Error: ' + error.code, 'utf-8');
@@ -62,9 +90,13 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`=================================`);
-  console.log(`TheLuxe Slot Game Server`);
+  console.log(`Slot Game Server`);
   console.log(`=================================`);
   console.log(`Server running at http://localhost:${PORT}/`);
-  console.log(`Open this URL in your browser to play`);
+  console.log('');
+  console.log('Available games:');
+  console.log(`  - Lobby:     http://localhost:${PORT}/lobby/`);
+  console.log(`  - TheLuxe:   http://localhost:${PORT}/theluxe/`);
+  console.log(`  - LeBandit:  http://localhost:${PORT}/lebandit/`);
   console.log(`=================================`);
 });
