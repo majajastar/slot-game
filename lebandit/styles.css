@@ -37,13 +37,25 @@
 /* Grid adjustments for 6x5 */
 .lebandit-grid-container {
     max-width: 720px;
+    position: relative;
+    height: 388px; /* 5 rows * 70px + 4 gaps * 6px + 2 * 15px padding */
+    overflow: hidden;
 }
 
 .lebandit-grid {
+    display: grid;
     grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(5, 1fr);
+    grid-template-rows: repeat(10, 70px); /* 5 buffer + 5 visible */
     gap: 6px;
     padding: 15px;
+    position: absolute;
+    top: -380px; /* Shift up to hide 5 buffer rows (5 * 76px) */
+    left: 0;
+    right: 0;
+}
+
+.buffer-cell {
+    /* Buffer cells are above the visible area */
 }
 
 .lebandit-cell {

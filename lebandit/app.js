@@ -10,16 +10,7 @@ let GAME_CONFIG = {};
 let BET_SIZE_LIST = [5, 10, 20, 50, 100];
 let CURRENT_BET_INDEX = 2; // Default $20
 
-// Fake game state for fields not in server response
-let fakeState = {
-    spinCount: 0,
-    totalWin: 0,
-    history: [],
-    cascadeSteps: [],
-    rainbowResult: null
-};
-
-// Current game state from server
+// Game state
 let socket = null;
 let isSpinning = false;
 let pingInterval = null;
@@ -27,8 +18,6 @@ let currentBalance = 0;
 
 // Grid state
 let currentGrid = [];
-let goldenSquares = [];
-let symbolInstances = {}; // Track symbol IDs
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -53,10 +42,25 @@ function updateServerModeDisplay() {
     }
 }
 
-// Create 6x5 grid
+// Create 6x5 grid with buffer rows above for animation
 function initGrid() {
     const grid = document.getElementById('reelGrid');
     grid.innerHTML = '';
+
+    // Create buffer rows above (negative rows) for new symbols to start from
+    const bufferRows = 5; // Rows -5, -4, -3, -2, -1
+    for (let r = -bufferRows; r < 0; r++) {
+        for (let c = 0; c < CONFIG.cols; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'reel-cell lebandit-cell buffer-cell';
+            cell.id = `cell-${r}-${c}`;
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            grid.appendChild(cell);
+        }
+    }
+
+    // Create visible grid rows (0-4)
     for (let r = 0; r < CONFIG.rows; r++) {
         for (let c = 0; c < CONFIG.cols; c++) {
             const cell = document.createElement('div');
@@ -349,20 +353,18 @@ function handleSpinResult(data) {
                 });
             }
 
-            // Print grid AFTER DROP (symbols fell down)
-            if (step.gridAfterDrop) {
-                console.log('  After Drop:');
-                step.gridAfterDrop.forEach((row, i) => {
+            // Print grid AFTER DROP & FILL (combined stage)
+            if (step.gridAfterDropAndFill) {
+                console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
+                step.gridAfterDropAndFill.forEach((row, i) => {
                     const rowStr = row.map(s => s === '' ? '·' : s).join(' | ');
                     console.log(`    Row ${i}: ${rowStr}`);
                 });
-            }
-
-            // Print grid AFTER FILL (symbols dropped, new ones added)
-            if (step.gridAfterFill) {
-                console.log('  After Fill:');
+            } else if (step.gridAfterFill) {
+                // Fallback for backwards compatibility
+                console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
                 step.gridAfterFill.forEach((row, i) => {
-                    const rowStr = row.join(' | ');
+                    const rowStr = row.map(s => s === '' ? '·' : s).join(' | ');
                     console.log(`    Row ${i}: ${rowStr}`);
                 });
             }
@@ -407,13 +409,6 @@ function handleSpinResult(data) {
     if (result.rainbowResult && result.rainbowResult.hasRainbow) {
         renderRainbowFeature(result.rainbowResult);
     }
-
-    // Update history
-    fakeState.history.unshift({
-        win: result.totalWinAmount,
-        bet: betInfo.bet,
-        timestamp: new Date().toLocaleTimeString()
-    });
 }
 
 // Grid Rendering
@@ -461,31 +456,27 @@ async function renderCascade(steps, totalWin) {
         const step = steps[i];
         cascadeStepEl.textContent = step.step;
 
-        // Render grid before removal
+        // Step 1: Show grid before and highlight wins
         renderGrid(step.gridBefore);
         highlightWinningSymbols(step.winningClusters);
+        await sleep(800);
 
-        await sleep(1000);
-
-        // Show removal animation
+        // Step 2: Animate removal
         highlightRemovedSymbols(step.removedSymbols);
+        await sleep(600);
 
-        await sleep(1000);
-
-        // Render after removal
+        // Step 3: Show "after removal" grid (with empty spaces)
         renderGrid(step.gridAfterRemoval);
+        await sleep(400);
 
-        await sleep(1000);
+        // Step 4: Animate drops and new symbols
+        // animateCombined will visually move symbols from their "from" positions
+        animateCombined(step.movements);
+        await sleep(700);
 
-        // Render after drop
-        renderGrid(step.gridAfterDrop);
-        animateDrops(step.movements);
-        
-        await sleep(500);
-
-        // Render final with new symbols
-        renderGrid(step.gridAfterFill);
-        animateNewSymbols(step.newSymbols);
+        // Step 5: Render final grid to ensure everything is in sync
+        renderGrid(step.gridAfterDropAndFill || step.gridAfterFill);
+        await sleep(400);
 
         // Add to history
         const stepDiv = document.createElement('div');
@@ -496,7 +487,7 @@ async function renderCascade(steps, totalWin) {
         `;
         cascadeStepsList.appendChild(stepDiv);
 
-        await sleep(600);
+        await sleep(300);
     }
 
     cascadeInfo.classList.add('hidden');
@@ -605,22 +596,123 @@ function highlightRemovedSymbols(removedSymbols) {
     }
 }
 
-function animateDrops(movements) {
-    for (const move of movements) {
-        const cell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
-        if (cell) {
-            cell.style.animation = 'drop 0.3s ease-out';
-        }
-    }
-}
+// Combined animation for drops and new symbols (happens simultaneously)
+// Lower symbols (larger row numbers) drop first
+function animateCombined(movements) {
+    const animationDuration = 400; // ms
+    const staggerDelay = 50; // ms between rows
 
-function animateNewSymbols(newSymbols) {
-    for (const ns of newSymbols) {
-        const cell = document.getElementById(`cell-${ns.row}-${ns.col}`);
-        if (cell) {
-            cell.style.animation = 'popIn 0.3s ease-out';
+    // Sort movements by destination row (descending - lower rows first)
+    const sortedMovements = [...movements].sort((a, b) => b.to.row - a.to.row);
+
+    // Animate all movements (existing and new symbols)
+    sortedMovements.forEach((move) => {
+        // Check if this is a new symbol (falling in from above / buffer row)
+        if (move.isNew || move.from.row < 0) {
+            const bufferCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
+            const targetCell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
+
+            if (!targetCell) return;
+
+            // Calculate delay (lower rows animate first)
+            const delay = (4 - move.to.row) * staggerDelay;
+
+            // Set up the symbol in the buffer cell
+            if (bufferCell) {
+                const icon = CONFIG.symbols[move.symbol] || '❓';
+                bufferCell.textContent = icon;
+                bufferCell.dataset.symbol = move.symbol;
+                bufferCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
+                if (move.symbol === '1') bufferCell.classList.add('wild');
+                if (move.symbol === '2') bufferCell.classList.add('scatter');
+
+                // Also set up target cell (will be revealed as symbol falls)
+                targetCell.textContent = icon;
+                targetCell.dataset.symbol = move.symbol;
+                targetCell.className = bufferCell.className;
+                targetCell.classList.remove('buffer-cell');
+
+                // Calculate the distance to fall
+                const rowDiff = move.to.row - move.from.row;
+                const cellHeight = 76; // 70px + 6px gap
+                const fallDistance = rowDiff * cellHeight;
+
+                // Animate from buffer position to target
+                setTimeout(() => {
+                    bufferCell.style.transition = `transform ${animationDuration}ms ease-out`;
+                    bufferCell.style.transform = `translateY(${fallDistance}px)`;
+
+                    setTimeout(() => {
+                        // Reset buffer cell
+                        bufferCell.style.transition = '';
+                        bufferCell.style.transform = '';
+                        bufferCell.textContent = '';
+                        bufferCell.className = 'reel-cell lebandit-cell buffer-cell';
+                    }, animationDuration);
+                }, delay);
+            } else {
+                // Fallback: animate target cell from above
+                const icon = CONFIG.symbols[move.symbol] || '❓';
+                targetCell.textContent = icon;
+                targetCell.dataset.symbol = move.symbol;
+                targetCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
+                if (move.symbol === '1') targetCell.classList.add('wild');
+                if (move.symbol === '2') targetCell.classList.add('scatter');
+
+                const cellHeight = 76;
+                const fromRow = move.from.row;
+                const fallDistance = Math.abs(fromRow - move.to.row) * cellHeight;
+
+                targetCell.style.transform = `translateY(-${fallDistance}px)`;
+                targetCell.style.opacity = '0';
+                targetCell.offsetHeight; // Force reflow
+
+                setTimeout(() => {
+                    targetCell.style.transition = `transform ${animationDuration}ms ease-out, opacity ${animationDuration * 0.7}ms ease-out`;
+                    targetCell.style.transform = 'translateY(0)';
+                    targetCell.style.opacity = '1';
+
+                    setTimeout(() => {
+                        targetCell.style.transition = '';
+                    }, animationDuration);
+                }, delay);
+            }
+        } else {
+            // Existing symbol dropping from one position to another
+            const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
+            const toCell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
+
+            if (!fromCell || !toCell) return;
+
+            // Calculate delay (lower rows animate first)
+            const delay = (4 - move.to.row) * staggerDelay;
+
+            // Calculate distance from "from" position to "to" position
+            const rowDiff = move.to.row - move.from.row;
+            const cellHeight = 76; // 70px + 6px gap
+            const translateY = rowDiff * cellHeight;
+
+            // Animate from current position to new position
+            fromCell.style.zIndex = '10';
+
+            setTimeout(() => {
+                fromCell.style.transition = `transform ${animationDuration}ms ease-out`;
+                fromCell.style.transform = `translateY(${translateY}px)`;
+
+                // After animation, copy content and reset
+                setTimeout(() => {
+                    toCell.innerHTML = fromCell.innerHTML;
+                    toCell.className = fromCell.className;
+
+                    fromCell.style.transition = '';
+                    fromCell.style.transform = '';
+                    fromCell.style.zIndex = '';
+                    fromCell.innerHTML = '';
+                    fromCell.className = 'reel-cell lebandit-cell';
+                }, animationDuration);
+            }, delay);
         }
-    }
+    });
 }
 
 // UI Helpers
