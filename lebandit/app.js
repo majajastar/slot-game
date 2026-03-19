@@ -436,21 +436,30 @@ function handleSpinResult(data) {
 }
 
 // Grid Rendering
-function renderGrid(grid) {
+function renderGrid(grid, instant = false) {
     if (!grid || !grid.length) return;
 
     currentGrid = grid;
 
-    for (let r = 0; r < CONFIG.rows; r++) {
+    for (let r = -5; r < CONFIG.rows; r++) {
         for (let c = 0; c < CONFIG.cols; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
-            if (cell){
+            if (r < 0){
+                cell.style.transform = '';
+                cell.style.animation = '';
+                cell.style.transform = 'scale(0)';
+            }
+            else if (cell){
                 if ( grid[r] && grid[r][c]) {
                     const symbolId = grid[r][c];
                     cell.textContent = CONFIG.symbols[symbolId] || symbolId;
                     cell.dataset.symbol = symbolId;
 
                     // Clear animation/transform styles from previous cascade
+                    if (instant)
+                        cell.style.transition = 'none'
+                    else
+                        cell.style.transition = '';
                     cell.style.transform = '';
                     cell.style.animation = '';
                     cell.classList.remove('wild', 'scatter', 'highlight', 'removing');
@@ -495,13 +504,10 @@ async function renderCascade(steps, totalWin) {
 
         // Step 4: Animate drops and new symbols
         // animateCombined will visually move symbols from their "from" positions
-        animateCombined(step.movements);
-        await sleep(700);
-
+        await animateCombined(step.movements);
         // Step 5: Render final grid to ensure everything is in sync
-        renderGrid(step.gridAfterDropAndFill || step.gridAfterFill);
+        renderGrid(step.gridAfterDropAndFill || step.gridAfterFill, true);
         await sleep(400);
-        break;
 
         // Add to history
         const stepDiv = document.createElement('div');
@@ -623,73 +629,68 @@ function highlightRemovedSymbols(removedSymbols) {
 
 // Combined animation for drops and new symbols (happens simultaneously)
 // Lower symbols (larger row numbers) drop first
-function animateCombined(movements) {
+async function animateCombined(movements) {
     const animationDuration = 400; // ms
     const staggerDelay = 50; // ms between rows
 
     // Sort movements by destination row (descending - lower rows first)
     const sortedMovements = [...movements].sort((a, b) => b.to.row - a.to.row);
 
-    // Animate all movements (existing and new symbols)
-    sortedMovements.forEach((move) => {
-        // Check if this is a new symbol (falling in from above / buffer row)
-        if (move.isNew || move.from.row < 0) {
-            const bufferCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
+    // 1. Create a Promise for every movement
+    const animationPromises = sortedMovements.map((move) => {
+        return new Promise((resolve) => {
+            const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
             const targetCell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
 
-            if (!targetCell) return;
-
-            // Calculate delay (lower rows animate first)
-            const delay = (4 - move.to.row) * staggerDelay;
-
-            // Set up the symbol in the buffer cell
+            // Set up the symbol in the starting cell (buffer or old position)
             const icon = CONFIG.symbols[move.symbol] || '❓';
-            bufferCell.textContent = icon;
-            bufferCell.dataset.symbol = move.symbol;
-            bufferCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
-            if (move.symbol === '1') bufferCell.classList.add('wild');
-            if (move.symbol === '2') bufferCell.classList.add('scatter');
+            if (move.isNew) {
+                fromCell.style.transform = '';
+                fromCell.textContent = icon;
+                fromCell.dataset.symbol = move.symbol;
+                fromCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
+            }
 
-            // Also set up target cell (will be revealed as symbol falls)
-            targetCell.textContent = icon;
-            targetCell.dataset.symbol = move.symbol;
-            targetCell.className = bufferCell.className;
-            targetCell.classList.remove('buffer-cell');
+            if (move.symbol === '1') fromCell.classList.add('wild');
+            if (move.symbol === '2') fromCell.classList.add('scatter');
 
-            // Calculate the distance to fall
+            // Calculate movement math
             const rowDiff = move.to.row - move.from.row;
-            const cellHeight = 76; // 70px + 6px gap
+            const cellHeight = 76; 
             const fallDistance = rowDiff * cellHeight;
-
-            // Animate from buffer position to target
-            setTimeout(() => {
-                bufferCell.style.transition = `transform ${animationDuration}ms ease-out`;
-                bufferCell.style.transform = `translateY(${fallDistance}px)`;
-            }, delay);
-
-        } else {
-            // Existing symbol dropping from one position to another
-            const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
-            const toCell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
-
-            if (!fromCell || !toCell) return;
-
-            // Calculate delay (lower rows animate first)
             const delay = (4 - move.to.row) * staggerDelay;
 
-            // Calculate distance from "from" position to "to" position
-            const rowDiff = move.to.row - move.from.row;
-            const cellHeight = 76; // 70px + 6px gap
-            const translateY = rowDiff * cellHeight;
-
-            // Animate from current position to new position
-            fromCell.style.zIndex = '10';
-
+            // 2. Execute the staggered animation
             setTimeout(() => {
                 fromCell.style.transition = `transform ${animationDuration}ms ease-out`;
-                fromCell.style.transform = `translateY(${translateY}px)`;
+                fromCell.style.transform = `translateY(${fallDistance}px)`;
+
+                // 3. Resolve this specific promise once the movement finishes
+                setTimeout(resolve, animationDuration);
             }, delay);
-        }
+        });
+    });
+
+    // 4. Wait for ALL animations to complete
+    return Promise.all(animationPromises).then(() => {
+        sortedMovements.forEach((move) => {
+            const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
+            if (fromCell) {
+                // STEP 1: Kill the transition immediately
+                fromCell.style.transition = 'none'; 
+                
+                // STEP 2: Force a reflow (tells the browser: "Stop animating NOW")
+                void fromCell.offsetHeight; 
+
+                // STEP 3: Reset everything else
+                fromCell.textContent = '';
+                fromCell.dataset.symbol = '';
+                // Restore original buffer classes
+                fromCell.className = 'reel-cell lebandit-cell buffer-cell';
+            }
+        });
+        
+        console.log("All symbols disappeared instantly without fallback.");
     });
 }
 
