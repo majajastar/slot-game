@@ -320,12 +320,18 @@ function handleSpinResult(data) {
         return;
     }
 
-    // Pretty print grid for debugging (show symbol IDs)
+    // Pretty print grid for debugging (show symbol IDs with icons)
     console.log('%c[Grid Result]', 'color: #4ecdc4; font-weight: bold;');
     if (result.grid) {
         console.log('Final Grid:');
         result.grid.forEach((row, i) => {
-            console.log(`  Row ${i}: ${row.join(' | ')}`);
+            const cells = row.map(s => {
+                if (s === '' || s === null || s === undefined) return '    ·   ';
+                const icon = CONFIG.symbols[s] || '❓';
+                const id = String(s).padStart(3, ' ');
+                return `${id}${icon}`;
+            });
+            console.log(`  Row ${i}: ${cells.join('│')}`);
         });
     }
 
@@ -335,45 +341,63 @@ function handleSpinResult(data) {
         result.cascadeSteps.forEach((step, idx) => {
             console.log(`%c  Step ${idx + 1}:`, 'color: #4ecdc4; font-weight: bold;', `${step.winningClusters.length} clusters, win: ${step.totalWin}`);
 
+            // Helper to format grid row with symbol IDs and icons
+            const formatRow = (row, rowIdx) => {
+                const cells = row.map(s => {
+                    if (s === '' || s === null || s === undefined) return '    ·   ';
+                    const icon = CONFIG.symbols[s] || '❓';
+                    const id = String(s).padStart(3, ' ');
+                    return `${id}${icon}`;
+                });
+                return `    Row ${rowIdx}: ${cells.join('│')}`;
+            };
+
+            const printSeparator = () => {
+                const sep = '───────'.repeat(6).slice(0, -1);
+                console.log(`           ${sep}`);
+            };
+
             // Print grid BEFORE (initial state for this step)
             if (step.gridBefore) {
-                console.log('  Before:');
+                console.log('%c  ┌─ BEFORE ─────────────┐', 'color: #888;');
                 step.gridBefore.forEach((row, i) => {
-                    const rowStr = row.join(' | ');
-                    console.log(`    Row ${i}: ${rowStr}`);
+                    console.log('%c' + formatRow(row, i), 'color: #ccc;');
                 });
+                printSeparator();
             }
 
             // Print grid AFTER REMOVAL (winning symbols removed)
             if (step.gridAfterRemoval) {
-                console.log('  After Removal:');
+                console.log('%c  ┌─ AFTER REMOVAL ──────┐', 'color: #ff6b6b;');
                 step.gridAfterRemoval.forEach((row, i) => {
-                    const rowStr = row.map(s => s === '' ? '·' : s).join(' | ');
-                    console.log(`    Row ${i}: ${rowStr}`);
+                    console.log('%c' + formatRow(row, i), 'color: #ff6b6b;');
                 });
+                printSeparator();
             }
 
             // Print grid AFTER DROP & FILL (combined stage)
             if (step.gridAfterDropAndFill) {
                 console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
                 step.gridAfterDropAndFill.forEach((row, i) => {
-                    const rowStr = row.map(s => s === '' ? '·' : s).join(' | ');
-                    console.log(`    Row ${i}: ${rowStr}`);
+                    console.log('%c' + formatRow(row, i), 'color: #95e1d3;');
                 });
+                printSeparator();
             } else if (step.gridAfterFill) {
                 // Fallback for backwards compatibility
                 console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
                 step.gridAfterFill.forEach((row, i) => {
-                    const rowStr = row.map(s => s === '' ? '·' : s).join(' | ');
-                    console.log(`    Row ${i}: ${rowStr}`);
+                    console.log('%c' + formatRow(row, i), 'color: #95e1d3;');
                 });
+                printSeparator();
             }
 
             // Print winning clusters
             if (step.winningClusters.length > 0) {
-                console.log('  Wins:');
+                console.log('%c  💰 Wins:', 'color: #ffd700; font-weight: bold;');
                 step.winningClusters.forEach(c => {
-                    console.log(`    ${c.symbol} cluster x${c.count} = $${c.payout}`);
+                    const icon = CONFIG.symbols[c.symbol] || '❓';
+                    const positions = c.positions.map(p => `(${p.row},${p.col})`).join(' ');
+                    console.log(`     ${c.symbol}${icon} cluster x${c.count} = $${c.payout}  [${positions}]`);
                 });
             }
             console.log(''); // Empty line between steps
@@ -477,6 +501,7 @@ async function renderCascade(steps, totalWin) {
         // Step 5: Render final grid to ensure everything is in sync
         renderGrid(step.gridAfterDropAndFill || step.gridAfterFill);
         await sleep(400);
+        break;
 
         // Add to history
         const stepDiv = document.createElement('div');
@@ -618,65 +643,30 @@ function animateCombined(movements) {
             const delay = (4 - move.to.row) * staggerDelay;
 
             // Set up the symbol in the buffer cell
-            if (bufferCell) {
-                const icon = CONFIG.symbols[move.symbol] || '❓';
-                bufferCell.textContent = icon;
-                bufferCell.dataset.symbol = move.symbol;
-                bufferCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
-                if (move.symbol === '1') bufferCell.classList.add('wild');
-                if (move.symbol === '2') bufferCell.classList.add('scatter');
+            const icon = CONFIG.symbols[move.symbol] || '❓';
+            bufferCell.textContent = icon;
+            bufferCell.dataset.symbol = move.symbol;
+            bufferCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
+            if (move.symbol === '1') bufferCell.classList.add('wild');
+            if (move.symbol === '2') bufferCell.classList.add('scatter');
 
-                // Also set up target cell (will be revealed as symbol falls)
-                targetCell.textContent = icon;
-                targetCell.dataset.symbol = move.symbol;
-                targetCell.className = bufferCell.className;
-                targetCell.classList.remove('buffer-cell');
+            // Also set up target cell (will be revealed as symbol falls)
+            targetCell.textContent = icon;
+            targetCell.dataset.symbol = move.symbol;
+            targetCell.className = bufferCell.className;
+            targetCell.classList.remove('buffer-cell');
 
-                // Calculate the distance to fall
-                const rowDiff = move.to.row - move.from.row;
-                const cellHeight = 76; // 70px + 6px gap
-                const fallDistance = rowDiff * cellHeight;
+            // Calculate the distance to fall
+            const rowDiff = move.to.row - move.from.row;
+            const cellHeight = 76; // 70px + 6px gap
+            const fallDistance = rowDiff * cellHeight;
 
-                // Animate from buffer position to target
-                setTimeout(() => {
-                    bufferCell.style.transition = `transform ${animationDuration}ms ease-out`;
-                    bufferCell.style.transform = `translateY(${fallDistance}px)`;
+            // Animate from buffer position to target
+            setTimeout(() => {
+                bufferCell.style.transition = `transform ${animationDuration}ms ease-out`;
+                bufferCell.style.transform = `translateY(${fallDistance}px)`;
+            }, delay);
 
-                    setTimeout(() => {
-                        // Reset buffer cell
-                        bufferCell.style.transition = '';
-                        bufferCell.style.transform = '';
-                        bufferCell.textContent = '';
-                        bufferCell.className = 'reel-cell lebandit-cell buffer-cell';
-                    }, animationDuration);
-                }, delay);
-            } else {
-                // Fallback: animate target cell from above
-                const icon = CONFIG.symbols[move.symbol] || '❓';
-                targetCell.textContent = icon;
-                targetCell.dataset.symbol = move.symbol;
-                targetCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
-                if (move.symbol === '1') targetCell.classList.add('wild');
-                if (move.symbol === '2') targetCell.classList.add('scatter');
-
-                const cellHeight = 76;
-                const fromRow = move.from.row;
-                const fallDistance = Math.abs(fromRow - move.to.row) * cellHeight;
-
-                targetCell.style.transform = `translateY(-${fallDistance}px)`;
-                targetCell.style.opacity = '0';
-                targetCell.offsetHeight; // Force reflow
-
-                setTimeout(() => {
-                    targetCell.style.transition = `transform ${animationDuration}ms ease-out, opacity ${animationDuration * 0.7}ms ease-out`;
-                    targetCell.style.transform = 'translateY(0)';
-                    targetCell.style.opacity = '1';
-
-                    setTimeout(() => {
-                        targetCell.style.transition = '';
-                    }, animationDuration);
-                }, delay);
-            }
         } else {
             // Existing symbol dropping from one position to another
             const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
@@ -698,18 +688,6 @@ function animateCombined(movements) {
             setTimeout(() => {
                 fromCell.style.transition = `transform ${animationDuration}ms ease-out`;
                 fromCell.style.transform = `translateY(${translateY}px)`;
-
-                // After animation, copy content and reset
-                setTimeout(() => {
-                    toCell.innerHTML = fromCell.innerHTML;
-                    toCell.className = fromCell.className;
-
-                    fromCell.style.transition = '';
-                    fromCell.style.transform = '';
-                    fromCell.style.zIndex = '';
-                    fromCell.innerHTML = '';
-                    fromCell.className = 'reel-cell lebandit-cell';
-                }, animationDuration);
             }, delay);
         }
     });
