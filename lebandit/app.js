@@ -765,25 +765,142 @@ async function renderRainbowFeature(rainbowResult) {
         }
     }
 
-    // Render each round - render symbols on grid first, then show overlay
+    // Helper to pretty print rainbow grid
+    function prettyPrintRainbowGrid(round, stepLabel) {
+        console.log(`%c[Rainbow Grid - Round ${round.round}, ${stepLabel}]`, 'color: #ff6b6b; font-weight: bold;');
+        
+        const grid = [];
+        for (let r = 0; r < CONFIG.rows; r++) {
+            grid[r] = [];
+            for (let c = 0; c < CONFIG.cols; c++) {
+                grid[r][c] = '  ·  ';
+            }
+        }
+
+        // Mark rainbow position
+        if (rainbowPos) {
+            grid[rainbowPos.row][rainbowPos.col] = '🌈R🌈';
+        }
+
+        // Mark coins
+        for (const coin of round.coins) {
+            const emoji = CONFIG.symbols[coin.type.toUpperCase()];
+            grid[coin.row][coin.col] = `${emoji}${coin.finalMultiplier}`;
+        }
+
+        // Mark clovers
+        for (const clover of round.clovers) {
+            grid[clover.row][clover.col] = `🍀${clover.multiplier}`;
+        }
+
+        // Mark pots
+        for (const pot of round.pots) {
+            grid[pot.row][pot.col] = `🏺${pot.finalMultiplier}`;
+        }
+
+        // Print grid with box drawing
+        console.log('  ┌─────┬─────┬─────┬─────┬─────┬─────┐');
+        for (let r = 0; r < CONFIG.rows; r++) {
+            const rowStr = grid[r].map(cell => cell.padStart(5, ' ')).join('│');
+            console.log(`${r} │${rowStr}│`);
+            if (r < CONFIG.rows - 1) {
+                console.log('  ├─────┼─────┼─────┼─────┼─────┼─────┤');
+            }
+        }
+        console.log('  └─────┴─────┴─────┴─────┴─────┴─────┘');
+        console.log('     0     1     2     3     4     5   ');
+        
+        // Summary
+        console.log(`  Coins: ${round.coins.length}, Clovers: ${round.clovers.length}, Pots: ${round.pots.length}`);
+        console.log(`  Total: ${round.totalCoinValue + round.totalPotValue}x`);
+    }
+
+    // Render each round
     for (const round of rainbowResult.rounds) {
-        // 1. Render coins on grid (with multipliers)
-        if (round.coins.length > 0) {
+        console.log(`%c[Rainbow Round ${round.round}]`, 'color: #ffd700; font-weight: bold; font-size: 14px;');
+        
+        // Check if we have steps data
+        if (round.steps && round.steps.length > 0) {
+            for (const step of round.steps) {
+                console.log(`%c  Step ${step.stepNumber}: ${step.description}`, 'color: #4ecdc4;');
+                
+                // Render based on step type
+                if (step.stepType === 'initial') {
+                    // Initial reveal - render all symbols
+                    for (const coin of step.coins) {
+                        const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                        if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
+                            const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
+                            cell.textContent = coinEmoji;
+                            cell.classList.add('coin-symbol', coin.type);
+                            cell.dataset.multiplier = coin.finalMultiplier + 'x';
+                        }
+                    }
+                    for (const clover of step.clovers) {
+                        const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
+                        if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
+                            cell.textContent = CONFIG.symbols['CLOVER'];
+                            cell.classList.add('clover-symbol');
+                            cell.dataset.multiplier = clover.multiplier + 'x';
+                        }
+                    }
+                    for (const pot of step.pots) {
+                        const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
+                        if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
+                            cell.textContent = CONFIG.symbols['POT'];
+                            cell.classList.add('pot-symbol');
+                            cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                        }
+                    }
+                    await sleep(500);
+                    
+                } else if (step.stepType === 'clover') {
+                    // Highlight active clover and affected symbols
+                    if (step.activeClover) {
+                        const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
+                        if (cloverCell) cloverCell.classList.add('active-clover');
+                    }
+                    // Update affected coins
+                    for (const coin of step.coins) {
+                        const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                        if (cell) cell.dataset.multiplier = coin.finalMultiplier + 'x';
+                    }
+                    await sleep(600);
+                    if (step.activeClover) {
+                        const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
+                        if (cloverCell) cloverCell.classList.remove('active-clover');
+                    }
+                    
+                } else if (step.stepType === 'pot') {
+                    // Highlight active pot collecting
+                    if (step.activePot) {
+                        const potCell = document.getElementById(`cell-${step.activePot.row}-${step.activePot.col}`);
+                        if (potCell) {
+                            potCell.classList.add('active-pot');
+                            potCell.dataset.multiplier = step.activePot.finalMultiplier + 'x';
+                        }
+                    }
+                    await sleep(800);
+                    if (step.activePot) {
+                        const potCell = document.getElementById(`cell-${step.activePot.row}-${step.activePot.col}`);
+                        if (potCell) potCell.classList.remove('active-pot');
+                    }
+                }
+
+                // Pretty print grid at this step
+                prettyPrintRainbowGrid(round, `Step ${step.stepNumber}: ${step.description}`);
+            }
+        } else {
+            // Fallback: render all at once if no steps data
             for (const coin of round.coins) {
                 const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                 if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
                     const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
                     cell.textContent = coinEmoji;
                     cell.classList.add('coin-symbol', coin.type);
-                    // Add multiplier as data attribute or small overlay
                     cell.dataset.multiplier = coin.finalMultiplier + 'x';
                 }
             }
-            await sleep(400);
-        }
-
-        // 2. Render clovers on grid (with multipliers)
-        if (round.clovers.length > 0) {
             for (const clover of round.clovers) {
                 const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                 if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
@@ -792,11 +909,6 @@ async function renderRainbowFeature(rainbowResult) {
                     cell.dataset.multiplier = clover.multiplier + 'x';
                 }
             }
-            await sleep(400);
-        }
-
-        // 3. Render pots on grid (with collected values)
-        if (round.pots.length > 0) {
             for (const pot of round.pots) {
                 const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                 if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
@@ -806,6 +918,9 @@ async function renderRainbowFeature(rainbowResult) {
                 }
             }
             await sleep(400);
+            
+            // Pretty print final grid
+            prettyPrintRainbowGrid(round, 'Final');
         }
 
         // 4. Build round summary HTML for overlay
