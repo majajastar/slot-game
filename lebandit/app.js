@@ -753,28 +753,65 @@ async function renderRainbowFeature(rainbowResult) {
     rainbowOverlay.classList.remove('hidden');
     rainbowHistory.classList.remove('hidden');
 
-    // Highlight rainbow position
-    if (rainbowResult.rainbowPosition) {
-        const { row, col } = rainbowResult.rainbowPosition;
+    // Highlight rainbow position first (before any other rendering)
+    const rainbowPos = rainbowResult.rainbowPosition;
+    if (rainbowPos) {
+        const { row, col } = rainbowPos;
         console.log(`[renderRainbowFeature] Setting rainbow at (${row},${col})`);
         const cell = document.getElementById(`cell-${row}-${col}`);
         if (cell) {
-            console.log(`[renderRainbowFeature] Cell found, current content: '${cell.textContent}'`);
             cell.textContent = CONFIG.symbols['RAINBOW'];
             cell.classList.add('rainbow');
-            console.log(`[renderRainbowFeature] Cell updated to: '${cell.textContent}'`);
-        } else {
-            console.log(`[renderRainbowFeature] Cell NOT found for (${row},${col})`);
         }
-    } else {
-        console.log('[renderRainbowFeature] No rainbow position in result');
     }
 
-    // Render each round
+    // Render each round - render symbols on grid first, then show overlay
     for (const round of rainbowResult.rounds) {
+        // 1. Render coins on grid (with multipliers)
+        if (round.coins.length > 0) {
+            for (const coin of round.coins) {
+                const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
+                    const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
+                    cell.textContent = coinEmoji;
+                    cell.classList.add('coin-symbol', coin.type);
+                    // Add multiplier as data attribute or small overlay
+                    cell.dataset.multiplier = coin.finalMultiplier + 'x';
+                }
+            }
+            await sleep(400);
+        }
+
+        // 2. Render clovers on grid (with multipliers)
+        if (round.clovers.length > 0) {
+            for (const clover of round.clovers) {
+                const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
+                if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
+                    cell.textContent = CONFIG.symbols['CLOVER'];
+                    cell.classList.add('clover-symbol');
+                    cell.dataset.multiplier = clover.multiplier + 'x';
+                }
+            }
+            await sleep(400);
+        }
+
+        // 3. Render pots on grid (with collected values)
+        if (round.pots.length > 0) {
+            for (const pot of round.pots) {
+                const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
+                if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
+                    cell.textContent = CONFIG.symbols['POT'];
+                    cell.classList.add('pot-symbol');
+                    cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                }
+            }
+            await sleep(400);
+        }
+
+        // 4. Build round summary HTML for overlay
         let roundHtml = `<div class="rainbow-round"><div class="round-title">Round ${round.round}</div>`;
 
-        // Show coins
+        // Show coins in overlay
         if (round.coins.length > 0) {
             roundHtml += `<div class="round-coins">`;
             for (const coin of round.coins) {
@@ -789,7 +826,7 @@ async function renderRainbowFeature(rainbowResult) {
             roundHtml += `</div>`;
         }
 
-        // Show clovers
+        // Show clovers in overlay
         if (round.clovers.length > 0) {
             roundHtml += `<div class="round-clovers">`;
             for (const clover of round.clovers) {
@@ -803,7 +840,7 @@ async function renderRainbowFeature(rainbowResult) {
             roundHtml += `</div>`;
         }
 
-        // Show pots
+        // Show pots in overlay
         if (round.pots.length > 0) {
             roundHtml += `<div class="round-pots">`;
             for (const pot of round.pots) {

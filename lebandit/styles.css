@@ -989,6 +989,79 @@
     margin-top: 5px;
 }
 
+/* Rainbow Feature - Coin, Clover, Pot symbols on grid */
+.reel-cell.coin-symbol,
+.reel-cell.clover-symbol,
+.reel-cell.pot-symbol {
+    position: relative;
+    font-size: 2rem;
+    animation: symbolPop 0.4s ease-out;
+}
+
+.reel-cell.coin-symbol::after,
+.reel-cell.clover-symbol::after,
+.reel-cell.pot-symbol::after {
+    content: attr(data-multiplier);
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 0.6rem;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0,0,0,0.7);
+    padding: 1px 4px;
+    border-radius: 4px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Coin type specific styles */
+.reel-cell.coin-symbol.bronze {
+    background: linear-gradient(135deg, #cd7f32, #b87333);
+    box-shadow: 0 0 15px rgba(205, 127, 50, 0.5);
+}
+
+.reel-cell.coin-symbol.silver {
+    background: linear-gradient(135deg, #c0c0c0, #a8a8a8);
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+}
+
+.reel-cell.coin-symbol.gold {
+    background: linear-gradient(135deg, #ffd700, #ffb700);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+/* Clover symbol */
+.reel-cell.clover-symbol {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+}
+
+/* Pot of Gold symbol */
+.reel-cell.pot-symbol {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    box-shadow: 0 0 15px rgba(155, 89, 182, 0.5);
+}
+
+/* Rainbow symbol */
+.reel-cell.rainbow {
+    background: linear-gradient(45deg, #ff6b6b, #ffd700, #4ecdc4, #45b7d1, #96ceb4);
+    background-size: 300% 300%;
+    animation: rainbowShift 2s ease infinite, symbolPop 0.4s ease-out;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes rainbowShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes symbolPop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
     .lebandit-layout {
