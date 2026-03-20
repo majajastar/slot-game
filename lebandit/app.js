@@ -838,7 +838,7 @@ async function renderRainbowFeature(rainbowResult) {
                         if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
                             const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
                             cell.textContent = coinEmoji;
-                            cell.classList.add('coin-symbol', coin.type);
+                            cell.classList.add('rainbow-coin', coin.type);
                             // Store both original and final
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
@@ -924,7 +924,7 @@ async function renderRainbowFeature(rainbowResult) {
                 if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
                     const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
                     cell.textContent = coinEmoji;
-                    cell.classList.add('coin-symbol', coin.type);
+                    cell.classList.add('rainbow-coin', coin.type);
                     cell.dataset.originalMultiplier = coin.originalMultiplier;
                     cell.dataset.finalMultiplier = coin.finalMultiplier;
                 }
@@ -1162,10 +1162,12 @@ function spin() {
 
     // Clear previous animations
     document.querySelectorAll('.reel-cell').forEach(cell => {
-        cell.classList.remove('highlight', 'removing', 'rainbow', 'coin-symbol', 'clover-symbol', 'pot-symbol');
+        cell.classList.remove('highlight', 'removing', 'rainbow', 'coin-symbol', 'clover-symbol', 'pot-symbol', 'rainbow-coin');
         cell.style.transform = '';
         cell.style.animation = '';
         cell.dataset.multiplier = '';
+        cell.dataset.originalMultiplier = '';
+        cell.dataset.finalMultiplier = '';
     });
 
     // Clear golden frames
