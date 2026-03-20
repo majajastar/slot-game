@@ -782,10 +782,16 @@ async function renderRainbowFeature(rainbowResult) {
             grid[rainbowPos.row][rainbowPos.col] = '🌈R🌈';
         }
 
-        // Mark coins
+        // Mark coins - show original and final multiplier
         for (const coin of round.coins) {
             const emoji = CONFIG.symbols[coin.type.toUpperCase()];
-            grid[coin.row][coin.col] = `${emoji}${coin.finalMultiplier}`;
+            const orig = coin.originalMultiplier;
+            const final = coin.finalMultiplier;
+            if (orig !== final) {
+                grid[coin.row][coin.col] = `${emoji}${orig}>${final}`;
+            } else {
+                grid[coin.row][coin.col] = `${emoji}${final}`;
+            }
         }
 
         // Mark clovers
@@ -856,16 +862,26 @@ async function renderRainbowFeature(rainbowResult) {
                     
                 } else if (step.stepType === 'clover') {
                     // Highlight active clover and affected symbols
+                    console.log(`  🍀 Clover at (${step.activeClover?.row},${step.activeClover?.col}) applies ${step.activeClover?.multiplier}x to:`);
+                    if (step.affectedCoins) {
+                        for (const coin of step.affectedCoins) {
+                            console.log(`     - Coin at (${coin.row},${coin.col}): ${coin.originalMultiplier}x → ${coin.finalMultiplier}x`);
+                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                            if (cell) {
+                                cell.classList.add('affected-by-clover');
+                                cell.dataset.multiplier = coin.finalMultiplier + 'x';
+                            }
+                        }
+                    }
                     if (step.activeClover) {
                         const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
                         if (cloverCell) cloverCell.classList.add('active-clover');
                     }
-                    // Update affected coins
-                    for (const coin of step.coins) {
-                        const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
-                        if (cell) cell.dataset.multiplier = coin.finalMultiplier + 'x';
-                    }
-                    await sleep(600);
+                    await sleep(800);
+                    // Clear affected highlight
+                    document.querySelectorAll('.affected-by-clover').forEach(cell => {
+                        cell.classList.remove('affected-by-clover');
+                    });
                     if (step.activeClover) {
                         const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
                         if (cloverCell) cloverCell.classList.remove('active-clover');
@@ -873,6 +889,15 @@ async function renderRainbowFeature(rainbowResult) {
                     
                 } else if (step.stepType === 'pot') {
                     // Highlight active pot collecting
+                    console.log(`  🏺 Pot at (${step.activePot?.row},${step.activePot?.col}) collects:`);
+                    if (step.collectedCoins) {
+                        let total = 0;
+                        for (const coin of step.collectedCoins) {
+                            console.log(`     - ${coin.type} at (${coin.row},${coin.col}): ${coin.finalMultiplier}x`);
+                            total += coin.finalMultiplier;
+                        }
+                        console.log(`     Total collected: ${total}x → Final: ${step.activePot?.finalMultiplier}x`);
+                    }
                     if (step.activePot) {
                         const potCell = document.getElementById(`cell-${step.activePot.row}-${step.activePot.col}`);
                         if (potCell) {
