@@ -865,11 +865,26 @@ async function renderRainbowFeature(rainbowResult) {
                 } else if (step.stepType === 'clover') {
                     // Highlight active clover and affected symbols
                     console.log(`  🍀 Clover at (${step.activeClover?.row},${step.activeClover?.col}) applies ${step.activeClover?.multiplier}x to:`);
+                    
+                    // First clear previous multipliers on affected coins
+                    if (step.affectedCoins) {
+                        for (const coin of step.affectedCoins) {
+                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                            if (cell) {
+                                // Clear multiplier temporarily to show transition
+                                cell.dataset.finalMultiplier = '';
+                                cell.classList.add('clearing-multiplier');
+                            }
+                        }
+                        await sleep(200);
+                    }
+                    
                     if (step.affectedCoins) {
                         for (const coin of step.affectedCoins) {
                             console.log(`     - Coin at (${coin.row},${coin.col}): ${coin.originalMultiplier}x → ${coin.finalMultiplier}x`);
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
+                                cell.classList.remove('clearing-multiplier');
                                 cell.classList.add('affected-by-clover');
                                 cell.dataset.finalMultiplier = coin.finalMultiplier;
                             }

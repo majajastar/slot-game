@@ -1091,6 +1091,11 @@
     100% { transform: scale(1); }
 }
 
+.reel-cell.clearing-multiplier::after {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
 /* Active clover/pot during animation */
 .reel-cell.active-clover {
     animation: cloverPulse 0.6s ease-in-out;
