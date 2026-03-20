@@ -48,10 +48,11 @@ function initGrid() {
     const grid = document.getElementById('reelGrid');
     grid.innerHTML = '';
 
+    const layout = CONFIG.gridLayout;
+
     // Create buffer rows above (negative rows) for new symbols to start from
-    const bufferRows = 5; // Rows -5, -4, -3, -2, -1
-    for (let r = -bufferRows; r < 0; r++) {
-        for (let c = 0; c < CONFIG.cols; c++) {
+    for (let r = -layout.ROWS_BUFFER; r < 0; r++) {
+        for (let c = 0; c < layout.COLS; c++) {
             const cell = document.createElement('div');
             cell.className = 'reel-cell lebandit-cell buffer-cell';
             cell.id = `cell-${r}-${c}`;
@@ -61,9 +62,9 @@ function initGrid() {
         }
     }
 
-    // Create visible grid rows (0-4)
-    for (let r = 0; r < CONFIG.rows; r++) {
-        for (let c = 0; c < CONFIG.cols; c++) {
+    // Create visible grid rows (0 to ROWS_VISIBLE-1)
+    for (let r = 0; r < layout.ROWS_VISIBLE; r++) {
+        for (let c = 0; c < layout.COLS; c++) {
             const cell = document.createElement('div');
             cell.className = 'reel-cell lebandit-cell';
             cell.id = `cell-${r}-${c}`;
@@ -531,9 +532,10 @@ function renderGrid(grid, instant = false) {
     if (!grid || !grid.length) return;
 
     currentGrid = grid;
+    const layout = CONFIG.gridLayout;
 
-    for (let r = -5; r < CONFIG.rows; r++) {
-        for (let c = 0; c < CONFIG.cols; c++) {
+    for (let r = -layout.ROWS_BUFFER; r < layout.ROWS_VISIBLE; r++) {
+        for (let c = 0; c < layout.COLS; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
             if (r < 0) {
                 cell.style.transform = '';
@@ -568,26 +570,18 @@ function renderGoldenSquares(squares) {
     const overlay = document.getElementById('goldenSquaresOverlay');
     if (!overlay) return;
 
+    const layout = CONFIG.gridLayout;
+
     // Clear existing golden squares first
     overlay.innerHTML = '';
 
-    // Use CSS Grid to match the main grid structure - responsive!
-    overlay.style.display = 'grid';
-    overlay.style.gridTemplateColumns = 'repeat(6, 1fr)';
-    overlay.style.gridTemplateRows = 'repeat(5, 1fr)';
-    overlay.style.gap = '6px';
-    overlay.style.padding = '15px';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.boxSizing = 'border-box';
-
     // Log rendering info
     console.log(`[Golden Squares] Rendering ${squares.length} squares at positions:`,
-        squares.filter(sq => sq.row >= 0 && sq.row < 5).map(sq => `(${sq.row},${sq.col})`).join(', '));
+        squares.filter(sq => sq.row >= 0 && sq.row < layout.ROWS_VISIBLE).map(sq => `(${sq.row},${sq.col})`).join(', '));
 
     for (const sq of squares) {
-        // Only render if row is in visible area (0-4)
-        if (sq.row < 0 || sq.row >= 5) continue;
+        // Only render if row is in visible area
+        if (sq.row < 0 || sq.row >= layout.ROWS_VISIBLE) continue;
 
         const squareEl = document.createElement('div');
         squareEl.className = 'golden-square-item';
@@ -759,10 +753,11 @@ async function renderRainbowFeature(rainbowResult) {
     function prettyPrintRainbowGrid(round, stepLabel) {
         console.log(`%c[Rainbow Grid - Round ${round.round}, ${stepLabel}]`, 'color: #ff6b6b; font-weight: bold;');
         
+        const layout = CONFIG.gridLayout;
         const grid = [];
-        for (let r = 0; r < CONFIG.rows; r++) {
+        for (let r = 0; r < layout.ROWS_VISIBLE; r++) {
             grid[r] = [];
-            for (let c = 0; c < CONFIG.cols; c++) {
+            for (let c = 0; c < layout.COLS; c++) {
                 grid[r][c] = '  ·  ';
             }
         }
@@ -796,10 +791,10 @@ async function renderRainbowFeature(rainbowResult) {
 
         // Print grid with box drawing
         console.log('  ┌─────┬─────┬─────┬─────┬─────┬─────┐');
-        for (let r = 0; r < CONFIG.rows; r++) {
+        for (let r = 0; r < CONFIG.gridLayout.ROWS_VISIBLE; r++) {
             const rowStr = grid[r].map(cell => cell.padStart(5, ' ')).join('│');
             console.log(`${r} │${rowStr}│`);
-            if (r < CONFIG.rows - 1) {
+            if (r < CONFIG.gridLayout.ROWS_VISIBLE - 1) {
                 console.log('  ├─────┼─────┼─────┼─────┼─────┼─────┤');
             }
         }
@@ -826,9 +821,16 @@ async function renderRainbowFeature(rainbowResult) {
                         cell.classList.remove('rainbow-coin', 'clover-symbol', 'pot-symbol', 
                                               'bronze', 'silver', 'gold', 
                                               'active-clover', 'active-pot', 'affected-by-clover');
+                        // Clear all multiplier data attributes
                         cell.dataset.originalMultiplier = '';
                         cell.dataset.finalMultiplier = '';
                         cell.dataset.multiplier = '';
+                        // Also clear any inline styles from animations
+                        cell.style.transform = '';
+                        cell.style.boxShadow = '';
+                        cell.style.filter = '';
+                        cell.style.zIndex = '';
+                        cell.style.background = '';
                     });
                 }
                 
@@ -865,15 +867,16 @@ async function renderRainbowFeature(rainbowResult) {
                     await sleep(500);
                     
                 } else if (step.stepType === 'clover') {
-                    // Re-render all symbols first
+                    // Re-render all symbols first with ORIGINAL values
                     for (const coin of step.coins) {
                         const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                         if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
                             const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
                             cell.textContent = coinEmoji;
                             cell.classList.add('rainbow-coin', coin.type);
+                            // Show ORIGINAL multiplier first
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
-                            cell.dataset.finalMultiplier = coin.finalMultiplier;
+                            cell.dataset.finalMultiplier = coin.originalMultiplier;
                         }
                     }
                     for (const clover of step.clovers) {
@@ -889,29 +892,83 @@ async function renderRainbowFeature(rainbowResult) {
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
                             cell.textContent = CONFIG.symbols['POT'];
                             cell.classList.add('pot-symbol');
+                            // Add collected class for visual distinction
+                            if (pot.collected) {
+                                cell.classList.add('pot-collected');
+                            }
                             cell.dataset.multiplier = pot.finalMultiplier + 'x';
                         }
                     }
                     
-                    // Highlight active clover and affected symbols
-                    console.log(`  🍀 Clover at (${step.activeClover?.row},${step.activeClover?.col}) applies ${step.activeClover?.multiplier}x to:`);
+                    // Small delay to let symbols settle
+                    await sleep(300);
                     
-                    if (step.affectedCoins) {
-                        for (const coin of step.affectedCoins) {
-                            console.log(`     - Coin at (${coin.row},${coin.col}): ${coin.originalMultiplier}x → ${coin.finalMultiplier}x`);
-                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
-                            if (cell) {
-                                cell.classList.add('affected-by-clover');
-                                cell.dataset.finalMultiplier = coin.finalMultiplier;
-                            }
-                        }
-                    }
+                    // Highlight active clover
                     if (step.activeClover) {
                         const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
                         if (cloverCell) cloverCell.classList.add('active-clover');
                     }
-                    await sleep(800);
-                    // Clear affected highlight
+                    
+                    // Apply rotation animation to affected coins and update value
+                    console.log(`  🍀 Clover at (${step.activeClover?.row},${step.activeClover?.col}) applies ${step.activeClover?.multiplier}x to ${step.affectedCoins?.length || 0} coins`);
+                    
+                    if (step.affectedCoins && step.affectedCoins.length > 0) {
+                        console.log('[Clover] Starting coin multiplication effect...');
+                        
+                        // First apply initial styles
+                        for (const coin of step.affectedCoins) {
+                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                            if (cell) {
+                                console.log(`[Clover] Setting initial state for cell (${coin.row},${coin.col})`);
+                                // Store original transition
+                                cell.dataset.originalTransition = cell.style.transition;
+                                cell.style.transition = 'all 0.3s ease';
+                            }
+                        }
+                        
+                        // Phase 1: Scale up and glow
+                        for (const coin of step.affectedCoins) {
+                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                            if (cell) {
+                                cell.style.transform = 'scale(1.3)';
+                                cell.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
+                                cell.style.filter = 'brightness(1.5)';
+                                cell.style.zIndex = '100';
+                            }
+                        }
+                        await sleep(300);
+                        
+                        // Phase 2: Update multiplier and flash
+                        for (const coin of step.affectedCoins) {
+                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                            if (cell) {
+                                const oldVal = cell.dataset.finalMultiplier;
+                                cell.dataset.finalMultiplier = coin.finalMultiplier;
+                                console.log(`[Clover] Updated multiplier at (${coin.row},${coin.col}): ${oldVal} → ${coin.finalMultiplier}`);
+                                // Flash effect
+                                cell.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.9), rgba(255,215,0,0.5))';
+                            }
+                        }
+                        await sleep(200);
+                        
+                        // Phase 3: Scale back down
+                        for (const coin of step.affectedCoins) {
+                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                            if (cell) {
+                                cell.style.transform = 'scale(1)';
+                                cell.style.boxShadow = '';
+                                cell.style.filter = '';
+                                cell.style.zIndex = '';
+                                cell.style.background = '';
+                                cell.style.transition = cell.dataset.originalTransition || '';
+                                cell.classList.add('affected-by-clover');
+                            }
+                        }
+                    }
+                    
+                    await sleep(400);
+                    
+                    // Clear highlights
                     document.querySelectorAll('.affected-by-clover').forEach(cell => {
                         cell.classList.remove('affected-by-clover');
                     });

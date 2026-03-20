@@ -3,6 +3,22 @@
  * Extends the base styles.css
  */
 
+/* CSS Variables - Grid Layout Constants */
+:root {
+    --grid-rows-visible: 5;
+    --grid-rows-buffer: 5;
+    --grid-rows-total: 10;
+    --grid-cols: 6;
+    --cell-height: 70px;
+    --cell-gap: 6px;
+    --grid-padding: 15px;
+    --container-height: 388px; /* 5 * 70 + 4 * 6 + 2 * 15 */
+    --buffer-offset: -380px; /* -(5 * (70 + 6)) */
+    --border-radius: 8px;
+    --border-radius-small: 6px;
+    --border-radius-mobile: 4px;
+}
+
 /* Server mode indicator */
 .server-mode {
     position: absolute;
@@ -38,40 +54,47 @@
 .lebandit-grid-container {
     max-width: 720px;
     position: relative;
-    height: 388px; /* 5 rows * 70px + 4 gaps * 6px + 2 * 15px padding */
+    height: var(--container-height);
     overflow: hidden;
 }
 
 .lebandit-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(10, 70px); /* 5 buffer + 5 visible */
-    gap: 6px;
-    padding: 15px;
+    grid-template-columns: repeat(var(--grid-cols), 1fr);
+    grid-template-rows: repeat(var(--grid-rows-total), var(--cell-height));
+    gap: var(--cell-gap);
+    padding: var(--grid-padding);
     position: absolute;
-    top: -380px; /* Shift up to hide 5 buffer rows (5 * 76px) */
+    top: var(--buffer-offset);
     left: 0;
     right: 0;
 }
 
 .buffer-cell {
     /* Buffer cells are above the visible area */
+    min-height: var(--cell-height);
 }
 
 .lebandit-cell {
     font-size: 2.2rem;
-    min-height: 70px;
+    min-height: var(--cell-height);
 }
 
-/* Golden Squares Overlay - Independent of grid cells */
+/* Golden Squares Overlay - Aligned with visible grid area */
 .golden-squares-overlay {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    pointer-events: none; /* Let clicks pass through to grid */
+    height: var(--container-height);
+    padding: var(--grid-padding);
+    display: grid;
+    grid-template-columns: repeat(var(--grid-cols), 1fr);
+    grid-template-rows: repeat(var(--grid-rows-visible), var(--cell-height));
+    gap: var(--cell-gap);
+    pointer-events: none;
     z-index: 5;
+    box-sizing: border-box;
 }
 
 .golden-square-item {
@@ -80,7 +103,7 @@
     border: 2px solid #ffd700;
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.1) 100%);
     box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3);
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     animation: goldenSquarePulse 2s ease-in-out infinite;
     pointer-events: none;
     box-sizing: border-box;
@@ -99,14 +122,14 @@
 @media (max-width: 900px) {
     .golden-square-item {
         border-width: 1.5px;
-        border-radius: 6px;
+        border-radius: var(--border-radius-small);
     }
 }
 
 @media (max-width: 600px) {
     .golden-square-item {
         border-width: 1px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-mobile);
     }
 }
 
@@ -832,7 +855,6 @@
 /* Golden Frame Styles for Bonus Games */
 .golden-frame {
     position: relative;
-    border: 3px solid transparent;
     border-radius: 8px;
     overflow: visible;
 }
@@ -840,19 +862,20 @@
 .golden-frame::before {
     content: '';
     position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     border-radius: 8px;
-    z-index: -1;
+    z-index: 0;
+    pointer-events: none;
 }
 
 /* Bronze Frame */
-.frame-bronze {
-    border-color: #cd7f32;
+.frame-bronze::before {
+    border: 3px solid #cd7f32;
     background: linear-gradient(135deg, rgba(205, 127, 50, 0.2) 0%, rgba(205, 127, 50, 0.05) 100%);
-    box-shadow: 0 0 10px rgba(205, 127, 50, 0.3);
+    box-shadow: 0 0 10px rgba(205, 127, 50, 0.3), inset 0 0 5px rgba(205, 127, 50, 0.2);
 }
 
 .frame-bronze .frame-value {
@@ -861,10 +884,10 @@
 }
 
 /* Silver Frame */
-.frame-silver {
-    border-color: #c0c0c0;
+.frame-silver::before {
+    border: 3px solid #c0c0c0;
     background: linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, rgba(192, 192, 192, 0.05) 100%);
-    box-shadow: 0 0 10px rgba(192, 192, 192, 0.3);
+    box-shadow: 0 0 10px rgba(192, 192, 192, 0.3), inset 0 0 5px rgba(192, 192, 192, 0.2);
 }
 
 .frame-silver .frame-value {
@@ -873,10 +896,10 @@
 }
 
 /* Gold Frame */
-.frame-gold {
-    border-color: #ffd700;
+.frame-gold::before {
+    border: 3px solid #ffd700;
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), inset 0 0 5px rgba(255, 215, 0, 0.2);
 }
 
 .frame-gold .frame-value {
@@ -885,10 +908,10 @@
 }
 
 /* Jackpot Frame */
-.frame-jackpot {
-    border-color: #ff6b6b;
+.frame-jackpot::before {
+    border: 3px solid #ff6b6b;
     background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(255, 107, 107, 0.05) 100%);
-    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5), inset 0 0 5px rgba(255, 107, 107, 0.2);
     animation: jackpotPulse 1.5s ease-in-out infinite;
 }
 
@@ -898,8 +921,8 @@
 }
 
 @keyframes jackpotPulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
-    50% { box-shadow: 0 0 30px rgba(255, 107, 107, 0.8); }
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.5), inset 0 0 5px rgba(255, 107, 107, 0.2); }
+    50% { box-shadow: 0 0 30px rgba(255, 107, 107, 0.8), inset 0 0 8px rgba(255, 107, 107, 0.3); }
 }
 
 /* Frame Value Display */
@@ -1087,6 +1110,13 @@
     box-shadow: 0 0 15px rgba(155, 89, 182, 0.5);
 }
 
+/* Collected pot - golden glow to show it's been collected */
+.reel-cell.pot-symbol.pot-collected {
+    background: linear-gradient(135deg, #ffd700, #ffb700);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3);
+    border: 2px solid #ffd700;
+}
+
 /* Rainbow symbol */
 .reel-cell.rainbow {
     background: linear-gradient(45deg, #ff6b6b, #ffd700, #4ecdc4, #45b7d1, #96ceb4);
@@ -1105,6 +1135,42 @@
     0% { transform: scale(0); }
     50% { transform: scale(1.2); }
     100% { transform: scale(1); }
+}
+
+/* Coin rotation animation for clover multiplication - HIGH SPECIFICITY */
+.reel-cell.rainbow-coin.coin-rotating,
+.reel-cell.coin-symbol.coin-rotating {
+    animation: coinMultiply 0.6s ease-in-out !important;
+    z-index: 20 !important;
+}
+
+@keyframes coinMultiply {
+    0% { 
+        transform: scale(1) !important;
+        filter: brightness(1) !important;
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0) !important;
+    }
+    30% {
+        transform: scale(1.2) !important;
+        filter: brightness(1.5) !important;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+    }
+    50% { 
+        transform: scale(1.5) !important;
+        filter: brightness(2) !important;
+        box-shadow: 0 0 40px rgba(255, 215, 0, 1) !important;
+        background: linear-gradient(135deg, rgba(255,215,0,0.8), rgba(255,215,0,0.4)) !important;
+    }
+    70% {
+        transform: scale(1.2) !important;
+        filter: brightness(1.5) !important;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+    }
+    100% { 
+        transform: scale(1) !important;
+        filter: brightness(1) !important;
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0) !important;
+    }
 }
 
 /* Active clover/pot during animation */

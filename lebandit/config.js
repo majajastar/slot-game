@@ -92,6 +92,28 @@ const CONFIG = {
     rows: 5,
     cols: 6,
     
+    // Grid layout constants - SINGLE SOURCE OF TRUTH for all grid sizing
+    gridLayout: {
+        ROWS_VISIBLE: 5,        // Number of visible rows
+        ROWS_BUFFER: 5,         // Number of buffer rows (above visible)
+        ROWS_TOTAL: 10,         // Total rows (visible + buffer)
+        COLS: 6,                // Number of columns
+        CELL_HEIGHT: 70,        // Height of each cell in pixels
+        CELL_GAP: 6,            // Gap between cells in pixels
+        PADDING: 15,            // Grid padding in pixels
+        get CONTAINER_HEIGHT() { // Total container height
+            return this.ROWS_VISIBLE * this.CELL_HEIGHT + 
+                   (this.ROWS_VISIBLE - 1) * this.CELL_GAP + 
+                   2 * this.PADDING;
+        },
+        get BUFFER_OFFSET() {   // Offset to hide buffer rows
+            return -(this.ROWS_BUFFER * (this.CELL_HEIGHT + this.CELL_GAP));
+        },
+        BORDER_RADIUS: 8,       // Cell border radius
+        BORDER_RADIUS_SMALL: 6, // Smaller border radius for responsive
+        BORDER_RADIUS_MOBILE: 4 // Mobile border radius
+    },
+    
     // Ping interval (ms)
     pingInterval: 20000,
     
