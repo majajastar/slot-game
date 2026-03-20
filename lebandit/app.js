@@ -830,6 +830,18 @@ async function renderRainbowFeature(rainbowResult) {
             for (const step of round.steps) {
                 console.log(`%c  Step ${step.stepNumber}: ${step.description}`, 'color: #4ecdc4;');
                 
+                // Clean previous styles before each step (except initial)
+                if (step.stepType !== 'initial') {
+                    document.querySelectorAll('.reel-cell').forEach(cell => {
+                        cell.classList.remove('rainbow-coin', 'clover-symbol', 'pot-symbol', 
+                                              'bronze', 'silver', 'gold', 
+                                              'active-clover', 'active-pot', 'affected-by-clover');
+                        cell.dataset.originalMultiplier = '';
+                        cell.dataset.finalMultiplier = '';
+                        cell.dataset.multiplier = '';
+                    });
+                }
+                
                 // Render based on step type
                 if (step.stepType === 'initial') {
                     // Initial reveal - render all symbols
@@ -863,28 +875,42 @@ async function renderRainbowFeature(rainbowResult) {
                     await sleep(500);
                     
                 } else if (step.stepType === 'clover') {
+                    // Re-render all symbols first
+                    for (const coin of step.coins) {
+                        const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                        if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
+                            const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
+                            cell.textContent = coinEmoji;
+                            cell.classList.add('rainbow-coin', coin.type);
+                            cell.dataset.originalMultiplier = coin.originalMultiplier;
+                            cell.dataset.finalMultiplier = coin.finalMultiplier;
+                        }
+                    }
+                    for (const clover of step.clovers) {
+                        const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
+                        if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
+                            cell.textContent = CONFIG.symbols['CLOVER'];
+                            cell.classList.add('clover-symbol');
+                            cell.dataset.multiplier = clover.multiplier + 'x';
+                        }
+                    }
+                    for (const pot of step.pots) {
+                        const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
+                        if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
+                            cell.textContent = CONFIG.symbols['POT'];
+                            cell.classList.add('pot-symbol');
+                            cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                        }
+                    }
+                    
                     // Highlight active clover and affected symbols
                     console.log(`  🍀 Clover at (${step.activeClover?.row},${step.activeClover?.col}) applies ${step.activeClover?.multiplier}x to:`);
-                    
-                    // First clear previous multipliers on affected coins
-                    if (step.affectedCoins) {
-                        for (const coin of step.affectedCoins) {
-                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
-                            if (cell) {
-                                // Clear multiplier temporarily to show transition
-                                cell.dataset.finalMultiplier = '';
-                                cell.classList.add('clearing-multiplier');
-                            }
-                        }
-                        await sleep(200);
-                    }
                     
                     if (step.affectedCoins) {
                         for (const coin of step.affectedCoins) {
                             console.log(`     - Coin at (${coin.row},${coin.col}): ${coin.originalMultiplier}x → ${coin.finalMultiplier}x`);
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
-                                cell.classList.remove('clearing-multiplier');
                                 cell.classList.add('affected-by-clover');
                                 cell.dataset.finalMultiplier = coin.finalMultiplier;
                             }
@@ -905,6 +931,34 @@ async function renderRainbowFeature(rainbowResult) {
                     }
                     
                 } else if (step.stepType === 'pot') {
+                    // Re-render all symbols first
+                    for (const coin of step.coins) {
+                        const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+                        if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
+                            const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
+                            cell.textContent = coinEmoji;
+                            cell.classList.add('rainbow-coin', coin.type);
+                            cell.dataset.originalMultiplier = coin.originalMultiplier;
+                            cell.dataset.finalMultiplier = coin.finalMultiplier;
+                        }
+                    }
+                    for (const clover of step.clovers) {
+                        const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
+                        if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
+                            cell.textContent = CONFIG.symbols['CLOVER'];
+                            cell.classList.add('clover-symbol');
+                            cell.dataset.multiplier = clover.multiplier + 'x';
+                        }
+                    }
+                    for (const pot of step.pots) {
+                        const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
+                        if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
+                            cell.textContent = CONFIG.symbols['POT'];
+                            cell.classList.add('pot-symbol');
+                            cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                        }
+                    }
+                    
                     // Highlight active pot collecting
                     console.log(`  🏺 Pot at (${step.activePot?.row},${step.activePot?.col}) collects:`);
                     if (step.collectedCoins) {
