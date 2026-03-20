@@ -63,6 +63,37 @@
     min-height: 70px;
 }
 
+/* Golden Squares Overlay - Independent of grid cells */
+.golden-squares-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none; /* Let clicks pass through to grid */
+    z-index: 5;
+}
+
+.golden-square-item {
+    position: absolute;
+    border: 2px solid #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.1) 100%);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    animation: goldenSquarePulse 2s ease-in-out infinite;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+@keyframes goldenSquarePulse {
+    0%, 100% { 
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+}
+
 /* Layout adjustment */
 .lebandit-layout {
     grid-template-columns: 280px 1fr 280px;
@@ -632,6 +663,60 @@
     font-weight: bold;
 }
 
+/* Status Bar - Compact layout for win and cascade */
+.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+/* Win Display - Compact */
+.win-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+
+.win-amount {
+    font-weight: bold;
+    color: #4ecdc4;
+    font-size: 0.95rem;
+}
+
+.win-label {
+    color: #888;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+/* Cascade Info - Compact */
+.cascade-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(78, 205, 196, 0.1);
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+
+.cascade-label {
+    color: #888;
+    font-size: 0.7rem;
+}
+
+.cascade-step {
+    font-weight: bold;
+    color: #4ecdc4;
+}
+
 /* Rainbow round display */
 .rainbow-round {
     padding: 10px;
@@ -722,6 +807,186 @@
 @keyframes highlightPulse {
     0%, 100% { box-shadow: 0 0 10px rgba(78, 205, 196, 0.5); }
     50% { box-shadow: 0 0 25px rgba(78, 205, 196, 0.9); }
+}
+
+/* Golden Frame Styles for Bonus Games */
+.golden-frame {
+    position: relative;
+    border: 3px solid transparent;
+    border-radius: 8px;
+    overflow: visible;
+}
+
+.golden-frame::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 8px;
+    z-index: -1;
+}
+
+/* Bronze Frame */
+.frame-bronze {
+    border-color: #cd7f32;
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.2) 0%, rgba(205, 127, 50, 0.05) 100%);
+    box-shadow: 0 0 10px rgba(205, 127, 50, 0.3);
+}
+
+.frame-bronze .frame-value {
+    color: #cd7f32;
+    text-shadow: 0 0 5px rgba(205, 127, 50, 0.5);
+}
+
+/* Silver Frame */
+.frame-silver {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, rgba(192, 192, 192, 0.05) 100%);
+    box-shadow: 0 0 10px rgba(192, 192, 192, 0.3);
+}
+
+.frame-silver .frame-value {
+    color: #c0c0c0;
+    text-shadow: 0 0 5px rgba(192, 192, 192, 0.5);
+}
+
+/* Gold Frame */
+.frame-gold {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.05) 100%);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.frame-gold .frame-value {
+    color: #ffd700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+/* Jackpot Frame */
+.frame-jackpot {
+    border-color: #ff6b6b;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.2) 0%, rgba(255, 107, 107, 0.05) 100%);
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+    animation: jackpotPulse 1.5s ease-in-out infinite;
+}
+
+.frame-jackpot .frame-value {
+    color: #ff6b6b;
+    text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
+}
+
+@keyframes jackpotPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
+    50% { box-shadow: 0 0 30px rgba(255, 107, 107, 0.8); }
+}
+
+/* Frame Value Display */
+.frame-value {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 4px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    z-index: 10;
+}
+
+/* Active Frame (during bonus) */
+.frame-active {
+    animation: frameGlow 2s ease-in-out infinite;
+}
+
+@keyframes frameGlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Golden Square Styles (positions where symbols were removed) */
+.golden-square {
+    position: relative;
+    border: 2px solid #ffd700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.1) 100%);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3);
+    animation: goldenSquarePulse 2s ease-in-out infinite;
+}
+
+@keyframes goldenSquarePulse {
+    0%, 100% { 
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), inset 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.8), inset 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+}
+
+/* Rainbow Mode Toggle */
+.rainbow-mode-toggle {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+.toggle-label input {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    background: #333;
+    border-radius: 13px;
+    transition: background 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle-label input:checked + .toggle-slider {
+    background: linear-gradient(45deg, #ff6b6b, #ffd700, #4ecdc4);
+}
+
+.toggle-label input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-text {
+    font-weight: bold;
+    background: linear-gradient(45deg, #ff6b6b, #ffd700, #4ecdc4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.rainbow-mode-desc {
+    font-size: 0.7rem;
+    color: #aaa;
+    margin-top: 5px;
 }
 
 /* Responsive adjustments */

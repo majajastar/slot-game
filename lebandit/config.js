@@ -93,7 +93,14 @@ const CONFIG = {
     cols: 6,
     
     // Ping interval (ms)
-    pingInterval: 20000
+    pingInterval: 20000,
+    
+    // Rainbow Mode Settings
+    rainbowMode: {
+        enabled: true,
+        costMultiplier: 10, // 10x normal bet cost
+        description: 'Guaranteed rainbow feature after every cascade'
+    }
 };
 
 // Helper to build WebSocket URL

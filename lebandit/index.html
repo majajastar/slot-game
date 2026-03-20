@@ -110,16 +110,16 @@
                         </div>
                     </div>
                     
-                    <!-- Win Display -->
-                    <div class="win-display">
-                        <div id="winAmount" class="win-amount">0.00</div>
-                        <div class="win-label">Total Win</div>
-                    </div>
-                    
-                    <!-- Cascade Info -->
-                    <div id="cascadeInfo" class="cascade-info hidden">
-                        <span class="cascade-label">Cascade</span>
-                        <span id="cascadeStep" class="cascade-step">1</span>
+                    <!-- Status Bar (Win + Cascade) -->
+                    <div class="status-bar">
+                        <div class="win-display">
+                            <span id="winAmount" class="win-amount">0.00</span>
+                            <span class="win-label">Win</span>
+                        </div>
+                        <div id="cascadeInfo" class="cascade-info hidden">
+                            <span class="cascade-label">Cascade</span>
+                            <span id="cascadeStep" class="cascade-step">1</span>
+                        </div>
                     </div>
                 </div>
 
@@ -144,6 +144,16 @@
                         <button id="spinButton" class="spin-button" onclick="spin()">
                             🎰 SPIN
                         </button>
+                        
+                        <!-- Rainbow Mode Toggle -->
+                        <div class="rainbow-mode-toggle">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="rainbowModeCheck" onchange="toggleRainbowMode()">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">🌈 Rainbow Mode (10x)</span>
+                            </label>
+                            <div class="rainbow-mode-desc">Guaranteed rainbow after cascade</div>
+                        </div>
                         
                         <div class="quick-bets">
                             <button class="quick-bet" onclick="setBet(5)">$5</button>

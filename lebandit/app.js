@@ -15,6 +15,7 @@ let socket = null;
 let isSpinning = false;
 let pingInterval = null;
 let currentBalance = 0;
+let rainbowModeEnabled = false; // Rainbow mode state
 
 // Grid state
 let currentGrid = [];
@@ -185,8 +186,8 @@ function handleMessage(msg) {
     console.log()
     const type = msg.vals.type;
     const data = msg.vals.data;
-    console.log(`type = ${type}`)
-    console.log(`data = ${JSON.stringify(data)}`)
+    //console.log(`type = ${type}`)
+    //console.log(`data = ${JSON.stringify(data)}`)
 
     switch (type) {
         case 1: // Login response
@@ -243,11 +244,16 @@ function sendSyncRoom() {
 }
 
 function sendSetBet(bet) {
+    const message = { 
+        bet: bet,
+        rainbowMode: rainbowModeEnabled
+    };
+    
     send('100000', [{
         subType: 100070,
         subData: [{
             opCode: 'SetBet',
-            message: { bet: bet }  // Send bet value directly, not index
+            message: message
         }]
     }]);
 }
@@ -297,10 +303,15 @@ function handleSyncRoom(data) {
     }
 }
 
-function handleSpinResult(data) {
-    isSpinning = false;
-    document.getElementById('spinButton').disabled = false;
+// Helper to convert SymbolGrid to display Grid
+function symbolGridToGrid(symbolGrid) {
+    if (!symbolGrid || !symbolGrid.length) return [];
+    return symbolGrid.map(row =>
+        row.map(cell => cell?.symbol || '')
+    );
+}
 
+async function handleSpinResult(data) {
     console.log('[handleSpinResult] Raw data:', data);
 
     // Match TheLuxe structure - betInfo contains the result
@@ -309,6 +320,8 @@ function handleSpinResult(data) {
 
     if (!betInfo) {
         console.error('No betInfo in SetBet response', data);
+        isSpinning = false;
+        document.getElementById('spinButton').disabled = false;
         return;
     }
 
@@ -317,6 +330,8 @@ function handleSpinResult(data) {
     const result = betInfo.gameResult;
     if (!result) {
         console.error('No gameResult in betInfo', betInfo);
+        isSpinning = false;
+        document.getElementById('spinButton').disabled = false;
         return;
     }
 
@@ -342,9 +357,10 @@ function handleSpinResult(data) {
             console.log(`%c  Step ${idx + 1}:`, 'color: #4ecdc4; font-weight: bold;', `${step.winningClusters.length} clusters, win: ${step.totalWin}`);
 
             // Helper to format grid row with symbol IDs and icons
-            const formatRow = (row, rowIdx) => {
-                const cells = row.map(s => {
-                    if (s === '' || s === null || s === undefined) return '    ·   ';
+            const formatRow = (symbolRow, rowIdx) => {
+                const cells = symbolRow.map(cell => {
+                    const s = cell?.symbol || '';
+                    if (s === '') return '    ·   ';
                     const icon = CONFIG.symbols[s] || '❓';
                     const id = String(s).padStart(3, ' ');
                     return `${id}${icon}`;
@@ -358,34 +374,27 @@ function handleSpinResult(data) {
             };
 
             // Print grid BEFORE (initial state for this step)
-            if (step.gridBefore) {
+            if (step.symbolGridBefore) {
                 console.log('%c  ┌─ BEFORE ─────────────┐', 'color: #888;');
-                step.gridBefore.forEach((row, i) => {
+                step.symbolGridBefore.forEach((row, i) => {
                     console.log('%c' + formatRow(row, i), 'color: #ccc;');
                 });
                 printSeparator();
             }
 
             // Print grid AFTER REMOVAL (winning symbols removed)
-            if (step.gridAfterRemoval) {
+            if (step.symbolGridAfterRemoval) {
                 console.log('%c  ┌─ AFTER REMOVAL ──────┐', 'color: #ff6b6b;');
-                step.gridAfterRemoval.forEach((row, i) => {
+                step.symbolGridAfterRemoval.forEach((row, i) => {
                     console.log('%c' + formatRow(row, i), 'color: #ff6b6b;');
                 });
                 printSeparator();
             }
 
             // Print grid AFTER DROP & FILL (combined stage)
-            if (step.gridAfterDropAndFill) {
+            if (step.symbolGridAfterDropAndFill) {
                 console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
-                step.gridAfterDropAndFill.forEach((row, i) => {
-                    console.log('%c' + formatRow(row, i), 'color: #95e1d3;');
-                });
-                printSeparator();
-            } else if (step.gridAfterFill) {
-                // Fallback for backwards compatibility
-                console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
-                step.gridAfterFill.forEach((row, i) => {
+                step.symbolGridAfterDropAndFill.forEach((row, i) => {
                     console.log('%c' + formatRow(row, i), 'color: #95e1d3;');
                 });
                 printSeparator();
@@ -400,14 +409,87 @@ function handleSpinResult(data) {
                     console.log(`     ${c.symbol}${icon} cluster x${c.count} = $${c.payout}  [${positions}]`);
                 });
             }
+            
+            // Print golden squares created in this step (as grid layout)
+            if (step.goldenSquares && step.goldenSquares.length > 0) {
+                const stepSquares = step.goldenSquares.filter(sq => sq.stepCreated === idx + 1);
+                if (stepSquares.length > 0) {
+                    console.log('%c  ✨ Golden Squares:', 'color: #ffd700; font-weight: bold;');
+                    
+                    // Create grid layout for golden squares
+                    const gridLines = [];
+                    gridLines.push('    ┌───┬───┬───┬───┬───┬───┐');
+                    for (let r = 0; r < 5; r++) {
+                        let rowStr = `  ${r} │`;
+                        for (let c = 0; c < 6; c++) {
+                            const isGolden = step.goldenSquares.some(sq => sq.row === r && sq.col === c);
+                            const isNew = stepSquares.some(sq => sq.row === r && sq.col === c);
+                            if (isNew) {
+                                rowStr += ' ✨│';  // New golden square this step
+                            } else if (isGolden) {
+                                rowStr += ' ✓ │';  // Existing golden square
+                            } else {
+                                rowStr += '   │';
+                            }
+                        }
+                        gridLines.push(rowStr);
+                        if (r < 4) {
+                            gridLines.push('    ├───┼───┼───┼───┼───┼───┤');
+                        }
+                    }
+                    gridLines.push('    └───┴───┴───┴───┴───┴───┘');
+                    gridLines.push('      0   1   2   3   4   5  ');
+                    
+                    gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
+                    console.log(`     New this step: ${stepSquares.length}, Total: ${step.goldenSquares.length}`);
+                }
+            }
+            
             console.log(''); // Empty line between steps
         });
+        
+        // Print summary of all golden squares from the cascade (as grid layout)
+        if (result.goldenSquares && result.goldenSquares.length > 0) {
+            console.log('%c[Golden Squares Summary]', 'color: #ffd700; font-weight: bold;');
+            console.log(`  Total: ${result.goldenSquares.length} positions`);
+            
+            // Create grid layout for all golden squares
+            const gridLines = [];
+            gridLines.push('  ┌───┬───┬───┬───┬───┬───┐');
+            for (let r = 0; r < 5; r++) {
+                let rowStr = `${r} │`;
+                for (let c = 0; c < 6; c++) {
+                    const isGolden = result.goldenSquares.some(sq => sq.row === r && sq.col === c);
+                    if (isGolden) {
+                        rowStr += ' ✨│';
+                    } else {
+                        rowStr += '   │';
+                    }
+                }
+                gridLines.push(rowStr);
+                if (r < 4) {
+                    gridLines.push('  ├───┼───┼───┼───┼───┼───┤');
+                }
+            }
+            gridLines.push('  └───┴───┴───┴───┴───┴───┘');
+            gridLines.push('    0   1   2   3   4   5  ');
+            
+            gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
+        }
     }
 
     // Log rainbow result if present
     if (result.rainbowResult?.hasRainbow) {
         console.log('%c[Rainbow Feature!]', 'color: #ff6b6b; font-weight: bold;',
             `Coin win: ${result.rainbowResult.coinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
+        console.log('[Rainbow] Position:', result.rainbowResult.rainbowPosition);
+        console.log('[Rainbow] Previous symbol:', result.rainbowResult.previousSymbol);
+        
+        // Debug: Check what's in the final grid at rainbow position
+        if (result.rainbowResult.rainbowPosition && result.grid) {
+            const { row, col } = result.rainbowResult.rainbowPosition;
+            console.log(`[Rainbow] Grid at (${row},${col}):`, result.grid[row]?.[col]);
+        }
     }
 
     // Update balance from server
@@ -422,7 +504,12 @@ function handleSpinResult(data) {
 
     // Render cascade if present
     if (result.cascadeSteps && result.cascadeSteps.length > 0) {
-        renderCascade(result.cascadeSteps, result.totalWinAmount);
+        await renderCascade(result.cascadeSteps, result.totalWinAmount);
+        // After cascade animation, render the final grid (includes rainbow symbol if triggered)
+        console.log('[handleSpinResult] Rendering final grid after cascade');
+        if (result.grid) {
+            renderGrid(result.grid, true);
+        }
     } else {
         // Simple grid render
         renderGrid(result.grid);
@@ -430,9 +517,13 @@ function handleSpinResult(data) {
     }
 
     // Render rainbow feature if present
-    if (result.rainbowResult && result.rainbowResult.hasRainbow) {
-        renderRainbowFeature(result.rainbowResult);
+    if (result.rainbowResult?.hasRainbow) {
+        await renderRainbowFeature(result.rainbowResult);
     }
+
+    // All animations complete - allow next spin
+    isSpinning = false;
+    document.getElementById('spinButton').disabled = false;
 }
 
 // Grid Rendering
@@ -444,13 +535,12 @@ function renderGrid(grid, instant = false) {
     for (let r = -5; r < CONFIG.rows; r++) {
         for (let c = 0; c < CONFIG.cols; c++) {
             const cell = document.getElementById(`cell-${r}-${c}`);
-            if (r < 0){
+            if (r < 0) {
                 cell.style.transform = '';
                 cell.style.animation = '';
                 cell.style.transform = 'scale(0)';
-            }
-            else if (cell){
-                if ( grid[r] && grid[r][c]) {
+            } else if (cell) {
+                if (grid[r] && grid[r][c]) {
                     const symbolId = grid[r][c];
                     cell.textContent = CONFIG.symbols[symbolId] || symbolId;
                     cell.dataset.symbol = symbolId;
@@ -462,16 +552,111 @@ function renderGrid(grid, instant = false) {
                         cell.style.transition = '';
                     cell.style.transform = '';
                     cell.style.animation = '';
-                    cell.classList.remove('wild', 'scatter', 'highlight', 'removing');
-
-                    if (symbolId === '1') cell.classList.add('wild');
-                    if (symbolId === '2') cell.classList.add('scatter');
+                    cell.classList.remove('highlight', 'removing');
                 }
             } else {
                 cell.style.transform = 'scale(0)';
             }
         }
     }
+}
+
+// Render Golden Squares in overlay (independent of grid cells)
+function renderGoldenSquares(squares) {
+    if (!squares || !squares.length) return;
+
+    const overlay = document.getElementById('goldenSquaresOverlay');
+    if (!overlay) return;
+
+    // Clear existing golden squares first
+    overlay.innerHTML = '';
+
+    // Get actual grid cell dimensions for precise alignment
+    const sampleCell = document.getElementById('cell-0-0');
+    if (!sampleCell) return;
+
+    const cellRect = sampleCell.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+    
+    // Calculate relative position
+    const cellWidth = cellRect.width;
+    const cellHeight = cellRect.height;
+    const gap = 6; // Gap between cells from CSS
+    const padding = 15; // Padding from CSS
+    
+    // Log rendering info
+    console.log(`[Golden Squares] Rendering ${squares.length} squares at positions:`, 
+        squares.filter(sq => sq.row >= 0 && sq.row < 5).map(sq => `(${sq.row},${sq.col})`).join(', '));
+    
+    for (const sq of squares) {
+        // Only render if row is in visible area (0-4)
+        if (sq.row < 0 || sq.row >= 5) continue;
+
+        const squareEl = document.createElement('div');
+        squareEl.className = 'golden-square-item';
+        
+        // Calculate position accounting for gaps
+        // Position = padding + col * (cellWidth + gap)
+        const top = padding + sq.row * (cellHeight + gap);
+        const left = padding + sq.col * (cellWidth + gap);
+        
+        squareEl.style.top = `${top}px`;
+        squareEl.style.left = `${left}px`;
+        squareEl.style.width = `${cellWidth}px`;
+        squareEl.style.height = `${cellHeight}px`;
+        
+        overlay.appendChild(squareEl);
+    }
+}
+
+// Clear Golden Squares from overlay
+function clearGoldenSquares() {
+    const overlay = document.getElementById('goldenSquaresOverlay');
+    if (overlay) overlay.innerHTML = '';
+}
+
+// Render Golden Frames for Bonus Games
+function renderGoldenFrames(frames) {
+    if (!frames || !frames.length) return;
+
+    for (let r = 0; r < frames.length; r++) {
+        for (let c = 0; c < frames[r].length; c++) {
+            const frame = frames[r][c];
+            if (!frame || frame.value <= 0) continue;
+
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            if (!cell) continue;
+
+            // Add golden frame styling based on type
+            cell.classList.add('golden-frame');
+            cell.classList.add(`frame-${frame.type}`);
+            
+            if (frame.active) {
+                cell.classList.add('frame-active');
+            }
+
+            // Show frame value
+            const valueEl = document.createElement('div');
+            valueEl.className = 'frame-value';
+            valueEl.textContent = frame.value + 'x';
+            cell.appendChild(valueEl);
+        }
+    }
+}
+
+// Clear Golden Frames
+function clearGoldenFrames() {
+    document.querySelectorAll('.golden-frame').forEach(cell => {
+        cell.classList.remove('golden-frame', 'frame-bronze', 'frame-silver', 'frame-gold', 'frame-jackpot', 'frame-active');
+        const valueEl = cell.querySelector('.frame-value');
+        if (valueEl) valueEl.remove();
+    });
+}
+
+// Clear All Golden Effects (squares + frames)
+function clearAllGoldenEffects() {
+    clearGoldenSquares();
+    clearGoldenFrames();
 }
 
 // Cascade Animation
@@ -485,28 +670,61 @@ async function renderCascade(steps, totalWin) {
     cascadeHistory.classList.remove('hidden');
     cascadeStepsList.innerHTML = '';
 
+    // Track all golden squares accumulated across steps
+    const accumulatedGoldenSquares = [];
+
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         cascadeStepEl.textContent = step.step;
 
         // Step 1: Show grid before and highlight wins
-        renderGrid(step.gridBefore);
+        // Convert SymbolGrid to Grid for rendering
+        renderGrid(symbolGridToGrid(step.symbolGridBefore));
         highlightWinningSymbols(step.winningClusters);
         await sleep(800);
+
+        // Accumulate golden squares from this step
+        if (step.goldenSquares && step.goldenSquares.length > 0) {
+            for (const sq of step.goldenSquares) {
+                // Avoid duplicates
+                const exists = accumulatedGoldenSquares.some(
+                    existing => existing.row === sq.row && existing.col === sq.col
+                );
+                if (!exists) {
+                    accumulatedGoldenSquares.push(sq);
+                }
+            }
+        }
+
+        // Render all accumulated golden squares in overlay
+        // This is independent of grid cells, so grid animations won't affect it
+        if (accumulatedGoldenSquares.length > 0) {
+            renderGoldenSquares(accumulatedGoldenSquares);
+        }
 
         // Step 2: Animate removal
         highlightRemovedSymbols(step.removedSymbols);
         await sleep(600);
 
-        // Step 3: Show "after removal" grid (with empty spaces)
-        renderGrid(step.gridAfterRemoval);
+        // Step 3: Show "after removal" grid
+        renderGrid(symbolGridToGrid(step.symbolGridAfterRemoval));
+
         await sleep(400);
 
         // Step 4: Animate drops and new symbols
-        // animateCombined will visually move symbols from their "from" positions
+        // Golden squares in overlay stay visible (independent of grid animation)
         await animateCombined(step.movements);
-        // Step 5: Render final grid to ensure everything is in sync
-        renderGrid(step.gridAfterDropAndFill || step.gridAfterFill, true);
+
+        // Step 5: Render final grid
+        renderGrid(symbolGridToGrid(step.symbolGridAfterDropAndFill), true);
+
+        // Golden squares persist in overlay - no need to re-render
+
+        // Render golden frames if in bonus game
+        if (step.bonusGameState?.goldenFrames) {
+            renderGoldenFrames(step.bonusGameState.goldenFrames);
+        }
+
         await sleep(400);
 
         // Add to history
@@ -538,11 +756,18 @@ async function renderRainbowFeature(rainbowResult) {
     // Highlight rainbow position
     if (rainbowResult.rainbowPosition) {
         const { row, col } = rainbowResult.rainbowPosition;
+        console.log(`[renderRainbowFeature] Setting rainbow at (${row},${col})`);
         const cell = document.getElementById(`cell-${row}-${col}`);
         if (cell) {
+            console.log(`[renderRainbowFeature] Cell found, current content: '${cell.textContent}'`);
             cell.textContent = CONFIG.symbols['RAINBOW'];
             cell.classList.add('rainbow');
+            console.log(`[renderRainbowFeature] Cell updated to: '${cell.textContent}'`);
+        } else {
+            console.log(`[renderRainbowFeature] Cell NOT found for (${row},${col})`);
         }
+    } else {
+        console.log('[renderRainbowFeature] No rainbow position in result');
     }
 
     // Render each round
@@ -617,7 +842,8 @@ function highlightWinningSymbols(clusters) {
     }
 }
 
-function highlightRemovedSymbols(removedSymbols) {
+function  highlightRemovedSymbols(removedSymbols) {
+    console.log(`${JSON.stringify(removedSymbols)}`)
     for (const rs of removedSymbols) {
         const cell = document.getElementById(`cell-${rs.row}-${rs.col}`);
         if (cell) {
@@ -648,11 +874,7 @@ async function animateCombined(movements) {
                 fromCell.style.transform = '';
                 fromCell.textContent = icon;
                 fromCell.dataset.symbol = move.symbol;
-                fromCell.classList.remove('wild', 'scatter', 'highlight', 'removing');
             }
-
-            if (move.symbol === '1') fromCell.classList.add('wild');
-            if (move.symbol === '2') fromCell.classList.add('scatter');
 
             // Calculate movement math
             const rowDiff = move.to.row - move.from.row;
@@ -722,6 +944,17 @@ function updateBetDisplay() {
     });
 }
 
+// Rainbow Mode Toggle
+function toggleRainbowMode() {
+    const checkbox = document.getElementById('rainbowModeCheck');
+    rainbowModeEnabled = checkbox.checked;
+    
+    console.log('[Rainbow Mode]', rainbowModeEnabled ? 'ENABLED' : 'DISABLED');
+    
+    // Update UI to show cost
+    updateBetDisplay();
+}
+
 function changeBet(delta) {
     CURRENT_BET_INDEX += delta;
     if (CURRENT_BET_INDEX < 0) CURRENT_BET_INDEX = 0;
@@ -753,6 +986,9 @@ function spin() {
         cell.style.transform = '';
         cell.style.animation = '';
     });
+
+    // Clear golden frames
+    clearAllGoldenEffects();
 
     // Clear history displays
     document.getElementById('cascadeHistory').classList.add('hidden');
