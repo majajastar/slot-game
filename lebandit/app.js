@@ -839,7 +839,9 @@ async function renderRainbowFeature(rainbowResult) {
                             const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
                             cell.textContent = coinEmoji;
                             cell.classList.add('coin-symbol', coin.type);
-                            cell.dataset.multiplier = coin.finalMultiplier + 'x';
+                            // Store both original and final
+                            cell.dataset.originalMultiplier = coin.originalMultiplier;
+                            cell.dataset.finalMultiplier = coin.finalMultiplier;
                         }
                     }
                     for (const clover of step.clovers) {
@@ -869,7 +871,7 @@ async function renderRainbowFeature(rainbowResult) {
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
                                 cell.classList.add('affected-by-clover');
-                                cell.dataset.multiplier = coin.finalMultiplier + 'x';
+                                cell.dataset.finalMultiplier = coin.finalMultiplier;
                             }
                         }
                     }
@@ -923,7 +925,8 @@ async function renderRainbowFeature(rainbowResult) {
                     const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
                     cell.textContent = coinEmoji;
                     cell.classList.add('coin-symbol', coin.type);
-                    cell.dataset.multiplier = coin.finalMultiplier + 'x';
+                    cell.dataset.originalMultiplier = coin.originalMultiplier;
+                    cell.dataset.finalMultiplier = coin.finalMultiplier;
                 }
             }
             for (const clover of round.clovers) {
