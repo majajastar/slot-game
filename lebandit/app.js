@@ -1019,9 +1019,10 @@ function spin() {
 
     // Clear previous animations
     document.querySelectorAll('.reel-cell').forEach(cell => {
-        cell.classList.remove('highlight', 'removing', 'rainbow');
+        cell.classList.remove('highlight', 'removing', 'rainbow', 'coin-symbol', 'clover-symbol', 'pot-symbol');
         cell.style.transform = '';
         cell.style.animation = '';
+        cell.dataset.multiplier = '';
     });
 
     // Clear golden frames
@@ -1032,6 +1033,9 @@ function spin() {
     document.getElementById('rainbowHistory').classList.add('hidden');
     document.getElementById('cascadeStepsList').innerHTML = '';
     document.getElementById('rainbowRoundsList').innerHTML = '';
+
+    // Hide rainbow overlay from previous spin
+    document.getElementById('rainbowOverlay').classList.add('hidden');
 
     // Send spin (SetBet triggers spin)
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];

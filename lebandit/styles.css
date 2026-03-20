@@ -472,20 +472,22 @@
     50% { opacity: 1; transform: scale(1.05); }
 }
 
-/* Rainbow overlay */
+/* Rainbow overlay - positioned at bottom, doesn't block grid view */
 .rainbow-overlay {
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
+    max-height: 40%;
+    background: rgba(0, 0, 0, 0.75);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     z-index: 100;
-    border-radius: 15px;
+    border-radius: 0 0 15px 15px;
+    padding: 15px;
+    overflow-y: auto;
 }
 
 .rainbow-overlay.hidden {
@@ -493,14 +495,14 @@
 }
 
 .rainbow-title {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: bold;
     background: linear-gradient(45deg, #ff6b6b, #ffd700, #4ecdc4, #ff6b6b);
     background-size: 300% 300%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: rainbowShift 2s ease infinite;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 @keyframes rainbowShift {
@@ -515,6 +517,8 @@
     gap: 20px;
     justify-content: center;
     max-width: 600px;
+    max-height: 150px;
+    overflow-y: auto;
 }
 
 /* Coin styles */
@@ -522,10 +526,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 8px;
+    border-radius: 8px;
     background: rgba(255,255,255,0.1);
-    min-width: 60px;
+    min-width: 50px;
 }
 
 .coin-item.bronze {
@@ -541,7 +545,7 @@
 }
 
 .coin-emoji {
-    font-size: 2rem;
+    font-size: 1.5rem;
 }
 
 .coin-value {
