@@ -571,40 +571,30 @@ function renderGoldenSquares(squares) {
     // Clear existing golden squares first
     overlay.innerHTML = '';
 
-    // Get actual grid cell dimensions for precise alignment
-    const sampleCell = document.getElementById('cell-0-0');
-    if (!sampleCell) return;
+    // Use CSS Grid to match the main grid structure - responsive!
+    overlay.style.display = 'grid';
+    overlay.style.gridTemplateColumns = 'repeat(6, 1fr)';
+    overlay.style.gridTemplateRows = 'repeat(5, 1fr)';
+    overlay.style.gap = '6px';
+    overlay.style.padding = '15px';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.boxSizing = 'border-box';
 
-    const cellRect = sampleCell.getBoundingClientRect();
-    const overlayRect = overlay.getBoundingClientRect();
-    
-    // Calculate relative position
-    const cellWidth = cellRect.width;
-    const cellHeight = cellRect.height;
-    const gap = 6; // Gap between cells from CSS
-    const padding = 15; // Padding from CSS
-    
     // Log rendering info
-    console.log(`[Golden Squares] Rendering ${squares.length} squares at positions:`, 
+    console.log(`[Golden Squares] Rendering ${squares.length} squares at positions:`,
         squares.filter(sq => sq.row >= 0 && sq.row < 5).map(sq => `(${sq.row},${sq.col})`).join(', '));
-    
+
     for (const sq of squares) {
         // Only render if row is in visible area (0-4)
         if (sq.row < 0 || sq.row >= 5) continue;
 
         const squareEl = document.createElement('div');
         squareEl.className = 'golden-square-item';
-        
-        // Calculate position accounting for gaps
-        // Position = padding + col * (cellWidth + gap)
-        const top = padding + sq.row * (cellHeight + gap);
-        const left = padding + sq.col * (cellWidth + gap);
-        
-        squareEl.style.top = `${top}px`;
-        squareEl.style.left = `${left}px`;
-        squareEl.style.width = `${cellWidth}px`;
-        squareEl.style.height = `${cellHeight}px`;
-        
+        // Position in grid: row+1 (1-based), col+1 (1-based)
+        squareEl.style.gridColumn = `${sq.col + 1}`;
+        squareEl.style.gridRow = `${sq.row + 1}`;
+
         overlay.appendChild(squareEl);
     }
 }
