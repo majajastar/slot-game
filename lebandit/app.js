@@ -900,7 +900,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     document.querySelectorAll('.reel-cell').forEach(cell => {
                         cell.classList.remove('rainbow-coin', 'clover-symbol', 'pot-symbol', 
                                               'bronze', 'silver', 'gold', 
-                                              'active-clover', 'active-pot', 'affected-by-clover',
+                                              'active-clover', 'active-pot',
                                               'pot-collected');
                         // Clear all multiplier data attributes
                         cell.dataset.originalMultiplier = '';
