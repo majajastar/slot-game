@@ -695,6 +695,27 @@ async function renderCascade(steps, totalWin) {
 
         await sleep(400);
 
+        // Log dropping symbols
+        if (step.movements && step.movements.length > 0) {
+            console.log(`%c[Cascade Step ${step.step}] Dropping symbols:`, 'color: #4ecdc4; font-weight: bold;');
+            const droppingSymbols = step.movements.filter(m => m.isNew);
+            const existingSymbols = step.movements.filter(m => !m.isNew);
+            
+            if (existingSymbols.length > 0) {
+                console.log('  Existing symbols dropping:');
+                existingSymbols.forEach(m => {
+                    console.log(`    ${m.symbol} from (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
+                });
+            }
+            
+            if (droppingSymbols.length > 0) {
+                console.log('  New symbols falling in:');
+                droppingSymbols.forEach(m => {
+                    console.log(`    ${m.symbol} from buffer (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
+                });
+            }
+        }
+
         // Step 4: Animate drops and new symbols
         // Golden squares in overlay stay visible (independent of grid animation)
         await animateCombined(step.movements);
@@ -759,6 +780,8 @@ function addStepDetailToPanel(step, container) {
                 if (step.collectedCoins && step.collectedCoins.length > 0) {
                     const totalValue = step.collectedCoins.reduce((sum, c) => sum + c.finalMultiplier, 0);
                     info += `${step.collectedCoins.length} coins = ${totalValue}x`;
+                    console.log(`@@@@ step.collectedCoins = ${JSON.stringify(step.collectedCoins)}`)
+                    console.log(`@@@@ totalValue = ${totalValue}`)
                     if (pot.cloverMultipliers && pot.cloverMultipliers.length > 0) {
                         console.log(`@@@@ pot.finalMultiplier = ${pot.finalMultiplier}`)
                         info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
