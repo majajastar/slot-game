@@ -872,6 +872,71 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         console.log(`  Total: ${totalCoinValue + totalPotValue}x`);
     }
 
+    // Helper to animate coins flying to pot
+    async function animateCoinsToPot(collectedCoins, potRow, potCol) {
+        const potCell = document.getElementById(`cell-${potRow}-${potCol}`);
+        if (!potCell) return;
+        
+        const potRect = potCell.getBoundingClientRect();
+        const gridRect = document.querySelector('.lebandit-grid').getBoundingClientRect();
+        
+        // Create flying coin elements
+        const flyingCoins = [];
+        
+        for (const coin of collectedCoins) {
+            const coinCell = document.getElementById(`cell-${coin.row}-${coin.col}`);
+            if (!coinCell) continue;
+            
+            const coinRect = coinCell.getBoundingClientRect();
+            
+            // Create flying coin element
+            const flyer = document.createElement('div');
+            flyer.textContent = CONFIG.symbols[coin.symbolId] || '🪙';
+            flyer.style.cssText = `
+                position: fixed;
+                left: ${coinRect.left}px;
+                top: ${coinRect.top}px;
+                width: ${coinRect.width}px;
+                height: ${coinRect.height}px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.8rem;
+                z-index: 1000;
+                pointer-events: none;
+                transition: all 0.6s ease-in-out;
+                text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            `;
+            document.body.appendChild(flyer);
+            flyingCoins.push(flyer);
+            
+            // Start animation after a small delay
+            await sleep(50);
+        }
+        
+        // Animate all coins to pot position
+        await sleep(100);
+        flyingCoins.forEach(flyer => {
+            flyer.style.left = `${potRect.left + potRect.width/2 - 20}px`;
+            flyer.style.top = `${potRect.top + potRect.height/2 - 20}px`;
+            flyer.style.transform = 'scale(0.5)';
+            flyer.style.opacity = '0.7';
+        });
+        
+        // Wait for animation to complete
+        await sleep(600);
+        
+        // Remove flying coins
+        flyingCoins.forEach(flyer => flyer.remove());
+        
+        // Flash the pot
+        potCell.style.transform = 'scale(1.3)';
+        potCell.style.boxShadow = '0 0 40px rgba(255, 215, 0, 0.9)';
+        await sleep(200);
+        potCell.style.transform = 'scale(1)';
+        potCell.style.boxShadow = '';
+    }
+
     // Render each round
     for (const round of rainbowResult.rounds) {
         console.log(`%c[Rainbow Round ${round.round}]`, 'color: #ffd700; font-weight: bold; font-size: 14px;');
@@ -906,8 +971,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                               'bronze', 'silver', 'gold', 
                                               'active-clover', 'active-pot',
                                               'pot-collected');
-                        // Clear all multiplier data attributes
-                        cell.dataset.multiplier = '';
                         // Also clear any inline styles from animations
                         cell.style.transform = '';
                         cell.style.boxShadow = '';
@@ -947,7 +1010,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             if (pot.finalMultiplier > 0) {
                                 cell.dataset.multiplier = pot.finalMultiplier + 'x';
                             } else {
-                                cell.dataset.multiplier = '';
+                                cell.dataset.multiplier = '-';
                             }
                         }
                     }
@@ -1131,6 +1194,11 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             total += coin.finalMultiplier;
                         }
                         console.log(`     Total collected: ${total}x → Final: ${step.activePot?.finalMultiplier}x`);
+                        
+                        // Animate coins flying to pot
+                        if (step.activePot) {
+                            await animateCoinsToPot(step.collectedCoins, step.activePot.row, step.activePot.col);
+                        }
                     }
                     if (step.activePot) {
                         const potCell = document.getElementById(`cell-${step.activePot.row}-${step.activePot.col}`);
@@ -1139,7 +1207,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             potCell.dataset.multiplier = step.activePot.finalMultiplier + 'x';
                         }
                     }
-                    await sleep(800);
+                    await sleep(400);
                     if (step.activePot) {
                         const potCell = document.getElementById(`cell-${step.activePot.row}-${step.activePot.col}`);
                         if (potCell) potCell.classList.remove('active-pot');
@@ -1276,7 +1344,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         
         totalDiv.innerHTML = `
             <div style="margin-top: 15px; padding: 15px; border-top: 2px solid #ffd700; text-align: center; background: rgba(0,0,0,0.3); border-radius: 8px;">
-                <strong style="color: #ffd700; font-size: 1.2rem;">🌈 Rainbow Total: ${overallTotal.toFixed(2)}x</strong>
+                <strong style="color: #ffd700; font-size: 1.2rem;">🌈 Rainbow Total: ${overallTotal.toFixed(2)}</strong>
                 ${detailsHtml}
             </div>
         `;
