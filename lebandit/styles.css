@@ -1114,11 +1114,53 @@
     100% { transform: scale(1); }
 }
 
+/* Coin rotation animation for clover multiplication - HIGH SPECIFICITY */
+.reel-cell.rainbow-coin.coin-rotating,
+.reel-cell.coin-symbol.coin-rotating {
+    animation: coinMultiply 0.6s ease-in-out !important;
+    z-index: 20 !important;
+}
+
+@keyframes coinMultiply {
+    0% { 
+        transform: scale(1) !important;
+        filter: brightness(1) !important;
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0) !important;
+    }
+    30% {
+        transform: scale(1.2) !important;
+        filter: brightness(1.5) !important;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+    }
+    50% { 
+        transform: scale(1.5) !important;
+        filter: brightness(2) !important;
+        box-shadow: 0 0 40px rgba(255, 215, 0, 1) !important;
+        background: linear-gradient(135deg, rgba(255,215,0,0.8), rgba(255,215,0,0.4)) !important;
+    }
+    70% {
+        transform: scale(1.2) !important;
+        filter: brightness(1.5) !important;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+    }
+    100% { 
+        transform: scale(1) !important;
+        filter: brightness(1) !important;
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0) !important;
+    }
+}
+
 /* Active clover/pot during animation */
 .reel-cell.active-clover {
     animation: cloverPulse 0.6s ease-in-out;
     box-shadow: 0 0 30px rgba(46, 204, 113, 0.8);
     z-index: 10;
+}
+
+.reel-cell.affected-by-clover {
+    animation: coinFlash 0.6s ease-in-out;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    z-index: 5;
 }
 
 .reel-cell.active-pot {
@@ -1130,6 +1172,11 @@
 @keyframes cloverPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.3); }
+}
+
+@keyframes coinFlash {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); background: rgba(255, 215, 0, 0.3); }
 }
 
 @keyframes potCollect {

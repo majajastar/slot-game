@@ -1023,7 +1023,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                     
                                     // Set initial multiplier (before)
                                     cell.dataset.finalMultiplier = affectedCoin.beforeMultiplier;
-                                    
+                                                                                                            
                                     // Phase 1: Scale up
                                     cell.style.transform = 'scale(1.3)';
                                     cell.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
@@ -1242,11 +1242,40 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         const overallTotal = rainbowResult.totalCoinWin + rainbowResult.totalPotWin;
         const totalDiv = document.createElement('div');
         totalDiv.className = 'rainbow-total-win';
+        
+        // Build detailed breakdown
+        let detailsHtml = '';
+        
+        // Show raw values (before bet)
+        if (rainbowResult.totalCoinValue > 0 || rainbowResult.totalPotValue > 0) {
+            detailsHtml += '<div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,215,0,0.3);">';
+            detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Raw Multipliers:</span><br/>';
+            if (rainbowResult.totalCoinValue > 0) {
+                detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinValue.toFixed(2)}x</span>`;
+            }
+            if (rainbowResult.totalPotValue > 0) {
+                if (rainbowResult.totalCoinValue > 0) detailsHtml += ' | ';
+                detailsHtml += `<span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotValue.toFixed(2)}x</span>`;
+            }
+            detailsHtml += '</div>';
+        }
+        
+        // Show win amounts (with bet)
+        detailsHtml += '<div style="margin-top: 8px;">';
+        detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Win Amount:</span><br/>';
+        if (rainbowResult.totalCoinWin > 0) {
+            detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinWin.toFixed(2)}x</span>`;
+        }
+        if (rainbowResult.totalPotWin > 0) {
+            if (rainbowResult.totalCoinWin > 0) detailsHtml += ' | ';
+            detailsHtml += `<span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotWin.toFixed(2)}x</span>`;
+        }
+        detailsHtml += '</div>';
+        
         totalDiv.innerHTML = `
-            <div style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #ffd700; text-align: center;">
-                <strong style="color: #ffd700; font-size: 1.1rem;">🌈 Rainbow Total Win: ${overallTotal.toFixed(2)}x</strong>
-                ${rainbowResult.totalCoinWin > 0 ? `<br/><span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinWin.toFixed(2)}x</span>` : ''}
-                ${rainbowResult.totalPotWin > 0 ? `<br/><span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotWin.toFixed(2)}x</span>` : ''}
+            <div style="margin-top: 15px; padding: 15px; border-top: 2px solid #ffd700; text-align: center; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                <strong style="color: #ffd700; font-size: 1.2rem;">🌈 Rainbow Total: ${overallTotal.toFixed(2)}x</strong>
+                ${detailsHtml}
             </div>
         `;
         rainbowDetailsContent.appendChild(totalDiv);
