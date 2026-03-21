@@ -763,7 +763,7 @@ function addStepDetailToPanel(step, container) {
                         info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
                     }
                     info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c => 
-                        `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.value}x</span>`
+                        `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.finalMultiplier}x</span>`
                     ).join('')}</div>`;
                 }
             }
@@ -924,8 +924,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             // Store both original and final
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
-                            // Add 'multiplied' class if coin was actually multiplied
-                            if (coin.originalMultiplier !== coin.finalMultiplier) {
+                            // Add 'multiplied' class if coin has clover multipliers
+                            if (coin.cloverMultipliers && coin.cloverMultipliers.length > 0) {
                                 cell.classList.add('multiplied');
                             }
                         }
@@ -959,8 +959,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             // Show ORIGINAL multiplier first
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.originalMultiplier;
-                            // Add 'multiplied' class if coin was actually multiplied
-                            if (coin.originalMultiplier !== coin.finalMultiplier) {
+                            // Add 'multiplied' class if coin has clover multipliers
+                            if (coin.cloverMultipliers && coin.cloverMultipliers.length > 0) {
                                 cell.classList.add('multiplied');
                             }
                         }
@@ -1073,8 +1073,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.classList.add('rainbow-coin', coin.type);
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
-                            // Add 'multiplied' class if coin was actually multiplied
-                            if (coin.originalMultiplier !== coin.finalMultiplier) {
+                            // Add 'multiplied' class if coin has clover multipliers
+                            if (coin.cloverMultipliers && coin.cloverMultipliers.length > 0) {
                                 cell.classList.add('multiplied');
                             }
                         }
