@@ -41,7 +41,14 @@ const CONFIG = {
         '103': '♦️',
         '104': '♣️',
         '105': '🌟',
-        // Special symbols for rainbow feature
+        // Special symbols for rainbow feature (matching backend IDs 300-305)
+        '300': '🌈',  // RAINBOW
+        '301': '🪙',  // BRONZE_COIN
+        '302': '🪙',  // SILVER_COIN
+        '303': '🪙',  // GOLD_COIN
+        '304': '🍀',  // FOUR_LEAF_CLOVER
+        '305': '🏺',  // POT_OF_GOLD
+        // Legacy mappings for compatibility
         'RAINBOW': '🌈',
         'BRONZE': '🪙',
         'SILVER': '🪙',

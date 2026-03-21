@@ -702,16 +702,18 @@ async function renderCascade(steps, totalWin) {
             const existingSymbols = step.movements.filter(m => !m.isNew);
             
             if (existingSymbols.length > 0) {
-                console.log('  Existing symbols dropping:');
+                console.log('[Drop] Existing symbols dropping:');
                 existingSymbols.forEach(m => {
-                    console.log(`    ${m.symbol} from (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
+                    const symbol = m.symbolInstance?.symbol || '?';
+                    console.log(`[Drop] ${symbol} (${m.symbolInstance?.id}) from (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
                 });
             }
             
             if (droppingSymbols.length > 0) {
-                console.log('  New symbols falling in:');
+                console.log('[Drop] New symbols falling in:');
                 droppingSymbols.forEach(m => {
-                    console.log(`    ${m.symbol} from buffer (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
+                    const symbol = m.symbolInstance?.symbol || '?';
+                    console.log(`[Drop] ${symbol} (${m.symbolInstance?.id}) from buffer (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
                 });
             }
         }
@@ -749,27 +751,48 @@ async function renderCascade(steps, totalWin) {
 }
 
 // Add step detail to rainbow details panel
-function addStepDetailToPanel(step, container) {
+function addStepDetailToPanel(step, container, round) {
     if (!container) return;
-    
+
     const stepDiv = document.createElement('div');
     stepDiv.className = `rainbow-step-detail ${step.stepType}`;
-    
+
     let title = '';
     let info = '';
-    
+
     switch (step.stepType) {
         case 'initial':
             title = '🎲 Initial Reveal';
             info = `${step.coins?.length || 0} coins, ${step.clovers?.length || 0} clovers, ${step.pots?.length || 0} pots`;
             break;
         case 'clover':
-            title = `🍀 Clover x${step.activeClover?.multiplier || 1}`;
-            info = `Multiplied ${step.affectedCoins?.length || 0} coins`;
-            if (step.affectedCoins && step.affectedCoins.length > 0) {
-                info += `<div class="rainbow-coin-list">${step.affectedCoins.map(c => 
-                    `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.finalMultiplier}x</span>`
-                ).join('')}</div>`;
+            const cloverMultiplier = step.activeClover?.multiplier || 1;
+            title = `🍀 Clover x${cloverMultiplier}`;
+
+            // Find the contribution for this clover
+            const contribution = round?.cloverContributions?.find(c =>
+                c.clover.row === step.activeClover?.row &&
+                c.clover.col === step.activeClover?.col
+            );
+            if (contribution) {
+                const coinCount = contribution.affectedCoins.length;
+                const potCount = contribution.affectedPots.length;
+                info = `Multiplied ${coinCount} coins${potCount > 0 ? ` and ${potCount} pots` : ''}`;
+
+                // Show detailed multiplier changes
+                if (contribution.affectedCoins.length > 0) {
+                    info += `<div class="rainbow-coin-list">${contribution.affectedCoins.map(ac =>
+                        `<span class="rainbow-coin-tag">(${ac.row},${ac.col}) ${ac.beforeMultiplier}x→${ac.afterMultiplier}x</span>`
+                    ).join('')}</div>`;
+                }
+
+                if (contribution.affectedPots.length > 0) {
+                    info += `<div class="rainbow-pot-list" style="margin-top:5px;">${contribution.affectedPots.map(ap =>
+                        `<span class="rainbow-pot-tag" style="background:rgba(155,89,182,0.3);padding:2px 6px;border-radius:4px;">Pot (${ap.row},${ap.col}) ${ap.beforeMultiplier}x→${ap.afterMultiplier}x</span>`
+                    ).join('')}</div>`;
+                }
+            } else {
+                info = `Multiplied ${step.affectedCoins?.length || 0} coins`;
             }
             break;
         case 'pot':
@@ -780,27 +803,24 @@ function addStepDetailToPanel(step, container) {
                 if (step.collectedCoins && step.collectedCoins.length > 0) {
                     const totalValue = step.collectedCoins.reduce((sum, c) => sum + c.finalMultiplier, 0);
                     info += `${step.collectedCoins.length} coins = ${totalValue}x`;
-                    console.log(`@@@@ step.collectedCoins = ${JSON.stringify(step.collectedCoins)}`)
-                    console.log(`@@@@ totalValue = ${totalValue}`)
                     if (pot.cloverMultipliers && pot.cloverMultipliers.length > 0) {
-                        console.log(`@@@@ pot.finalMultiplier = ${pot.finalMultiplier}`)
                         info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
                     }
-                    info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c => 
+                    info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c =>
                         `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.finalMultiplier}x</span>`
                     ).join('')}</div>`;
                 }
             }
             break;
     }
-    
+
     stepDiv.innerHTML = `
         <div class="rainbow-step-title">${title}</div>
         <div class="rainbow-step-info">${info}</div>
     `;
-    
+
     container.appendChild(stepDiv);
-    
+
     // Scroll to bottom
     container.scrollTop = container.scrollHeight;
 }
@@ -836,7 +856,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         console.log(`[renderRainbowFeature] Setting rainbow at (${row},${col})`);
         const cell = document.getElementById(`cell-${row}-${col}`);
         if (cell) {
-            cell.textContent = CONFIG.symbols['RAINBOW'];
+            //cell.textContent = CONFIG.symbols['RAINBOW'];
             cell.classList.add('rainbow');
         }
     }
@@ -861,7 +881,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
 
         // Mark coins - show original and final multiplier
         for (const coin of round.coins) {
-            const emoji = CONFIG.symbols[coin.type.toUpperCase()];
+            const emoji = CONFIG.symbols[coin.symbolId] || CONFIG.symbols[coin.type.toUpperCase()] || '🪙';
             const orig = coin.originalMultiplier;
             const final = coin.finalMultiplier;
             if (orig !== final) {
@@ -873,12 +893,14 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
 
         // Mark clovers
         for (const clover of round.clovers) {
-            grid[clover.row][clover.col] = `🍀${clover.multiplier}`;
+            const emoji = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
+            grid[clover.row][clover.col] = `${emoji}${clover.multiplier}`;
         }
 
         // Mark pots
         for (const pot of round.pots) {
-            grid[pot.row][pot.col] = `🏺${pot.finalMultiplier}`;
+            const emoji = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
+            grid[pot.row][pot.col] = `${emoji}${pot.finalMultiplier}`;
         }
 
         // Print grid with box drawing
@@ -909,9 +931,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         
         // Add round header to details panel (accumulate all rounds)
         if (rainbowDetailsContent) {
+            const roundTotal = round.totalCoinValue + round.totalPotValue;
             const roundHeader = document.createElement('div');
             roundHeader.className = 'rainbow-round-header';
-            roundHeader.innerHTML = `<strong>Round ${round.round}</strong> (${round.coins.length} coins, ${round.clovers.length} clovers, ${round.pots.length} pots)`;
+            roundHeader.innerHTML = `<strong>Round ${round.round}</strong> (${round.coins.length} coins, ${round.clovers.length} clovers, ${round.pots.length} pots) - <span style="color:#4ecdc4">Win: ${roundTotal}x</span>`;
             roundHeader.style.cssText = 'margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,215,0,0.3); color: #ffd700;';
             rainbowDetailsContent.appendChild(roundHeader);
         }
@@ -922,7 +945,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                 console.log(`%c  Step ${step.stepNumber}: ${step.description}`, 'color: #4ecdc4;');
                 
                 // Add step detail to panel
-                addStepDetailToPanel(step, rainbowDetailsContent);
+                addStepDetailToPanel(step, rainbowDetailsContent, round);
                 
                 // Clean previous styles before each step (except initial)
                 if (step.stepType !== 'initial') {
@@ -930,7 +953,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         cell.classList.remove('rainbow-coin', 'clover-symbol', 'pot-symbol', 
                                               'bronze', 'silver', 'gold', 
                                               'active-clover', 'active-pot', 'affected-by-clover',
-                                              'multiplied', 'pot-collected');
+                                              'pot-collected');
                         // Clear all multiplier data attributes
                         cell.dataset.originalMultiplier = '';
                         cell.dataset.finalMultiplier = '';
@@ -950,25 +973,18 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const coin of step.coins) {
                         const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                         if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
-                            const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
+                            const coinEmoji = CONFIG.symbols[coin.symbolId] || CONFIG.symbols[coin.type.toUpperCase()] || '🪙';
                             cell.textContent = coinEmoji;
                             cell.classList.add('rainbow-coin', coin.type);
                             // Store both original and final
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
-                            // Add 'multiplied' class only if coin was actually multiplied (value changed)
-                            const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
-                                                  coin.originalMultiplier !== coin.finalMultiplier;
-                            if (wasMultiplied) {
-                                console.log(`@@@ intitila coin.originalMultiplier = ${coin.originalMultiplier}, coin.finalMultiplier = ${coin.finalMultiplier}`)
-                                cell.classList.add('multiplied');
-                            }
                         }
                     }
                     for (const clover of step.clovers) {
                         const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols['CLOVER'];
+                            cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
                             cell.classList.add('clover-symbol');
                             cell.dataset.multiplier = clover.multiplier + 'x';
                         }
@@ -976,7 +992,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const pot of step.pots) {
                         const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols['POT'];
+                            cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
                             cell.classList.add('pot-symbol');
                             // Only show multiplier if pot has collected coins (has value > 0)
                             if (pot.finalMultiplier > 0) {
@@ -993,26 +1009,18 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const coin of step.coins) {
                         const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                         if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
-                            const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
+                            const coinEmoji = CONFIG.symbols[coin.symbolId] || CONFIG.symbols[coin.type.toUpperCase()] || '🪙';
                             cell.textContent = coinEmoji;
                             cell.classList.add('rainbow-coin', coin.type);
                             // Show ORIGINAL multiplier first
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.originalMultiplier;
-                            // Add 'multiplied' class only if coin was actually multiplied (value changed)
-                            const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
-                                                  coin.originalMultiplier !== coin.finalMultiplier;
-                            if (wasMultiplied) {
-                                console.log(`@@@ cell-${coin.row}-${coin.col} A coin.originalMultiplier = ${coin.originalMultiplier}, coin.finalMultiplier = ${coin.finalMultiplier}`)
-                                cell.classList.add('multiplied');
-                                console.log(`@@@ cell-${coin.row}-${coin.col} = ${JSON.stringify(cell.dataset)}`)
-                            }
                         }
                     }
                     for (const clover of step.clovers) {
                         const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols['CLOVER'];
+                            cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
                             cell.classList.add('clover-symbol');
                             cell.dataset.multiplier = clover.multiplier + 'x';
                         }
@@ -1020,7 +1028,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const pot of step.pots) {
                         const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols['POT'];
+                            cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
                             cell.classList.add('pot-symbol');
                             // Add collected class for visual distinction
                             if (pot.collected) {
@@ -1044,76 +1052,83 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (cloverCell) cloverCell.classList.add('active-clover');
                     }
                     
-                    // Apply rotation animation to affected coins and update value
-                    console.log(`  🍀 Clover at (${step.activeClover?.row},${step.activeClover?.col}) applies ${step.activeClover?.multiplier}x to ${step.affectedCoins?.length || 0} coins`);
-                    
-                    if (step.affectedCoins && step.affectedCoins.length > 0) {
-                        console.log('[Clover] Starting coin multiplication effect...');
+                    // Use cloverContributions to animate each clover one by one
+                    if (round.cloverContributions && round.cloverContributions.length > 0) {
+                        // Find the contribution for this step's activeClover
+                        const contribution = round.cloverContributions.find(c => 
+                            c.clover.row === step.activeClover?.row && 
+                            c.clover.col === step.activeClover?.col
+                        );
                         
-                        // First apply initial styles with transition
-                        for (const coin of step.affectedCoins) {
-                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
-                            if (cell) {
-                                console.log(`[Clover] Setting initial state for cell (${coin.row},${coin.col})`);
-                                // Store original transition
-                                cell.dataset.originalTransition = cell.style.transition;
-                                // Set transition for smooth animation
-                                cell.style.transition = 'all 0.5s ease';
+                        if (contribution && (contribution.affectedCoins.length > 0 || contribution.affectedPots.length > 0)) {
+                            console.log(`[Clover] Processing contribution at (${contribution.clover.row},${contribution.clover.col})`);
+                            
+                            // Animate each affected coin one by one with before/after values
+                            for (const affectedCoin of contribution.affectedCoins) {
+                                const cell = document.getElementById(`cell-${affectedCoin.row}-${affectedCoin.col}`);
+                                if (cell) {
+                                    console.log(`[Clover] Animating coin at (${affectedCoin.row},${affectedCoin.col}): ${affectedCoin.beforeMultiplier} → ${affectedCoin.afterMultiplier}`);
+                                    
+                                    // Store original transition
+                                    cell.dataset.originalTransition = cell.style.transition;
+                                    cell.style.transition = 'all 0.5s ease';
+                                    
+                                    // Set initial multiplier (before)
+                                    cell.dataset.finalMultiplier = affectedCoin.beforeMultiplier;
+                                    
+                                    // Phase 1: Scale up
+                                    cell.style.transform = 'scale(1.3)';
+                                    cell.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
+                                    cell.style.filter = 'brightness(1.5)';
+                                    cell.style.zIndex = '100';
+                                    await sleep(300);
+                                    
+                                    // Phase 2: Update multiplier (show after value)
+                                    cell.dataset.finalMultiplier = affectedCoin.afterMultiplier;
+                                    cell.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.9), rgba(255,215,0,0.5))';
+                                    await sleep(300);
+                                    
+                                    // Phase 3: Scale back
+                                    cell.style.transform = 'scale(1)';
+                                    cell.style.boxShadow = '';
+                                    cell.style.filter = '';
+                                    cell.style.zIndex = '';
+                                    cell.style.background = '';
+                                    cell.style.transition = cell.dataset.originalTransition || '';
+                                }
                             }
-                        }
-                        
-                        // Phase 1: Scale up and glow (increased to 500ms)
-                        for (const coin of step.affectedCoins) {
-                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
-                            if (cell) {
-                                cell.style.transform = 'scale(1.3)';
-                                cell.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
-                                cell.style.filter = 'brightness(1.5)';
-                                cell.style.zIndex = '100';
-                            }
-                        }
-                        await sleep(500);
-                        
-                        // Phase 2: Update multiplier and flash (increased to 400ms)
-                        for (const coin of step.affectedCoins) {
-                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
-                            if (cell) {
-                                const oldVal = cell.dataset.finalMultiplier;
-                                // Add multiplied class before updating value
-                                cell.classList.add('multiplied');
-                                // Force reflow to ensure class is applied
-                                void cell.offsetWidth;
-                                // Update the final multiplier - this triggers the CSS display
-                                cell.dataset.finalMultiplier = coin.finalMultiplier;
-                                console.log(`[Clover] Updated multiplier at (${coin.row},${coin.col}): ${oldVal} → ${coin.finalMultiplier}`);
-                                // Flash effect
-                                cell.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.9), rgba(255,215,0,0.5))';
-                            }
-                        }
-                        await sleep(400);
-                        
-                        // Phase 3: Scale back down (increased duration)
-                        for (const coin of step.affectedCoins) {
-                            const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
-                            if (cell) {
-                                cell.style.transform = 'scale(1)';
-                                cell.style.boxShadow = '';
-                                cell.style.filter = '';
-                                cell.style.zIndex = '';
-                                cell.style.background = '';
-                                cell.style.transition = cell.dataset.originalTransition || '';
-                                cell.classList.add('affected-by-clover');
+                            
+                            // Animate each affected pot one by one
+                            for (const affectedPot of contribution.affectedPots) {
+                                const cell = document.getElementById(`cell-${affectedPot.row}-${affectedPot.col}`);
+                                if (cell) {
+                                    console.log(`[Clover] Animating pot at (${affectedPot.row},${affectedPot.col}): ${affectedPot.beforeMultiplier} → ${affectedPot.afterMultiplier}`);
+                                    
+                                    cell.dataset.originalTransition = cell.style.transition;
+                                    cell.style.transition = 'all 0.5s ease';
+                                    
+                                    cell.style.transform = 'scale(1.3)';
+                                    cell.style.boxShadow = '0 0 30px rgba(155, 89, 182, 0.8)';
+                                    cell.style.filter = 'brightness(1.5)';
+                                    cell.style.zIndex = '100';
+                                    await sleep(300);
+                                    
+                                    cell.dataset.multiplier = affectedPot.afterMultiplier + 'x';
+                                    cell.style.background = 'linear-gradient(135deg, rgba(155,89,182,0.9), rgba(155,89,182,0.5))';
+                                    await sleep(300);
+                                    
+                                    cell.style.transform = 'scale(1)';
+                                    cell.style.boxShadow = '';
+                                    cell.style.filter = '';
+                                    cell.style.zIndex = '';
+                                    cell.style.background = '';
+                                    cell.style.transition = cell.dataset.originalTransition || '';
+                                }
                             }
                         }
                     }
                     
-                    // Increased wait after clover animation
-                    await sleep(600);
-                    
                     // Clear highlights
-                    document.querySelectorAll('.affected-by-clover').forEach(cell => {
-                        cell.classList.remove('affected-by-clover');
-                    });
                     if (step.activeClover) {
                         const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
                         if (cloverCell) cloverCell.classList.remove('active-clover');
@@ -1127,24 +1142,17 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const coin of step.coins) {
                         const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                         if (cell && !(rainbowPos && coin.row === rainbowPos.row && coin.col === rainbowPos.col)) {
-                            const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
+                            const coinEmoji = CONFIG.symbols[coin.symbolId] || CONFIG.symbols[coin.type.toUpperCase()] || '🪙';
                             cell.textContent = coinEmoji;
                             cell.classList.add('rainbow-coin', coin.type);
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
-                            // Add 'multiplied' class only if coin was actually multiplied (value changed)
-                            const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
-                                                  coin.originalMultiplier !== coin.finalMultiplier;
-                            if (wasMultiplied) {
-                                console.log(`@@@ coin.originalMultiplier = ${coin.originalMultiplier}, coin.finalMultiplier = ${coin.finalMultiplier}`)
-                                cell.classList.add('multiplied');
-                            }
                         }
                     }
                     for (const clover of step.clovers) {
                         const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols['CLOVER'];
+                            cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
                             cell.classList.add('clover-symbol');
                             cell.dataset.multiplier = clover.multiplier + 'x';
                         }
@@ -1152,7 +1160,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const pot of step.pots) {
                         const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols['POT'];
+                            cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
                             cell.classList.add('pot-symbol');
                             // Only show multiplier if pot has value > 0
                             if (pot.finalMultiplier > 0) {
@@ -1205,7 +1213,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             for (const clover of round.clovers) {
                 const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                 if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                    cell.textContent = CONFIG.symbols['CLOVER'];
+                    cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
                     cell.classList.add('clover-symbol');
                     cell.dataset.multiplier = clover.multiplier + 'x';
                 }
@@ -1213,7 +1221,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             for (const pot of round.pots) {
                 const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                 if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                    cell.textContent = CONFIG.symbols['POT'];
+                    cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
                     cell.classList.add('pot-symbol');
                     cell.dataset.multiplier = pot.finalMultiplier + 'x';
                 }
@@ -1246,9 +1254,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         if (round.clovers.length > 0) {
             roundHtml += `<div class="round-clovers">`;
             for (const clover of round.clovers) {
+                const cloverEmoji = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
                 roundHtml += `
                     <div class="clover-item">
-                        <span class="clover-emoji">${CONFIG.symbols['CLOVER']}</span>
+                        <span class="clover-emoji">${cloverEmoji}</span>
                         <span class="clover-multiplier">${clover.multiplier}x</span>
                     </div>
                 `;
@@ -1260,9 +1269,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         if (round.pots.length > 0) {
             roundHtml += `<div class="round-pots">`;
             for (const pot of round.pots) {
+                const potEmoji = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
                 roundHtml += `
                     <div class="pot-item">
-                        <span class="pot-emoji">${CONFIG.symbols['POT']}</span>
+                        <span class="pot-emoji">${potEmoji}</span>
                         <span class="pot-value">${pot.finalMultiplier}x</span>
                     </div>
                 `;
@@ -1277,6 +1287,21 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         rainbowRoundsList.appendChild(roundDiv);
 
         await sleep(1000);
+    }
+
+    // Add overall total win to details panel
+    if (rainbowDetailsContent && rainbowResult.totalCoinWin !== undefined && rainbowResult.totalPotWin !== undefined) {
+        const overallTotal = rainbowResult.totalCoinWin + rainbowResult.totalPotWin;
+        const totalDiv = document.createElement('div');
+        totalDiv.className = 'rainbow-total-win';
+        totalDiv.innerHTML = `
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #ffd700; text-align: center;">
+                <strong style="color: #ffd700; font-size: 1.1rem;">🌈 Rainbow Total Win: ${overallTotal.toFixed(2)}x</strong>
+                ${rainbowResult.totalCoinWin > 0 ? `<br/><span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinWin.toFixed(2)}x</span>` : ''}
+                ${rainbowResult.totalPotWin > 0 ? `<br/><span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotWin.toFixed(2)}x</span>` : ''}
+            </div>
+        `;
+        rainbowDetailsContent.appendChild(totalDiv);
     }
 
     await sleep(2000);
@@ -1322,7 +1347,7 @@ async function animateCombined(movements) {
             const targetCell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
 
             // Set up the symbol in the starting cell (buffer or old position)
-            const icon = CONFIG.symbols[move.symbol] || '❓';
+            const icon = CONFIG.symbols[move.symbolInstance.symbol] || '❓';
             if (move.isNew) {
                 fromCell.style.transform = '';
                 fromCell.textContent = icon;
@@ -1435,7 +1460,7 @@ function spin() {
 
     // Clear previous animations
     document.querySelectorAll('.reel-cell').forEach(cell => {
-        cell.classList.remove('highlight', 'removing', 'rainbow', 'coin-symbol', 'clover-symbol', 'pot-symbol', 'rainbow-coin', 'multiplied', 'pot-collected');
+        cell.classList.remove('highlight', 'removing', 'rainbow', 'coin-symbol', 'clover-symbol', 'pot-symbol', 'rainbow-coin', 'pot-collected');
         cell.style.transform = '';
         cell.style.animation = '';
         cell.dataset.multiplier = '';
