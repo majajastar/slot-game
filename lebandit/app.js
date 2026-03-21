@@ -81,9 +81,15 @@ function renderPaytable() {
     const container = document.getElementById('paytable');
     if (!container) return;
 
-    // Use payouts from server (CLUSTER_PAYOUTS) or fallback to CONFIG
+    // Use payouts from server (CLUSTER_PAYOUTS) - must come from backend
     const hasServerData = Object.keys(CLUSTER_PAYOUTS).length > 0;
-    const clusterPayouts = hasServerData ? CLUSTER_PAYOUTS : CONFIG.clusterPayouts;
+    if (!hasServerData) {
+        console.log('[renderPaytable] Waiting for server data...');
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">Loading paytable...</div>';
+        return;
+    }
+    
+    const clusterPayouts = CLUSTER_PAYOUTS;
     const symbols = Object.keys(SYMBOLS).length > 0 ? SYMBOLS : CONFIG.symbols;
     const names = CONFIG.symbolNames;
 

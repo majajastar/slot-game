@@ -64,26 +64,6 @@ const CONFIG = {
         '105': 'Star'
     },
     
-    // CLUSTER PAYOUT TABLE - Single source of truth (matches backend)
-    // Index = cluster size (0-17), value = payout multiplier
-    // Paytable columns: 5, 6, 7, 8, 9-10, 11-12, 13+
-    // Array indices:    5, 6, 7, 8, 9,    11,    13
-    // Wild has NO payout (substitutes only)
-    // 9-10 same value, 11-12 same value
-    // Maximum payout at index 13 (13+ cluster size)
-    clusterPayouts: {
-        '201': { name: 'Crown',    payouts: [0, 0, 0, 0, 0, 20, 40, 80, 150, 250, 250, 400, 400, 800, 800, 800, 800, 800] },
-        '202': { name: 'Ring',     payouts: [0, 0, 0, 0, 0, 15, 30, 60, 120, 200, 200, 320, 320, 640, 640, 640, 640, 640] },
-        '203': { name: 'Trophy',   payouts: [0, 0, 0, 0, 0, 12, 25, 50, 100, 160, 160, 260, 260, 520, 520, 520, 520, 520] },
-        '204': { name: 'Cash',     payouts: [0, 0, 0, 0, 0, 10, 20, 40, 80, 140, 140, 220, 220, 440, 440, 440, 440, 440] },
-        '205': { name: 'Slot',     payouts: [0, 0, 0, 0, 0, 8, 16, 32, 64, 120, 120, 200, 200, 400, 400, 400, 400, 400] },
-        '101': { name: 'Spades',   payouts: [0, 0, 0, 0, 0, 6, 12, 24, 48, 100, 100, 180, 180, 360, 360, 360, 360, 360] },
-        '102': { name: 'Hearts',   payouts: [0, 0, 0, 0, 0, 6, 12, 24, 48, 100, 100, 180, 180, 360, 360, 360, 360, 360] },
-        '103': { name: 'Diamonds', payouts: [0, 0, 0, 0, 0, 6, 12, 24, 48, 100, 100, 180, 180, 360, 360, 360, 360, 360] },
-        '104': { name: 'Clubs',    payouts: [0, 0, 0, 0, 0, 5, 10, 20, 40, 80, 80, 160, 160, 320, 320, 320, 320, 320] },
-        '105': { name: 'Star',     payouts: [0, 0, 0, 0, 0, 5, 10, 20, 40, 80, 80, 160, 160, 320, 320, 320, 320, 320] }
-    },
-    
     // Cluster size labels for paytable columns
     // Maps to array indices: 5, 6, 7, 8, 10, 12, 13+
     clusterSizeLabels: ['5', '6', '7', '8', '9-10', '11-12', '13+'],
