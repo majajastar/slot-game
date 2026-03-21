@@ -1031,7 +1031,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             }
                         }
                         
-                        // Phase 1: Scale up and glow
+                        // Phase 1: Scale up and glow (increased to 500ms)
                         for (const coin of step.affectedCoins) {
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
@@ -1041,9 +1041,9 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                 cell.style.zIndex = '100';
                             }
                         }
-                        await sleep(300);
+                        await sleep(500);
                         
-                        // Phase 2: Update multiplier and flash
+                        // Phase 2: Update multiplier and flash (increased to 400ms)
                         for (const coin of step.affectedCoins) {
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
@@ -1054,9 +1054,9 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                 cell.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.9), rgba(255,215,0,0.5))';
                             }
                         }
-                        await sleep(200);
+                        await sleep(400);
                         
-                        // Phase 3: Scale back down
+                        // Phase 3: Scale back down (increased duration)
                         for (const coin of step.affectedCoins) {
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
@@ -1071,7 +1071,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         }
                     }
                     
-                    await sleep(400);
+                    // Increased wait after clover animation
+                    await sleep(600);
                     
                     // Clear highlights
                     document.querySelectorAll('.affected-by-clover').forEach(cell => {
@@ -1081,6 +1082,9 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
                         if (cloverCell) cloverCell.classList.remove('active-clover');
                     }
+                    
+                    // 500ms delay between clovers
+                    await sleep(500);
                     
                 } else if (step.stepType === 'pot') {
                     // Re-render all symbols first
