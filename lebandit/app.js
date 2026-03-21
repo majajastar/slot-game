@@ -948,7 +948,12 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
                             cell.textContent = CONFIG.symbols['POT'];
                             cell.classList.add('pot-symbol');
-                            cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                            // Only show multiplier if pot has collected coins (has value > 0)
+                            if (pot.finalMultiplier > 0) {
+                                cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                            } else {
+                                cell.dataset.multiplier = '';
+                            }
                         }
                     }
                     await sleep(500);
@@ -991,7 +996,12 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             if (pot.collected) {
                                 cell.classList.add('pot-collected');
                             }
-                            cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                            // Only show multiplier if pot has value > 0
+                            if (pot.finalMultiplier > 0) {
+                                cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                            } else {
+                                cell.dataset.multiplier = '';
+                            }
                         }
                     }
                     
@@ -1104,7 +1114,12 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
                             cell.textContent = CONFIG.symbols['POT'];
                             cell.classList.add('pot-symbol');
-                            cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                            // Only show multiplier if pot has value > 0
+                            if (pot.finalMultiplier > 0) {
+                                cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                            } else {
+                                cell.dataset.multiplier = '';
+                            }
                         }
                     }
                     
