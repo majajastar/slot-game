@@ -1435,7 +1435,7 @@ function spin() {
 
     // Clear previous animations
     document.querySelectorAll('.reel-cell').forEach(cell => {
-        cell.classList.remove('highlight', 'removing', 'rainbow', 'coin-symbol', 'clover-symbol', 'pot-symbol', 'rainbow-coin');
+        cell.classList.remove('highlight', 'removing', 'rainbow', 'coin-symbol', 'clover-symbol', 'pot-symbol', 'rainbow-coin', 'multiplied', 'pot-collected');
         cell.style.transform = '';
         cell.style.animation = '';
         cell.dataset.multiplier = '';
