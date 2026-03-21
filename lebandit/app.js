@@ -184,8 +184,11 @@ function send(type, data) {
 function handleMessage(msg) {
 
     if (!msg.vals) return;
+    console.log()
     const type = msg.vals.type;
     const data = msg.vals.data;
+    console.log(`type = ${type}`)
+    console.log(`data = ${JSON.stringify(data)}`)
 
     switch (type) {
         case 1: // Login response
@@ -926,7 +929,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.classList.add('rainbow-coin', coin.type);
                             // Store both original and final
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
-                            cell.dataset.finalMultiplier = coin.finalMultiplier;
                         }
                     }
                     for (const clover of step.clovers) {
@@ -962,7 +964,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.classList.add('rainbow-coin', coin.type);
                             // Show ORIGINAL multiplier first
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
-                            cell.dataset.finalMultiplier = coin.originalMultiplier;
                         }
                     }
                     for (const clover of step.clovers) {
@@ -1022,7 +1023,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                     cell.style.transition = 'all 0.5s ease';
                                     
                                     // Set initial multiplier (before)
-                                    cell.dataset.finalMultiplier = affectedCoin.beforeMultiplier;
+                                    cell.dataset.multiplier = affectedCoin.beforeMultiplier;
                                                                                                             
                                     // Phase 1: Scale up
                                     cell.style.transform = 'scale(1.3)';
@@ -1032,7 +1033,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                     await sleep(300);
                                     
                                     // Phase 2: Update multiplier (show after value)
-                                    cell.dataset.finalMultiplier = affectedCoin.afterMultiplier;
+                                    cell.dataset.multiplier = affectedCoin.afterMultiplier;
                                     cell.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.9), rgba(255,215,0,0.5))';
                                     await sleep(300);
                                     
@@ -1052,6 +1053,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                 if (cell) {
                                     console.log(`[Clover] Animating pot at (${affectedPot.row},${affectedPot.col}): ${affectedPot.beforeMultiplier} → ${affectedPot.afterMultiplier}`);
                                     
+                                    cell.dataset.multiplier = affectedPot.beforeMultiplier;
                                     cell.dataset.originalTransition = cell.style.transition;
                                     cell.style.transition = 'all 0.5s ease';
                                     
@@ -1061,7 +1063,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                     cell.style.zIndex = '100';
                                     await sleep(300);
                                     
-                                    cell.dataset.multiplier = affectedPot.afterMultiplier + 'x';
+                                    cell.dataset.multiplier = affectedPot.afterMultiplier;
                                     cell.style.background = 'linear-gradient(135deg, rgba(155,89,182,0.9), rgba(155,89,182,0.5))';
                                     await sleep(300);
                                     

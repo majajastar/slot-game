@@ -1042,7 +1042,7 @@
 
 /* Rainbow coin shows final multiplier */
 .reel-cell.rainbow-coin::after {
-    content: attr(data-final-multiplier) "x";
+    content: attr(data-multiplier) "x";
     position: absolute;
     bottom: 2px;
     right: 2px;
