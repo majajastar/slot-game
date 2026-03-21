@@ -48,13 +48,6 @@ const CONFIG = {
         '303': '🪙',  // GOLD_COIN
         '304': '🍀',  // FOUR_LEAF_CLOVER
         '305': '🏺',  // POT_OF_GOLD
-        // Legacy mappings for compatibility
-        'RAINBOW': '🌈',
-        'BRONZE': '🪙',
-        'SILVER': '🪙',
-        'GOLD': '🪙',
-        'CLOVER': '🍀',
-        'POT': '🏺'
     },
     
     // Symbol names for paytable (Wild excluded - no direct payout)

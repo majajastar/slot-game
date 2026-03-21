@@ -807,7 +807,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         console.log(`[renderRainbowFeature] Setting rainbow at (${row},${col})`);
         const cell = document.getElementById(`cell-${row}-${col}`);
         if (cell) {
-            //cell.textContent = CONFIG.symbols['RAINBOW'];
             cell.classList.add('rainbow');
         }
     }
@@ -844,13 +843,13 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
 
         // Mark clovers
         for (const clover of round.clovers) {
-            const emoji = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
+            const emoji = CONFIG.symbols[clover.symbolId] || '🍀';
             grid[clover.row][clover.col] = `${emoji}${clover.multiplier}`;
         }
 
         // Mark pots
         for (const pot of round.pots) {
-            const emoji = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
+            const emoji = CONFIG.symbols[pot.symbolId] || '🏺';
             grid[pot.row][pot.col] = `${emoji}${pot.finalMultiplier}`;
         }
 
@@ -906,8 +905,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                               'active-clover', 'active-pot',
                                               'pot-collected');
                         // Clear all multiplier data attributes
-                        cell.dataset.originalMultiplier = '';
-                        cell.dataset.finalMultiplier = '';
                         cell.dataset.multiplier = '';
                         // Also clear any inline styles from animations
                         cell.style.transform = '';
@@ -928,13 +925,13 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.textContent = coinEmoji;
                             cell.classList.add('rainbow-coin', coin.type);
                             // Store both original and final
-                            cell.dataset.originalMultiplier = coin.originalMultiplier;
+                            cell.dataset.multiplier = coin.originalMultiplier;
                         }
                     }
                     for (const clover of step.clovers) {
                         const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
+                            cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                             cell.classList.add('clover-symbol');
                             cell.dataset.multiplier = clover.multiplier + 'x';
                         }
@@ -942,7 +939,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const pot of step.pots) {
                         const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
+                            cell.textContent = CONFIG.symbols[pot.symbolId] || '🏺';
                             cell.classList.add('pot-symbol');
                             // Only show multiplier if pot has collected coins (has value > 0)
                             if (pot.finalMultiplier > 0) {
@@ -962,14 +959,12 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             const coinEmoji = CONFIG.symbols[coin.symbolId] || CONFIG.symbols[coin.type.toUpperCase()] || '🪙';
                             cell.textContent = coinEmoji;
                             cell.classList.add('rainbow-coin', coin.type);
-                            // Show ORIGINAL multiplier first
-                            cell.dataset.originalMultiplier = coin.originalMultiplier;
                         }
                     }
                     for (const clover of step.clovers) {
                         const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
+                            cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                             cell.classList.add('clover-symbol');
                             cell.dataset.multiplier = clover.multiplier + 'x';
                         }
@@ -977,7 +972,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const pot of step.pots) {
                         const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
+                            cell.textContent = CONFIG.symbols[pot.symbolId] || '🏺';
                             cell.classList.add('pot-symbol');
                             // Add collected class for visual distinction
                             if (pot.collected) {
@@ -1095,14 +1090,12 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             const coinEmoji = CONFIG.symbols[coin.symbolId] || CONFIG.symbols[coin.type.toUpperCase()] || '🪙';
                             cell.textContent = coinEmoji;
                             cell.classList.add('rainbow-coin', coin.type);
-                            cell.dataset.originalMultiplier = coin.originalMultiplier;
-                            cell.dataset.finalMultiplier = coin.finalMultiplier;
                         }
                     }
                     for (const clover of step.clovers) {
                         const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
+                            cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                             cell.classList.add('clover-symbol');
                             cell.dataset.multiplier = clover.multiplier + 'x';
                         }
@@ -1110,7 +1103,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     for (const pot of step.pots) {
                         const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                         if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                            cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
+                            cell.textContent = CONFIG.symbols[pot.symbolId] || '🏺';
                             cell.classList.add('pot-symbol');
                             // Only show multiplier if pot has value > 0
                             if (pot.finalMultiplier > 0) {
@@ -1156,14 +1149,13 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     const coinEmoji = CONFIG.symbols[coin.type.toUpperCase()];
                     cell.textContent = coinEmoji;
                     cell.classList.add('rainbow-coin', coin.type);
-                    cell.dataset.originalMultiplier = coin.originalMultiplier;
-                    cell.dataset.finalMultiplier = coin.finalMultiplier;
+                    cell.dataset.multiplier = coin.finalMultiplier;
                 }
             }
             for (const clover of round.clovers) {
                 const cell = document.getElementById(`cell-${clover.row}-${clover.col}`);
                 if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
-                    cell.textContent = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
+                    cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                     cell.classList.add('clover-symbol');
                     cell.dataset.multiplier = clover.multiplier + 'x';
                 }
@@ -1171,7 +1163,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             for (const pot of round.pots) {
                 const cell = document.getElementById(`cell-${pot.row}-${pot.col}`);
                 if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
-                    cell.textContent = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
+                    cell.textContent = CONFIG.symbols[pot.symbolId] || '🏺';
                     cell.classList.add('pot-symbol');
                     cell.dataset.multiplier = pot.finalMultiplier + 'x';
                 }
@@ -1204,7 +1196,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         if (round.clovers.length > 0) {
             roundHtml += `<div class="round-clovers">`;
             for (const clover of round.clovers) {
-                const cloverEmoji = CONFIG.symbols[clover.symbolId] || CONFIG.symbols['CLOVER'] || '🍀';
+                const cloverEmoji = CONFIG.symbols[clover.symbolId] || '🍀';
                 roundHtml += `
                     <div class="clover-item">
                         <span class="clover-emoji">${cloverEmoji}</span>
@@ -1219,7 +1211,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         if (round.pots.length > 0) {
             roundHtml += `<div class="round-pots">`;
             for (const pot of round.pots) {
-                const potEmoji = CONFIG.symbols[pot.symbolId] || CONFIG.symbols['POT'] || '🏺';
+                const potEmoji = CONFIG.symbols[pot.symbolId] || '🏺';
                 roundHtml += `
                     <div class="pot-item">
                         <span class="pot-emoji">${potEmoji}</span>
@@ -1443,8 +1435,6 @@ function spin() {
         cell.style.transform = '';
         cell.style.animation = '';
         cell.dataset.multiplier = '';
-        cell.dataset.originalMultiplier = '';
-        cell.dataset.finalMultiplier = '';
     });
 
     // Clear golden squares
