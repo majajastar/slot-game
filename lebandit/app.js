@@ -746,11 +746,8 @@ function addStepDetailToPanel(step, container) {
             title = `🍀 Clover x${step.activeClover?.multiplier || 1}`;
             info = `Multiplied ${step.affectedCoins?.length || 0} coins`;
             if (step.affectedCoins && step.affectedCoins.length > 0) {
-                const coinDetails = step.affectedCoins.map(c => 
-                    `(${c.row},${c.col}): ${c.originalMultiplier}x→${c.finalMultiplier}x`
-                ).join(', ');
                 info += `<div class="rainbow-coin-list">${step.affectedCoins.map(c => 
-                    `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.finalMultiplier}x</span>`
+                    `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.finalMultiplier}x</span>`
                 ).join('')}</div>`;
             }
             break;
@@ -766,7 +763,7 @@ function addStepDetailToPanel(step, container) {
                         info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
                     }
                     info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c => 
-                        `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.finalMultiplier}x</span>`
+                        `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.value}x</span>`
                     ).join('')}</div>`;
                 }
             }
