@@ -760,6 +760,7 @@ function addStepDetailToPanel(step, container) {
                     const totalValue = step.collectedCoins.reduce((sum, c) => sum + c.finalMultiplier, 0);
                     info += `${step.collectedCoins.length} coins = ${totalValue}x`;
                     if (pot.cloverMultipliers && pot.cloverMultipliers.length > 0) {
+                        console.log(`@@@@ pot.finalMultiplier = ${pot.finalMultiplier}`)
                         info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
                     }
                     info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c => 
@@ -898,7 +899,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     document.querySelectorAll('.reel-cell').forEach(cell => {
                         cell.classList.remove('rainbow-coin', 'clover-symbol', 'pot-symbol', 
                                               'bronze', 'silver', 'gold', 
-                                              'active-clover', 'active-pot', 'affected-by-clover');
+                                              'active-clover', 'active-pot', 'affected-by-clover',
+                                              'multiplied', 'pot-collected');
                         // Clear all multiplier data attributes
                         cell.dataset.originalMultiplier = '';
                         cell.dataset.finalMultiplier = '';
@@ -928,6 +930,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
                                                   coin.originalMultiplier !== coin.finalMultiplier;
                             if (wasMultiplied) {
+                                console.log(`@@@ intitila coin.originalMultiplier = ${coin.originalMultiplier}, coin.finalMultiplier = ${coin.finalMultiplier}`)
                                 cell.classList.add('multiplied');
                             }
                         }
@@ -965,7 +968,9 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
                                                   coin.originalMultiplier !== coin.finalMultiplier;
                             if (wasMultiplied) {
+                                console.log(`@@@ cell-${coin.row}-${coin.col} A coin.originalMultiplier = ${coin.originalMultiplier}, coin.finalMultiplier = ${coin.finalMultiplier}`)
                                 cell.classList.add('multiplied');
+                                console.log(`@@@ cell-${coin.row}-${coin.col} = ${JSON.stringify(cell.dataset)}`)
                             }
                         }
                     }
@@ -1081,6 +1086,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
                                                   coin.originalMultiplier !== coin.finalMultiplier;
                             if (wasMultiplied) {
+                                console.log(`@@@ coin.originalMultiplier = ${coin.originalMultiplier}, coin.finalMultiplier = ${coin.finalMultiplier}`)
                                 cell.classList.add('multiplied');
                             }
                         }
