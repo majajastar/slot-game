@@ -299,6 +299,7 @@ body {
     border-radius: 4px;
 }
 
+
 .example-grid span.wild {
     background: rgba(233, 69, 96, 0.3);
     border: 1px solid var(--primary);
@@ -1365,4 +1366,18 @@ body {
 .trigger-btn:hover {
     transform: scale(1.05);
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.lebandit-example {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); /* Creates 6 equal columns */
+    gap: 10px; /* Adds space between symbols */
+    width: max-content; /* Keeps the grid tight to the symbols */
+}
+
+.highlight-crown {
+    display: inline-block; /* Required for transforms to work */
+    filter: drop-shadow(0 0 8px #ffd700); /* Golden glow */
+    transform: scale(1.2); /* Make it slightly bigger */
+    animation: pulse 2s infinite; /* Optional: make it pulse */
 }

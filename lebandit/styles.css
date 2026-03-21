@@ -514,19 +514,19 @@
 /* Rainbow overlay - positioned at bottom, doesn't block grid view */
 .rainbow-overlay {
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 0;
     right: 0;
-    max-height: 40%;
-    background: rgba(0, 0, 0, 0.75);
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     z-index: 100;
-    border-radius: 0 0 15px 15px;
+    border-radius: 15px;
     padding: 15px;
-    overflow-y: auto;
+    pointer-events: none; /* Let clicks pass through */
 }
 
 .rainbow-overlay.hidden {
@@ -558,6 +558,94 @@
     max-width: 600px;
     max-height: 150px;
     overflow-y: auto;
+}
+
+/* Rainbow Details Panel - Below Grid */
+.rainbow-details-panel {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #ffd700;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.rainbow-details-panel.hidden {
+    display: none;
+}
+
+.rainbow-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.rainbow-details-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.rainbow-details-round {
+    font-size: 0.9rem;
+    color: #4ecdc4;
+    background: rgba(78, 205, 196, 0.2);
+    padding: 4px 10px;
+    border-radius: 15px;
+}
+
+.rainbow-details-content {
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.rainbow-step-detail {
+    margin-bottom: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid #4ecdc4;
+}
+
+.rainbow-step-detail.coin-win {
+    border-left-color: #ffd700;
+}
+
+.rainbow-step-detail.clover-multiply {
+    border-left-color: #2ecc71;
+}
+
+.rainbow-step-detail.pot-collect {
+    border-left-color: #9b59b6;
+}
+
+.rainbow-step-title {
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.rainbow-step-info {
+    color: #ccc;
+}
+
+.rainbow-coin-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.rainbow-coin-tag {
+    background: rgba(255, 215, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #ffd700;
 }
 
 /* Coin styles */

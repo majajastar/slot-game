@@ -38,9 +38,20 @@
                                 <p>Adjacent = up, down, left, right (no diagonals)</p>
                                 <div class="example-win">
                                     <div class="example-grid lebandit-example">
-                                        <span>👑</span><span>👑</span><span>👑</span><span>💍</span><span>🎰</span><span>♠️</span>
-                                        <span>👑</span><span>👑</span><span>💍</span><span>💍</span><span>🎰</span><span>♥️</span>
-                                        <span>💎</span><span>👑</span><span>👑</span><span>💍</span><span>🎰</span><span>♦️</span>
+                                        <span class="highlight-crown">👑</span>
+                                        <span class="highlight-crown">👑</span>
+                                        <span class="highlight-crown">👑</span>
+                                        <span>💍</span><span>🎰</span><span>♠️</span>
+                                        
+                                        <span class="highlight-crown">👑</span>
+                                        <span class="highlight-crown">👑</span>
+                                        <span>💍</span><span>💍</span><span>🎰</span><span>♥️</span>
+                                        
+                                        <span>💎</span>
+                                        <span class="highlight-crown">👑</span>
+                                        <span class="highlight-crown">👑</span>
+                                        <span>💍</span><span>🎰</span><span>♦️</span>
+                                        
                                         <span>💵</span><span>🏆</span><span>🏆</span><span>♣️</span><span>🌟</span><span>🎯</span>
                                         <span>🎰</span><span>♠️</span><span>♥️</span><span>♦️</span><span>♣️</span><span>🌟</span>
                                     </div>
@@ -119,6 +130,17 @@
                         <div id="cascadeInfo" class="cascade-info hidden">
                             <span class="cascade-label">Cascade</span>
                             <span id="cascadeStep" class="cascade-step">1</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Rainbow Step Details Panel -->
+                    <div id="rainbowDetailsPanel" class="rainbow-details-panel hidden">
+                        <div class="rainbow-details-header">
+                            <span class="rainbow-details-title">🌈 Rainbow Feature Details</span>
+                            <span id="rainbowDetailsRound" class="rainbow-details-round">Round 1</span>
+                        </div>
+                        <div id="rainbowDetailsContent" class="rainbow-details-content">
+                            <!-- Step details will be populated here -->
                         </div>
                     </div>
                 </div>

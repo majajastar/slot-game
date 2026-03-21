@@ -519,7 +519,7 @@ async function handleSpinResult(data) {
 
     // Render rainbow feature if present
     if (result.rainbowResult?.hasRainbow) {
-        await renderRainbowFeature(result.rainbowResult);
+        await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
     }
 
     // All animations complete - allow next spin
@@ -727,15 +727,83 @@ async function renderCascade(steps, totalWin) {
     showWin(totalWin);
 }
 
+// Add step detail to rainbow details panel
+function addStepDetailToPanel(step, container) {
+    if (!container) return;
+    
+    const stepDiv = document.createElement('div');
+    stepDiv.className = `rainbow-step-detail ${step.stepType}`;
+    
+    let title = '';
+    let info = '';
+    
+    switch (step.stepType) {
+        case 'initial':
+            title = '🎲 Initial Reveal';
+            info = `${step.coins?.length || 0} coins, ${step.clovers?.length || 0} clovers, ${step.pots?.length || 0} pots`;
+            break;
+        case 'clover':
+            title = `🍀 Clover x${step.activeClover?.multiplier || 1}`;
+            info = `Multiplied ${step.affectedCoins?.length || 0} coins`;
+            if (step.affectedCoins && step.affectedCoins.length > 0) {
+                const coinDetails = step.affectedCoins.map(c => 
+                    `(${c.row},${c.col}): ${c.originalMultiplier}x→${c.finalMultiplier}x`
+                ).join(', ');
+                info += `<div class="rainbow-coin-list">${step.affectedCoins.map(c => 
+                    `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.finalMultiplier}x</span>`
+                ).join('')}</div>`;
+            }
+            break;
+        case 'pot':
+            title = '🏺 Pot Collects';
+            const pot = step.activePot;
+            if (pot) {
+                info = `Pot at (${pot.row},${pot.col}) collected `;
+                if (step.collectedCoins && step.collectedCoins.length > 0) {
+                    const totalValue = step.collectedCoins.reduce((sum, c) => sum + c.finalMultiplier, 0);
+                    info += `${step.collectedCoins.length} coins = ${totalValue}x`;
+                    if (pot.cloverMultipliers && pot.cloverMultipliers.length > 0) {
+                        info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
+                    }
+                    info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c => 
+                        `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.finalMultiplier}x</span>`
+                    ).join('')}</div>`;
+                }
+            }
+            break;
+    }
+    
+    stepDiv.innerHTML = `
+        <div class="rainbow-step-title">${title}</div>
+        <div class="rainbow-step-info">${info}</div>
+    `;
+    
+    container.appendChild(stepDiv);
+    
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
 // Rainbow Feature Rendering
-async function renderRainbowFeature(rainbowResult) {
+async function renderRainbowFeature(rainbowResult, goldenSquares) {
+    // Only show rainbow overlay if there are golden squares
+    if (!goldenSquares || goldenSquares.length === 0) {
+        console.log('[Rainbow] No golden squares, skipping rainbow feature');
+        return;
+    }
+    
     const rainbowOverlay = document.getElementById('rainbowOverlay');
     const rainbowContent = document.getElementById('rainbowContent');
-    const rainbowHistory = document.getElementById('rainbowHistory');
-    const rainbowRoundsList = document.getElementById('rainbowRoundsList');
+    const rainbowDetailsPanel = document.getElementById('rainbowDetailsPanel');
+    const rainbowDetailsContent = document.getElementById('rainbowDetailsContent');
+    const rainbowDetailsRound = document.getElementById('rainbowDetailsRound');
 
     rainbowOverlay.classList.remove('hidden');
-    rainbowHistory.classList.remove('hidden');
+    
+    // Show details panel
+    if (rainbowDetailsPanel) {
+        rainbowDetailsPanel.classList.remove('hidden');
+    }
 
     // Highlight rainbow position first (before any other rendering)
     const rainbowPos = rainbowResult.rainbowPosition;
@@ -810,10 +878,23 @@ async function renderRainbowFeature(rainbowResult) {
     for (const round of rainbowResult.rounds) {
         console.log(`%c[Rainbow Round ${round.round}]`, 'color: #ffd700; font-weight: bold; font-size: 14px;');
         
+        // Update details panel round number
+        if (rainbowDetailsRound) {
+            rainbowDetailsRound.textContent = `Round ${round.round}`;
+        }
+        
+        // Clear previous details
+        if (rainbowDetailsContent) {
+            rainbowDetailsContent.innerHTML = '';
+        }
+        
         // Check if we have steps data
         if (round.steps && round.steps.length > 0) {
             for (const step of round.steps) {
                 console.log(`%c  Step ${step.stepNumber}: ${step.description}`, 'color: #4ecdc4;');
+                
+                // Add step detail to panel
+                addStepDetailToPanel(step, rainbowDetailsContent);
                 
                 // Clean previous styles before each step (except initial)
                 if (step.stepType !== 'initial') {
