@@ -177,6 +177,31 @@
                             <div class="rainbow-mode-desc">Guaranteed rainbow after cascade</div>
                         </div>
                         
+                        <!-- Bonus Game Button -->
+                        <div id="bonusGameSection" class="bonus-game-section hidden">
+                            <button id="buyBonusButton" class="buy-bonus-button" onclick="buyBonus()">
+                                🎁 Buy Bonus (100x)
+                            </button>
+                            <div class="bonus-game-desc">8 free spins with accumulating golden squares</div>
+                        </div>
+                        
+                        <!-- Bonus Progress Display -->
+                        <div id="bonusProgress" class="bonus-progress hidden">
+                            <div class="bonus-progress-header">
+                                <span class="bonus-icon">🎁</span>
+                                <span class="bonus-name">LUCK OF THE BANDIT</span>
+                            </div>
+                            <div class="bonus-progress-spins">
+                                <span id="bonusSpinsLeft">8</span> / <span id="bonusTotalSpins">8</span> Free Spins
+                            </div>
+                            <div class="bonus-progress-frames">
+                                <span id="bonusFrameCount">0</span> Golden Frames
+                            </div>
+                            <div class="bonus-progress-win">
+                                Bonus Win: <span id="bonusTotalWin">$0.00</span>
+                            </div>
+                        </div>
+                        
                         <div class="quick-bets">
                             <button class="quick-bet" onclick="setBet(5)">$5</button>
                             <button class="quick-bet" onclick="setBet(10)">$10</button>
@@ -206,6 +231,16 @@
                 <div class="rainbow-history-title">🌈 Rainbow Rounds</div>
                 <div id="rainbowRoundsList" class="rainbow-rounds-list"></div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Bonus Trigger Overlay -->
+    <div id="bonusTriggerOverlay" class="bonus-trigger-overlay hidden">
+        <div class="bonus-trigger-content">
+            <div class="bonus-trigger-title">🎁 BONUS TRIGGERED!</div>
+            <div class="bonus-trigger-text" id="bonusTriggerText">3 Scatters! You won Luck of the Bandit Bonus!</div>
+            <div class="bonus-trigger-grid" id="bonusTriggerGrid"></div>
+            <button class="bonus-trigger-button" onclick="enterBonus()">ENTER BONUS</button>
         </div>
     </div>
     

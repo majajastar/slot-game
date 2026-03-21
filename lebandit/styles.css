@@ -1015,6 +1015,107 @@
     margin-top: 5px;
 }
 
+/* Bonus Game Section */
+.bonus-game-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.buy-bonus-button {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    border: 2px solid #9b59b6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
+}
+
+.buy-bonus-button:hover {
+    background: linear-gradient(135deg, #a569bd, #9b59b6);
+    box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5);
+    transform: translateY(-2px);
+}
+
+.buy-bonus-button:disabled {
+    background: #555;
+    border-color: #444;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.bonus-game-desc {
+    font-size: 0.7rem;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+/* Bonus Progress Display */
+.bonus-progress {
+    margin-top: 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.2), rgba(142, 68, 173, 0.2));
+    border: 2px solid #9b59b6;
+    border-radius: 10px;
+    text-align: center;
+    animation: bonusPulse 2s ease-in-out infinite;
+}
+
+@keyframes bonusPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(155, 89, 182, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(155, 89, 182, 0.8); }
+}
+
+.bonus-progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.bonus-icon {
+    font-size: 1.5rem;
+}
+
+.bonus-name {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #9b59b6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.bonus-progress-spins {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.bonus-progress-spins span:first-child {
+    color: #ffd700;
+    font-size: 1.5rem;
+}
+
+.bonus-progress-frames {
+    font-size: 0.9rem;
+    color: #ffd700;
+    margin-bottom: 5px;
+}
+
+.bonus-progress-win {
+    font-size: 0.85rem;
+    color: #4ecdc4;
+    font-weight: bold;
+}
+
 /* Rainbow Feature - Coin, Clover, Pot symbols on grid */
 .reel-cell.coin-symbol,
 .reel-cell.clover-symbol,
@@ -1027,7 +1128,7 @@
 .reel-cell.coin-symbol::after,
 .reel-cell.clover-symbol::after,
 .reel-cell.pot-symbol::after {
-    content: attr(data-multiplier);
+    content: attr(data-multiplier) "x";
     position: absolute;
     bottom: 2px;
     right: 2px;
@@ -1224,4 +1325,124 @@
     .quick-bets {
         grid-template-columns: repeat(2, 1fr);
     }
+}
+
+/* Bonus Trigger Overlay */
+.bonus-trigger-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.bonus-trigger-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.bonus-trigger-content {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 3px solid #9b59b6;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 0 50px rgba(155, 89, 182, 0.5);
+    animation: bonusTriggerPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes bonusTriggerPulse {
+    0%, 100% { box-shadow: 0 0 30px rgba(155, 89, 182, 0.5); }
+    50% { box-shadow: 0 0 60px rgba(155, 89, 182, 0.8); }
+}
+
+.bonus-trigger-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 15px;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.bonus-trigger-text {
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 25px;
+}
+
+.bonus-trigger-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin: 25px auto;
+    max-width: 360px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.trigger-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.trigger-cell.scatter {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
+    animation: scatterPulse 1s ease-in-out infinite;
+}
+
+@keyframes scatterPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.bonus-trigger-button {
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+}
+
+.bonus-trigger-button:hover {
+    background: linear-gradient(135deg, #a569bd, #9b59b6);
+    box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Bonus trigger text animation */
+@keyframes bonusTextPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+/* Scatter highlight for bonus trigger */
+.reel-cell.scatter-highlight {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a) !important;
+    border: 3px solid #ffd700 !important;
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.8), inset 0 0 10px rgba(255, 215, 0, 0.5) !important;
+    z-index: 10;
 }

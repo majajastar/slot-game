@@ -25,7 +25,7 @@ const CONFIG = {
     currency: 'USD',
     
     // Symbol emojis for display
-    // Symbol IDs: WILD=1, SCATTER=2, High=201-205, Low=101-105
+    // Symbol IDs: WILD=1, SCATTER=2, High=201-205, Low=101-105 (10, J, Q, K, A)
     symbols: {
         '1': '💎',      // WILD (no payout, substitutes only)
         '2': '🎯',     // SCATTER
@@ -35,12 +35,12 @@ const CONFIG = {
         '203': '🏆',
         '204': '💵',
         '205': '🎰',
-        // Low payout symbols (101-105)
-        '101': '♠️',
-        '102': '♥️',
-        '103': '♦️',
-        '104': '♣️',
-        '105': '🌟',
+        // Low payout symbols (101-105) - 10, J, Q, K, A
+        '101': '10',
+        '102': 'J',
+        '103': 'Q',
+        '104': 'K',
+        '105': 'A',
         // Special symbols for rainbow feature (matching backend IDs 300-305)
         '300': '🌈',  // RAINBOW
         '301': '🪙',  // BRONZE_COIN
@@ -57,11 +57,12 @@ const CONFIG = {
         '203': 'Trophy',
         '204': 'Cash',
         '205': 'Slot',
-        '101': 'Spades',
-        '102': 'Hearts',
-        '103': 'Diamonds',
-        '104': 'Clubs',
-        '105': 'Star'
+        // Low payout symbols - 10, J, Q, K, A
+        '101': 'Ten',
+        '102': 'Jack',
+        '103': 'Queen',
+        '104': 'King',
+        '105': 'Ace'
     },
     
     // Cluster size labels for paytable columns
@@ -102,6 +103,14 @@ const CONFIG = {
         enabled: true,
         costMultiplier: 10, // 10x normal bet cost
         description: 'Guaranteed rainbow feature after every cascade'
+    },
+    
+    // Bonus Game Settings - "Luck of the Bandit"
+    bonusGame: {
+        enabled: true,           // Enable/disable bonus game
+        buyCostMultiplier: 100,  // Cost to buy bonus (100x bet)
+        freeSpins: 8,            // Number of free spins
+        description: '8 free spins with accumulating golden squares until rainbow arrives'
     }
 };
 

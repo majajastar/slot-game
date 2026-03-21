@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initGrid();
     renderPaytable();
     updateBetDisplay();
+    updateBonusButton();
     updateServerModeDisplay();
     connect();
 });
@@ -88,7 +89,7 @@ function renderPaytable() {
         container.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">Loading paytable...</div>';
         return;
     }
-    
+
     const clusterPayouts = CLUSTER_PAYOUTS;
     const symbols = Object.keys(SYMBOLS).length > 0 ? SYMBOLS : CONFIG.symbols;
     const names = CONFIG.symbolNames;
@@ -193,8 +194,8 @@ function handleMessage(msg) {
     console.log()
     const type = msg.vals.type;
     const data = msg.vals.data;
-    console.log(`type = ${type}`)
-    console.log(`data = ${JSON.stringify(data)}`)
+    //console.log(`type = ${type}`)
+    //console.log(`data = ${JSON.stringify(data)}`)
 
     switch (type) {
         case 1: // Login response
@@ -250,12 +251,17 @@ function sendSyncRoom() {
     }]);
 }
 
-function sendSetBet(bet) {
-    const message = { 
+function sendSetBet(bet, forceBonusType = null) {
+    const message = {
         bet: bet,
         rainbowMode: rainbowModeEnabled
     };
-    
+
+    // Add forceBonusType if provided (for buying bonus)
+    if (forceBonusType) {
+        message.forceBonusType = forceBonusType;
+    }
+
     send('100000', [{
         subType: 100070,
         subData: [{
@@ -416,13 +422,13 @@ async function handleSpinResult(data) {
                     console.log(`     ${c.symbol}${icon} cluster x${c.count} = $${c.payout}  [${positions}]`);
                 });
             }
-            
+
             // Print golden squares created in this step (as grid layout)
             if (step.goldenSquares && step.goldenSquares.length > 0) {
                 const stepSquares = step.goldenSquares.filter(sq => sq.stepCreated === idx + 1);
                 if (stepSquares.length > 0) {
                     console.log('%c  ✨ Golden Squares:', 'color: #ffd700; font-weight: bold;');
-                    
+
                     // Create grid layout for golden squares
                     const gridLines = [];
                     gridLines.push('    ┌───┬───┬───┬───┬───┬───┐');
@@ -446,20 +452,20 @@ async function handleSpinResult(data) {
                     }
                     gridLines.push('    └───┴───┴───┴───┴───┴───┘');
                     gridLines.push('      0   1   2   3   4   5  ');
-                    
+
                     gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
                     console.log(`     New this step: ${stepSquares.length}, Total: ${step.goldenSquares.length}`);
                 }
             }
-            
+
             console.log(''); // Empty line between steps
         });
-        
+
         // Print summary of all golden squares from the cascade (as grid layout)
         if (result.goldenSquares && result.goldenSquares.length > 0) {
             console.log('%c[Golden Squares Summary]', 'color: #ffd700; font-weight: bold;');
             console.log(`  Total: ${result.goldenSquares.length} positions`);
-            
+
             // Create grid layout for all golden squares
             const gridLines = [];
             gridLines.push('  ┌───┬───┬───┬───┬───┬───┐');
@@ -480,7 +486,7 @@ async function handleSpinResult(data) {
             }
             gridLines.push('  └───┴───┴───┴───┴───┴───┘');
             gridLines.push('    0   1   2   3   4   5  ');
-            
+
             gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
         }
     }
@@ -491,7 +497,7 @@ async function handleSpinResult(data) {
             `Coin win: ${result.rainbowResult.coinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
         console.log('[Rainbow] Position:', result.rainbowResult.rainbowPosition);
         console.log('[Rainbow] Previous symbol:', result.rainbowResult.previousSymbol);
-        
+
         // Debug: Check what's in the final grid at rainbow position
         if (result.rainbowResult.rainbowPosition && result.grid) {
             const { row, col } = result.rainbowResult.rainbowPosition;
@@ -523,14 +529,66 @@ async function handleSpinResult(data) {
         showWin(result.totalWinAmount);
     }
 
-    // Render rainbow feature if present
-    if (result.rainbowResult?.hasRainbow) {
+    // Render golden squares from result (important for bonus game with no win)
+    if (result.goldenSquares && result.goldenSquares.length > 0) {
+        console.log(`[handleSpinResult] Rendering ${result.goldenSquares.length} golden squares from result`);
+        renderGoldenSquares(result.goldenSquares);
+    } else {
+        // Clear golden squares if none in result
+        clearGoldenSquares();
+    }
+    // Render rainbow feature if present AND there's a win from it
+    if (result.rainbowResult?.hasRainbow && result.rainbowResult.coinWin > 0) {
         await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
+    }
+
+    // Handle bonus game state
+    if (result.bonusGameState) {
+        const bonusState = result.bonusGameState;
+        
+        console.log(`[Bonus State] spinsLeft=${bonusState.spinsLeft}, totalSpins=${bonusState.totalSpins}, isActive=${bonusState.isActive}, bonusGameActive=${bonusGameActive}`);
+        
+        // Check if this is the first entry (buy bonus trigger) or bonus just started
+        const isFirstEntry = bonusState.spinsLeft === bonusState.totalSpins && !bonusGameActive;
+        const isNewBonus = bonusState.isActive && !bonusGameActive;
+        console.log(`[Bonus State] isFirstEntry=${isFirstEntry}, isNewBonus=${isNewBonus}`);
+
+        if ((isFirstEntry || isNewBonus) && bonusState.spinsLeft > 0) {
+            console.log('[Bonus Trigger] First entry or new bonus detected! Showing trigger overlay...');
+            // First time entering bonus - show trigger overlay
+            const scatterPositions = [];
+            if (result.grid) {
+                for (let r = 0; r < result.grid.length; r++) {
+                    for (let c = 0; c < result.grid[r].length; c++) {
+                        if (result.grid[r][c] === '2' || result.grid[r][c] === SYMBOLS.SCATTER) {
+                            scatterPositions.push({row: r, col: c});
+                        }
+                    }
+                }
+            }
+            console.log(`[Bonus Trigger] Found ${scatterPositions.length} scatters in grid`);
+            await renderBonusTrigger(bonusState, result.grid);
+        }
+        
+        if (bonusState.isActive && bonusState.spinsLeft > 0) {
+            // Bonus is active - show/update progress
+            bonusGameActive = true;
+            showBonusProgress(bonusState);
+        } else {
+            // Bonus ended
+            hideBonusProgress();
+        }
+    } else {
+        // No bonus state - hide progress if showing
+        if (bonusGameActive) {
+            hideBonusProgress();
+        }
     }
 
     // All animations complete - allow next spin
     isSpinning = false;
     document.getElementById('spinButton').disabled = false;
+    updateBonusButton();
 }
 
 // Grid Rendering
@@ -662,7 +720,7 @@ async function renderCascade(steps, totalWin) {
             console.log(`%c[Cascade Step ${step.step}] Dropping symbols:`, 'color: #4ecdc4; font-weight: bold;');
             const droppingSymbols = step.movements.filter(m => m.isNew);
             const existingSymbols = step.movements.filter(m => !m.isNew);
-            
+
             if (existingSymbols.length > 0) {
                 console.log('[Drop] Existing symbols dropping:');
                 existingSymbols.forEach(m => {
@@ -670,7 +728,7 @@ async function renderCascade(steps, totalWin) {
                     console.log(`[Drop] ${symbol} (${m.symbolInstance?.id}) from (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
                 });
             }
-            
+
             if (droppingSymbols.length > 0) {
                 console.log('[Drop] New symbols falling in:');
                 droppingSymbols.forEach(m => {
@@ -784,12 +842,12 @@ function addStepDetailToPanel(step, container, round) {
 
 // Rainbow Feature Rendering
 async function renderRainbowFeature(rainbowResult, goldenSquares) {
-    // Only show rainbow overlay if there are golden squares
-    if (!goldenSquares || goldenSquares.length === 0) {
-        console.log('[Rainbow] No golden squares, skipping rainbow feature');
+    // Show rainbow overlay if rainbow result exists
+    if (!rainbowResult || !rainbowResult.hasRainbow) {
+        console.log('[Rainbow] No rainbow result, skipping rainbow feature');
         return;
     }
-    
+
     const rainbowOverlay = document.getElementById('rainbowOverlay');
     const rainbowContent = document.getElementById('rainbowContent');
     const rainbowDetailsPanel = document.getElementById('rainbowDetailsPanel');
@@ -797,7 +855,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     const rainbowDetailsRound = document.getElementById('rainbowDetailsRound');
 
     rainbowOverlay.classList.remove('hidden');
-    
+
     // Show details panel and clear previous content
     if (rainbowDetailsPanel) {
         rainbowDetailsPanel.classList.remove('hidden');
@@ -820,7 +878,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     // Helper to pretty print rainbow grid
     function prettyPrintRainbowGrid(round, stepLabel, stepData = null) {
         console.log(`%c[Rainbow Grid - Round ${round.round}, ${stepLabel}]`, 'color: #ff6b6b; font-weight: bold;');
-        
+
         const layout = CONFIG.gridLayout;
         const grid = [];
         for (let r = 0; r < layout.ROWS_VISIBLE; r++) {
@@ -832,7 +890,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
 
         // Mark rainbow position
         if (rainbowPos) {
-            grid[rainbowPos.row][rainbowPos.col] = '🌈R🌈';
+            grid[rainbowPos.row][rainbowPos.col] = '🌈R';
         }
 
         // Use step data if provided, otherwise use round data
@@ -870,7 +928,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         }
         console.log('  └─────┴─────┴─────┴─────┴─────┴─────┘');
         console.log('     0     1     2     3     4     5   ');
-        
+
         // Summary
         const totalCoinValue = coins.reduce((sum, c) => sum + c.finalMultiplier, 0);
         const totalPotValue = pots.reduce((sum, p) => sum + p.finalMultiplier, 0);
@@ -882,19 +940,19 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     async function animateCoinsToPot(collectedCoins, potRow, potCol) {
         const potCell = document.getElementById(`cell-${potRow}-${potCol}`);
         if (!potCell) return;
-        
+
         const potRect = potCell.getBoundingClientRect();
         const gridRect = document.querySelector('.lebandit-grid').getBoundingClientRect();
-        
+
         // Create flying coin elements
         const flyingCoins = [];
-        
+
         for (const coin of collectedCoins) {
             const coinCell = document.getElementById(`cell-${coin.row}-${coin.col}`);
             if (!coinCell) continue;
-            
+
             const coinRect = coinCell.getBoundingClientRect();
-            
+
             // Create flying coin element
             const flyer = document.createElement('div');
             flyer.textContent = CONFIG.symbols[coin.symbolId] || '🪙';
@@ -915,11 +973,11 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             `;
             document.body.appendChild(flyer);
             flyingCoins.push(flyer);
-            
+
             // Start animation after a small delay
             await sleep(50);
         }
-        
+
         // Animate all coins to pot position
         await sleep(100);
         flyingCoins.forEach(flyer => {
@@ -928,13 +986,13 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             flyer.style.transform = 'scale(0.5)';
             flyer.style.opacity = '0.7';
         });
-        
+
         // Wait for animation to complete
         await sleep(600);
-        
+
         // Remove flying coins
         flyingCoins.forEach(flyer => flyer.remove());
-        
+
         // Flash the pot
         potCell.style.transform = 'scale(1.3)';
         potCell.style.boxShadow = '0 0 40px rgba(255, 215, 0, 0.9)';
@@ -946,12 +1004,12 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     // Render each round
     for (const round of rainbowResult.rounds) {
         console.log(`%c[Rainbow Round ${round.round}]`, 'color: #ffd700; font-weight: bold; font-size: 14px;');
-        
+
         // Update details panel round number (show total rounds)
         if (rainbowDetailsRound) {
             rainbowDetailsRound.textContent = `Round ${round.round} of ${rainbowResult.rounds.length}`;
         }
-        
+
         // Add round header to details panel (accumulate all rounds)
         if (rainbowDetailsContent) {
             const roundTotal = round.totalCoinValue + round.totalPotValue;
@@ -961,20 +1019,20 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             roundHeader.style.cssText = 'margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,215,0,0.3); color: #ffd700;';
             rainbowDetailsContent.appendChild(roundHeader);
         }
-        
+
         // Check if we have steps data
         if (round.steps && round.steps.length > 0) {
             for (const step of round.steps) {
                 console.log(`%c  Step ${step.stepNumber}: ${step.description}`, 'color: #4ecdc4;');
-                
+
                 // Add step detail to panel
                 addStepDetailToPanel(step, rainbowDetailsContent, round);
-                
+
                 // Clean previous styles before each step (except initial)
                 if (step.stepType !== 'initial') {
                     document.querySelectorAll('.reel-cell').forEach(cell => {
-                        cell.classList.remove('rainbow-coin', 'clover-symbol', 'pot-symbol', 
-                                              'bronze', 'silver', 'gold', 
+                        cell.classList.remove('rainbow-coin', 'clover-symbol', 'pot-symbol',
+                                              'bronze', 'silver', 'gold',
                                               'active-clover', 'active-pot',
                                               'pot-collected');
                         // Also clear any inline styles from animations
@@ -985,7 +1043,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         cell.style.background = '';
                     });
                 }
-                
+
                 // Render based on step type
                 if (step.stepType === 'initial') {
                     // Initial reveal - render all symbols
@@ -1004,7 +1062,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
                             cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                             cell.classList.add('clover-symbol');
-                            cell.dataset.multiplier = clover.multiplier + 'x';
+                            cell.dataset.multiplier = clover.multiplier;
                         }
                     }
                     for (const pot of step.pots) {
@@ -1014,14 +1072,14 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.classList.add('pot-symbol');
                             // Only show multiplier if pot has collected coins (has value > 0)
                             if (pot.finalMultiplier > 0) {
-                                cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                                cell.dataset.multiplier = pot.finalMultiplier;
                             } else {
-                                cell.dataset.multiplier = '-';
+                                cell.dataset.multiplier = '0';
                             }
                         }
                     }
                     await sleep(500);
-                    
+
                 } else if (step.stepType === 'clover') {
                     // Re-render all symbols first with ORIGINAL values
                     for (const coin of step.coins) {
@@ -1037,7 +1095,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
                             cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                             cell.classList.add('clover-symbol');
-                            cell.dataset.multiplier = clover.multiplier + 'x';
+                            cell.dataset.multiplier = clover.multiplier;
                         }
                     }
                     for (const pot of step.pots) {
@@ -1049,63 +1107,57 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             if (pot.collected) {
                                 cell.classList.add('pot-collected');
                             }
-                            // Only show multiplier if pot has value > 0
-                            if (pot.finalMultiplier > 0) {
-                                cell.dataset.multiplier = pot.finalMultiplier + 'x';
-                            } else {
-                                cell.dataset.multiplier = '';
-                            }
                         }
                     }
-                    
+
                     // Small delay to let symbols settle
                     await sleep(300);
-                    
+
                     // Highlight active clover
                     if (step.activeClover) {
                         const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
                         if (cloverCell) cloverCell.classList.add('active-clover');
                     }
-                    
+
                     // Use cloverContributions to animate each clover one by one
                     if (round.cloverContributions && round.cloverContributions.length > 0) {
                         // Find the contribution for this step's activeClover
-                        const contribution = round.cloverContributions.find(c => 
-                            c.clover.row === step.activeClover?.row && 
+                        const contribution = round.cloverContributions.find(c =>
+                            c.clover.row === step.activeClover?.row &&
                             c.clover.col === step.activeClover?.col
                         );
-                        
+
                         if (contribution && (contribution.affectedCoins.length > 0 || contribution.affectedPots.length > 0)) {
                             console.log(`[Clover] Processing contribution at (${contribution.clover.row},${contribution.clover.col})`);
-                            
+
                             // Pretty print grid BEFORE this clover's contribution
                             prettyPrintRainbowGrid(round, `BEFORE Clover at (${contribution.clover.row},${contribution.clover.col})`, step);
-                            
+
                             // Animate each affected coin one by one with before/after values
                             for (const affectedCoin of contribution.affectedCoins) {
                                 const cell = document.getElementById(`cell-${affectedCoin.row}-${affectedCoin.col}`);
                                 if (cell) {
                                     console.log(`[Clover] Animating coin at (${affectedCoin.row},${affectedCoin.col}): ${affectedCoin.beforeMultiplier} → ${affectedCoin.afterMultiplier}`);
-                                    
+
                                     // Store original transition
                                     cell.dataset.originalTransition = cell.style.transition;
                                     cell.style.transition = 'all 0.5s ease';
-                                    
+
                                     // Set initial multiplier (before)
                                     cell.dataset.multiplier = affectedCoin.beforeMultiplier;
-                                                                                                            
+
                                     // Phase 1: Scale up
                                     cell.style.transform = 'scale(1.3)';
                                     cell.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.8)';
                                     cell.style.filter = 'brightness(1.5)';
                                     cell.style.zIndex = '100';
                                     await sleep(300);
-                                    
+
                                     // Phase 2: Update multiplier (show after value)
                                     cell.dataset.multiplier = affectedCoin.afterMultiplier;
                                     cell.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.9), rgba(255,215,0,0.5))';
                                     await sleep(300);
-                                    
+
                                     // Phase 3: Scale back
                                     cell.style.transform = 'scale(1)';
                                     cell.style.boxShadow = '';
@@ -1115,27 +1167,27 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                     cell.style.transition = cell.dataset.originalTransition || '';
                                 }
                             }
-                            
+
                             // Animate each affected pot one by one
                             for (const affectedPot of contribution.affectedPots) {
                                 const cell = document.getElementById(`cell-${affectedPot.row}-${affectedPot.col}`);
                                 if (cell) {
                                     console.log(`[Clover] Animating pot at (${affectedPot.row},${affectedPot.col}): ${affectedPot.beforeMultiplier} → ${affectedPot.afterMultiplier}`);
-                                    
+
                                     cell.dataset.multiplier = affectedPot.beforeMultiplier;
                                     cell.dataset.originalTransition = cell.style.transition;
                                     cell.style.transition = 'all 0.5s ease';
-                                    
+
                                     cell.style.transform = 'scale(1.3)';
                                     cell.style.boxShadow = '0 0 30px rgba(155, 89, 182, 0.8)';
                                     cell.style.filter = 'brightness(1.5)';
                                     cell.style.zIndex = '100';
                                     await sleep(300);
-                                    
+
                                     cell.dataset.multiplier = affectedPot.afterMultiplier;
                                     cell.style.background = 'linear-gradient(135deg, rgba(155,89,182,0.9), rgba(155,89,182,0.5))';
                                     await sleep(300);
-                                    
+
                                     cell.style.transform = 'scale(1)';
                                     cell.style.boxShadow = '';
                                     cell.style.filter = '';
@@ -1145,20 +1197,20 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                 }
                             }
                         }
-                        
+
                         // Pretty print grid AFTER this clover's contribution
                         prettyPrintRainbowGrid(round, `AFTER Clover at (${contribution.clover.row},${contribution.clover.col})`, step);
                     }
-                    
+
                     // Clear highlights
                     if (step.activeClover) {
                         const cloverCell = document.getElementById(`cell-${step.activeClover.row}-${step.activeClover.col}`);
                         if (cloverCell) cloverCell.classList.remove('active-clover');
                     }
-                    
+
                     // 500ms delay between clovers
                     await sleep(500);
-                    
+
                 } else if (step.stepType === 'pot') {
                     // Re-render all symbols first
                     for (const coin of step.coins) {
@@ -1174,7 +1226,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
                             cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                             cell.classList.add('clover-symbol');
-                            cell.dataset.multiplier = clover.multiplier + 'x';
+                            cell.dataset.multiplier = clover.multiplier;
                         }
                     }
                     for (const pot of step.pots) {
@@ -1184,23 +1236,21 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.classList.add('pot-symbol');
                             // Only show multiplier if pot has value > 0
                             if (pot.finalMultiplier > 0) {
-                                cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                                cell.dataset.multiplier = pot.finalMultiplier;
                             } else {
                                 cell.dataset.multiplier = '';
                             }
                         }
                     }
-                    
+
                     // Highlight active pot collecting
                     console.log(`  🏺 Pot at (${step.activePot?.row},${step.activePot?.col}) collects:`);
                     if (step.collectedCoins) {
-                        let total = 0;
                         for (const coin of step.collectedCoins) {
                             console.log(`     - ${coin.type} at (${coin.row},${coin.col}): ${coin.finalMultiplier}x`);
-                            total += coin.finalMultiplier;
                         }
-                        console.log(`     Total collected: ${total}x → Final: ${step.activePot?.finalMultiplier}x`);
-                        
+                        console.log(`     Total collected: ${step.activePot?.finalMultiplier}x`);
+
                         // Animate coins flying to pot
                         if (step.activePot) {
                             await animateCoinsToPot(step.collectedCoins, step.activePot.row, step.activePot.col);
@@ -1210,7 +1260,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         const potCell = document.getElementById(`cell-${step.activePot.row}-${step.activePot.col}`);
                         if (potCell) {
                             potCell.classList.add('active-pot');
-                            potCell.dataset.multiplier = step.activePot.finalMultiplier + 'x';
+                            potCell.dataset.multiplier = step.activePot.finalMultiplier;
                         }
                     }
                     await sleep(400);
@@ -1239,7 +1289,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                 if (cell && !(rainbowPos && clover.row === rainbowPos.row && clover.col === rainbowPos.col)) {
                     cell.textContent = CONFIG.symbols[clover.symbolId] || '🍀';
                     cell.classList.add('clover-symbol');
-                    cell.dataset.multiplier = clover.multiplier + 'x';
+                    cell.dataset.multiplier = clover.multiplier;
                 }
             }
             for (const pot of round.pots) {
@@ -1247,11 +1297,11 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                 if (cell && !(rainbowPos && pot.row === rainbowPos.row && pot.col === rainbowPos.col)) {
                     cell.textContent = CONFIG.symbols[pot.symbolId] || '🏺';
                     cell.classList.add('pot-symbol');
-                    cell.dataset.multiplier = pot.finalMultiplier + 'x';
+                    cell.dataset.multiplier = pot.finalMultiplier;
                 }
             }
             await sleep(400);
-            
+
             // Pretty print final grid
             prettyPrintRainbowGrid(round, 'Final');
         }
@@ -1318,10 +1368,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         const overallTotal = rainbowResult.totalCoinWin + rainbowResult.totalPotWin;
         const totalDiv = document.createElement('div');
         totalDiv.className = 'rainbow-total-win';
-        
+
         // Build detailed breakdown
         let detailsHtml = '';
-        
+
         // Show raw values (before bet)
         if (rainbowResult.totalCoinValue > 0 || rainbowResult.totalPotValue > 0) {
             detailsHtml += '<div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,215,0,0.3);">';
@@ -1335,7 +1385,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             }
             detailsHtml += '</div>';
         }
-        
+
         // Show win amounts (with bet)
         detailsHtml += '<div style="margin-top: 8px;">';
         detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Win Amount:</span><br/>';
@@ -1347,7 +1397,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             detailsHtml += `<span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotWin.toFixed(2)}x</span>`;
         }
         detailsHtml += '</div>';
-        
+
         totalDiv.innerHTML = `
             <div style="margin-top: 15px; padding: 15px; border-top: 2px solid #ffd700; text-align: center; background: rgba(0,0,0,0.3); border-radius: 8px;">
                 <strong style="color: #ffd700; font-size: 1.2rem;">🌈 Rainbow Total: ${overallTotal.toFixed(2)}</strong>
@@ -1409,7 +1459,7 @@ async function animateCombined(movements) {
 
             // Calculate movement math
             const rowDiff = move.to.row - move.from.row;
-            const cellHeight = 76; 
+            const cellHeight = 76;
             const fallDistance = rowDiff * cellHeight;
             const delay = (4 - move.to.row) * staggerDelay;
 
@@ -1430,10 +1480,10 @@ async function animateCombined(movements) {
             const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
             if (fromCell) {
                 // STEP 1: Kill the transition immediately
-                fromCell.style.transition = 'none'; 
-                
+                fromCell.style.transition = 'none';
+
                 // STEP 2: Force a reflow (tells the browser: "Stop animating NOW")
-                void fromCell.offsetHeight; 
+                void fromCell.offsetHeight;
 
                 // STEP 3: Reset everything else
                 fromCell.textContent = '';
@@ -1442,7 +1492,7 @@ async function animateCombined(movements) {
                 fromCell.className = 'reel-cell lebandit-cell buffer-cell';
             }
         });
-        
+
         console.log("All symbols disappeared instantly without fallback.");
     });
 }
@@ -1473,17 +1523,260 @@ function updateBetDisplay() {
             btn.classList.add('active');
         }
     });
+
+    // Update bonus button
+    updateBonusButton();
 }
 
 // Rainbow Mode Toggle
 function toggleRainbowMode() {
     const checkbox = document.getElementById('rainbowModeCheck');
     rainbowModeEnabled = checkbox.checked;
-    
+
     console.log('[Rainbow Mode]', rainbowModeEnabled ? 'ENABLED' : 'DISABLED');
-    
+
     // Update UI to show cost
     updateBetDisplay();
+}
+
+// Bonus Game State
+let bonusGameActive = false;
+
+// Buy Bonus Function
+function buyBonus() {
+    if (!CONFIG.bonusGame.enabled) {
+        console.log('[Buy Bonus] Bonus game is disabled');
+        return;
+    }
+
+    if (isSpinning) {
+        console.log('[Buy Bonus] Cannot buy bonus while spinning');
+        return;
+    }
+
+    const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+    const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
+
+    console.log(`[Buy Bonus] Buying bonus for ${bonusCost}x bet ($${bonusCost})`);
+
+    // Use sendSetBet with forceBonusType to trigger bonus
+    sendSetBet(currentBet, 'LUCK_OF_THE_BANDIT');
+
+    updateBonusButton();
+}
+
+// Update Bonus Button State
+function updateBonusButton() {
+    const bonusSection = document.getElementById('bonusGameSection');
+    const buyButton = document.getElementById('buyBonusButton');
+
+    if (!bonusSection || !buyButton) return;
+
+    // Show/hide based on config
+    if (CONFIG.bonusGame.enabled) {
+        bonusSection.classList.remove('hidden');
+    } else {
+        bonusSection.classList.add('hidden');
+        return;
+    }
+
+    // Update button text with current cost
+    const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+    const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
+    buyButton.textContent = `🎁 Buy Bonus (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
+
+    // Disable if spinning or bonus is active
+    buyButton.disabled = isSpinning || bonusGameActive;
+}
+
+// Show Bonus Progress
+function showBonusProgress(bonusState) {
+    const progressDiv = document.getElementById('bonusProgress');
+    if (!progressDiv) return;
+
+    progressDiv.classList.remove('hidden');
+    
+    // Hide buy button section during bonus
+    const bonusSection = document.getElementById('bonusGameSection');
+    if (bonusSection) bonusSection.classList.add('hidden');
+
+    updateBonusProgress(bonusState);
+}
+
+// Update Bonus Progress Display
+function updateBonusProgress(bonusState) {
+    const spinsLeftEl = document.getElementById('bonusSpinsLeft');
+    const totalSpinsEl = document.getElementById('bonusTotalSpins');
+    const frameCountEl = document.getElementById('bonusFrameCount');
+    const totalWinEl = document.getElementById('bonusTotalWin');
+
+    if (spinsLeftEl) spinsLeftEl.textContent = bonusState.spinsLeft;
+    if (totalSpinsEl) totalSpinsEl.textContent = bonusState.totalSpins;
+    if (frameCountEl) frameCountEl.textContent = bonusState.goldenFrames?.length || 0;
+    if (totalWinEl) totalWinEl.textContent = '$' + (bonusState.totalWin || 0).toFixed(2);
+}
+
+// Hide Bonus Progress
+function hideBonusProgress() {
+    const progressDiv = document.getElementById('bonusProgress');
+    if (progressDiv) progressDiv.classList.add('hidden');
+    
+    // Show buy button section again
+    const bonusSection = document.getElementById('bonusGameSection');
+    if (bonusSection && CONFIG.bonusGame.enabled) bonusSection.classList.remove('hidden');
+    
+    bonusGameActive = false;
+    updateBonusButton();
+}
+
+// Show Bonus Trigger Overlay
+function showBonusTrigger(grid, scatterPositions) {
+    console.log('[showBonusTrigger] Called with', scatterPositions.length, 'scatters');
+    
+    const overlay = document.getElementById('bonusTriggerOverlay');
+    const gridEl = document.getElementById('bonusTriggerGrid');
+    
+    if (!overlay || !gridEl) {
+        console.error('[showBonusTrigger] Missing elements:', { overlay: !!overlay, gridEl: !!gridEl });
+        return;
+    }
+    
+    // Build grid HTML with highlighted scatters
+    let gridHtml = '';
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+            const symbol = grid[r][c];
+            const isScatter = symbol === '2' || symbol === SYMBOLS.SCATTER;
+            const display = CONFIG.symbols[symbol] || symbol;
+            gridHtml += `<div class="trigger-cell ${isScatter ? 'scatter' : ''}">${display}</div>`;
+        }
+    }
+    gridEl.innerHTML = gridHtml;
+    
+    // Show overlay
+    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
+    
+    console.log('[Bonus Trigger] Overlay shown');
+}
+
+// Hide Bonus Trigger Overlay
+function hideBonusTrigger() {
+    const overlay = document.getElementById('bonusTriggerOverlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.classList.add('hidden');
+    }
+}
+
+// Enter Bonus Game
+function enterBonus() {
+    hideBonusTrigger();
+    console.log('[Bonus] Entering bonus game...');
+}
+
+// Render Bonus Trigger - Similar to rainbow feature style
+async function renderBonusTrigger(bonusState, grid) {
+    console.log('[renderBonusTrigger] Rendering bonus trigger animation');
+    
+    if (!bonusState || !grid) {
+        console.log('[renderBonusTrigger] Missing bonusState or grid');
+        return;
+    }
+    
+    // Remove any existing trigger text first
+    const existingText = document.getElementById('bonusTriggerText');
+    if (existingText) existingText.remove();
+    
+    // Find scatter positions
+    const scatterPositions = [];
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+            if (grid[r][c] === '2' || grid[r][c] === SYMBOLS.SCATTER) {
+                scatterPositions.push({row: r, col: c});
+            }
+        }
+    }
+    
+    console.log(`[renderBonusTrigger] Found ${scatterPositions.length} scatters`);
+    
+    // Create and show bonus trigger text overlay
+    const triggerText = document.createElement('div');
+    triggerText.id = 'bonusTriggerText';
+    triggerText.style.cssText = `
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(155, 89, 182, 0.85);
+        color: #fff;
+        padding: 20px 40px;
+        border-radius: 15px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+        z-index: 1001;
+        box-shadow: 0 0 30px rgba(155, 89, 182, 0.8);
+        animation: bonusTextPulse 1s ease-in-out 3;
+        backdrop-filter: blur(5px);
+    `;
+    triggerText.innerHTML = `
+        <div style="font-size: 2rem; margin-bottom: 10px;">🎁 BONUS TRIGGERED!</div>
+        <div style="color: #ffd700;">${scatterPositions.length} SCATTERS</div>
+        <div style="font-size: 1.2rem; margin-top: 10px;">Luck of the Bandit</div>
+        <div style="font-size: 1rem; color: #ccc; margin-top: 5px;">8 Free Spins with Accumulating Golden Squares</div>
+    `;
+    document.body.appendChild(triggerText);
+    
+    // Highlight scatter positions with animation
+    for (const pos of scatterPositions) {
+        const cell = document.getElementById(`cell-${pos.row}-${pos.col}`);
+        if (cell) {
+            cell.classList.add('scatter-highlight');
+            cell.style.animation = 'scatterPulse 0.5s ease-in-out 3';
+        }
+    }
+    
+    // Show bonus triggered message
+    const statusBar = document.getElementById('cascadeInfo');
+    const statusLabel = document.getElementById('cascadeLabel');
+    const statusStep = document.getElementById('cascadeStep');
+    
+    if (statusBar && statusLabel && statusStep) {
+        statusBar.classList.remove('hidden');
+        statusLabel.textContent = '🎁 BONUS TRIGGERED!';
+        statusStep.textContent = `${scatterPositions.length} Scatters → Luck of the Bandit`;
+        statusLabel.style.color = '#9b59b6';
+        statusLabel.style.fontWeight = 'bold';
+    }
+    
+    // Wait for animation
+    await sleep(1500);
+    
+    // Remove trigger text with fade out
+    const textEl = document.getElementById('bonusTriggerText');
+    if (textEl) {
+        textEl.style.transition = 'opacity 0.5s ease';
+        textEl.style.opacity = '0';
+        await sleep(500);
+        textEl.remove();
+    }
+    
+    // Clear scatter highlights
+    document.querySelectorAll('.scatter-highlight').forEach(cell => {
+        cell.classList.remove('scatter-highlight');
+        cell.style.animation = '';
+    });
+    
+    // Hide status after delay
+    if (statusBar && statusLabel) {
+        await sleep(1000);
+        statusBar.classList.add('hidden');
+        statusLabel.style.color = '';
+        statusLabel.style.fontWeight = '';
+    }
+    
+    console.log('[renderBonusTrigger] Animation complete');
 }
 
 function changeBet(delta) {
@@ -1520,7 +1813,7 @@ function spin() {
     });
 
     // Clear golden squares
-    clearGoldenSquares();
+    //clearGoldenSquares();
 
     // Clear history displays
     document.getElementById('cascadeHistory').classList.add('hidden');
