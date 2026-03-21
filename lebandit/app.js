@@ -596,50 +596,6 @@ function clearGoldenSquares() {
     if (overlay) overlay.innerHTML = '';
 }
 
-// Render Golden Frames for Bonus Games
-function renderGoldenFrames(frames) {
-    if (!frames || !frames.length) return;
-
-    for (let r = 0; r < frames.length; r++) {
-        for (let c = 0; c < frames[r].length; c++) {
-            const frame = frames[r][c];
-            if (!frame || frame.value <= 0) continue;
-
-            const cell = document.getElementById(`cell-${r}-${c}`);
-            if (!cell) continue;
-
-            // Add golden frame styling based on type
-            cell.classList.add('golden-frame');
-            cell.classList.add(`frame-${frame.type}`);
-            
-            if (frame.active) {
-                cell.classList.add('frame-active');
-            }
-
-            // Show frame value
-            const valueEl = document.createElement('div');
-            valueEl.className = 'frame-value';
-            valueEl.textContent = frame.value + 'x';
-            cell.appendChild(valueEl);
-        }
-    }
-}
-
-// Clear Golden Frames
-function clearGoldenFrames() {
-    document.querySelectorAll('.golden-frame').forEach(cell => {
-        cell.classList.remove('golden-frame', 'frame-bronze', 'frame-silver', 'frame-gold', 'frame-jackpot', 'frame-active');
-        const valueEl = cell.querySelector('.frame-value');
-        if (valueEl) valueEl.remove();
-    });
-}
-
-// Clear All Golden Effects (squares + frames)
-function clearAllGoldenEffects() {
-    clearGoldenSquares();
-    clearGoldenFrames();
-}
-
 // Cascade Animation
 async function renderCascade(steps, totalWin) {
     const cascadeInfo = document.getElementById('cascadeInfo');
@@ -723,11 +679,6 @@ async function renderCascade(steps, totalWin) {
         renderGrid(symbolGridToGrid(step.symbolGridAfterDropAndFill), true);
 
         // Golden squares persist in overlay - no need to re-render
-
-        // Render golden frames if in bonus game
-        if (step.bonusGameState?.goldenFrames) {
-            renderGoldenFrames(step.bonusGameState.goldenFrames);
-        }
 
         await sleep(400);
 
@@ -1465,8 +1416,8 @@ function spin() {
         cell.dataset.finalMultiplier = '';
     });
 
-    // Clear golden frames
-    clearAllGoldenEffects();
+    // Clear golden squares
+    clearGoldenSquares();
 
     // Clear history displays
     document.getElementById('cascadeHistory').classList.add('hidden');
