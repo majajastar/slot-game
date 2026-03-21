@@ -184,11 +184,8 @@ function send(type, data) {
 function handleMessage(msg) {
 
     if (!msg.vals) return;
-    console.log()
     const type = msg.vals.type;
     const data = msg.vals.data;
-    //console.log(`type = ${type}`)
-    //console.log(`data = ${JSON.stringify(data)}`)
 
     switch (type) {
         case 1: // Login response
