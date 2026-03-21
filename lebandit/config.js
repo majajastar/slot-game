@@ -43,9 +43,9 @@ const CONFIG = {
         '105': '🌟',
         // Special symbols for rainbow feature
         'RAINBOW': '🌈',
-        'BRONZE': '🥉',
-        'SILVER': '🥈',
-        'GOLD': '🥇',
+        'BRONZE': '🪙',
+        'SILVER': '🪙',
+        'GOLD': '🪙',
         'CLOVER': '🍀',
         'POT': '🏺'
     },
