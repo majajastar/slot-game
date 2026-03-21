@@ -1020,14 +1020,15 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     if (step.affectedCoins && step.affectedCoins.length > 0) {
                         console.log('[Clover] Starting coin multiplication effect...');
                         
-                        // First apply initial styles
+                        // First apply initial styles with transition
                         for (const coin of step.affectedCoins) {
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
                                 console.log(`[Clover] Setting initial state for cell (${coin.row},${coin.col})`);
                                 // Store original transition
                                 cell.dataset.originalTransition = cell.style.transition;
-                                cell.style.transition = 'all 0.3s ease';
+                                // Set transition for smooth animation
+                                cell.style.transition = 'all 0.5s ease';
                             }
                         }
                         
@@ -1048,6 +1049,11 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             const cell = document.getElementById(`cell-${coin.row}-${coin.col}`);
                             if (cell) {
                                 const oldVal = cell.dataset.finalMultiplier;
+                                // Add multiplied class before updating value
+                                cell.classList.add('multiplied');
+                                // Force reflow to ensure class is applied
+                                void cell.offsetWidth;
+                                // Update the final multiplier - this triggers the CSS display
                                 cell.dataset.finalMultiplier = coin.finalMultiplier;
                                 console.log(`[Clover] Updated multiplier at (${coin.row},${coin.col}): ${oldVal} → ${coin.finalMultiplier}`);
                                 // Flash effect
