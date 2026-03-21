@@ -812,7 +812,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     }
 
     // Helper to pretty print rainbow grid
-    function prettyPrintRainbowGrid(round, stepLabel) {
+    function prettyPrintRainbowGrid(round, stepLabel, stepData = null) {
         console.log(`%c[Rainbow Grid - Round ${round.round}, ${stepLabel}]`, 'color: #ff6b6b; font-weight: bold;');
         
         const layout = CONFIG.gridLayout;
@@ -829,26 +829,26 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
             grid[rainbowPos.row][rainbowPos.col] = '🌈R🌈';
         }
 
-        // Mark coins - show original and final multiplier
-        for (const coin of round.coins) {
-            const emoji = CONFIG.symbols[coin.symbolId] || CONFIG.symbols[coin.type.toUpperCase()] || '🪙';
-            const orig = coin.originalMultiplier;
-            const final = coin.finalMultiplier;
-            if (orig !== final) {
-                grid[coin.row][coin.col] = `${emoji}${orig}>${final}`;
-            } else {
-                grid[coin.row][coin.col] = `${emoji}${final}`;
-            }
+        // Use step data if provided, otherwise use round data
+        const coins = stepData?.coins || round.coins;
+        const clovers = stepData?.clovers || round.clovers;
+        const pots = stepData?.pots || round.pots;
+
+        // Mark coins - show multiplier at this step
+        for (const coin of coins) {
+            const emoji = CONFIG.symbols[coin.symbolId] || '🪙';
+            // Use the multiplier at this step (finalMultiplier represents current state)
+            grid[coin.row][coin.col] = `${emoji}${coin.finalMultiplier}`;
         }
 
         // Mark clovers
-        for (const clover of round.clovers) {
+        for (const clover of clovers) {
             const emoji = CONFIG.symbols[clover.symbolId] || '🍀';
             grid[clover.row][clover.col] = `${emoji}${clover.multiplier}`;
         }
 
-        // Mark pots
-        for (const pot of round.pots) {
+        // Mark pots - show multiplier at this step
+        for (const pot of pots) {
             const emoji = CONFIG.symbols[pot.symbolId] || '🏺';
             grid[pot.row][pot.col] = `${emoji}${pot.finalMultiplier}`;
         }
@@ -866,8 +866,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         console.log('     0     1     2     3     4     5   ');
         
         // Summary
-        console.log(`  Coins: ${round.coins.length}, Clovers: ${round.clovers.length}, Pots: ${round.pots.length}`);
-        console.log(`  Total: ${round.totalCoinValue + round.totalPotValue}x`);
+        const totalCoinValue = coins.reduce((sum, c) => sum + c.finalMultiplier, 0);
+        const totalPotValue = pots.reduce((sum, p) => sum + p.finalMultiplier, 0);
+        console.log(`  Coins: ${coins.length}, Clovers: ${clovers.length}, Pots: ${pots.length}`);
+        console.log(`  Total: ${totalCoinValue + totalPotValue}x`);
     }
 
     // Render each round
@@ -1139,7 +1141,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                 }
 
                 // Pretty print grid at this step
-                prettyPrintRainbowGrid(round, `Step ${step.stepNumber}: ${step.description}`);
+                prettyPrintRainbowGrid(round, `Step ${step.stepNumber}: ${step.description}`, step);
             }
         } else {
             // Fallback: render all at once if no steps data
