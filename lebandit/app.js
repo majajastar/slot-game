@@ -924,8 +924,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             // Store both original and final
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
-                            // Add 'multiplied' class if coin has clover multipliers
-                            if (coin.cloverMultipliers && coin.cloverMultipliers.length > 0) {
+                            // Add 'multiplied' class only if coin was actually multiplied (value changed)
+                            const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
+                                                  coin.originalMultiplier !== coin.finalMultiplier;
+                            if (wasMultiplied) {
                                 cell.classList.add('multiplied');
                             }
                         }
@@ -959,8 +961,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             // Show ORIGINAL multiplier first
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.originalMultiplier;
-                            // Add 'multiplied' class if coin has clover multipliers
-                            if (coin.cloverMultipliers && coin.cloverMultipliers.length > 0) {
+                            // Add 'multiplied' class only if coin was actually multiplied (value changed)
+                            const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
+                                                  coin.originalMultiplier !== coin.finalMultiplier;
+                            if (wasMultiplied) {
                                 cell.classList.add('multiplied');
                             }
                         }
@@ -1073,8 +1077,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.classList.add('rainbow-coin', coin.type);
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
-                            // Add 'multiplied' class if coin has clover multipliers
-                            if (coin.cloverMultipliers && coin.cloverMultipliers.length > 0) {
+                            // Add 'multiplied' class only if coin was actually multiplied (value changed)
+                            const wasMultiplied = coin.cloverMultipliers && coin.cloverMultipliers.length > 0 && 
+                                                  coin.originalMultiplier !== coin.finalMultiplier;
+                            if (wasMultiplied) {
                                 cell.classList.add('multiplied');
                             }
                         }
