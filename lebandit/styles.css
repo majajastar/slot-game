@@ -1145,8 +1145,8 @@
     text-shadow: 0 1px 2px rgba(0,0,0,0.8);
 }
 
-/* Rainbow coin shows original and final multiplier */
-.reel-cell.rainbow-coin::after {
+/* Rainbow coin shows multiplier - only show transition if multiplied */
+.reel-cell.rainbow-coin.multiplied::after {
     content: attr(data-original-multiplier) ">" attr(data-final-multiplier);
     position: absolute;
     bottom: 2px;
@@ -1155,6 +1155,21 @@
     font-weight: bold;
     color: #fff;
     background: linear-gradient(90deg, rgba(0,0,0,0.7), rgba(255,215,0,0.5));
+    padding: 1px 3px;
+    border-radius: 4px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* If not multiplied, just show the original multiplier */
+.reel-cell.rainbow-coin:not(.multiplied)::after {
+    content: attr(data-original-multiplier) "x";
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 0.5rem;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0,0,0,0.7);
     padding: 1px 3px;
     border-radius: 4px;
     text-shadow: 0 1px 2px rgba(0,0,0,0.8);

@@ -924,6 +924,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             // Store both original and final
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
+                            // Add 'multiplied' class if coin was actually multiplied
+                            if (coin.originalMultiplier !== coin.finalMultiplier) {
+                                cell.classList.add('multiplied');
+                            }
                         }
                     }
                     for (const clover of step.clovers) {
@@ -955,6 +959,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             // Show ORIGINAL multiplier first
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.originalMultiplier;
+                            // Add 'multiplied' class if coin was actually multiplied
+                            if (coin.originalMultiplier !== coin.finalMultiplier) {
+                                cell.classList.add('multiplied');
+                            }
                         }
                     }
                     for (const clover of step.clovers) {
@@ -1065,6 +1073,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             cell.classList.add('rainbow-coin', coin.type);
                             cell.dataset.originalMultiplier = coin.originalMultiplier;
                             cell.dataset.finalMultiplier = coin.finalMultiplier;
+                            // Add 'multiplied' class if coin was actually multiplied
+                            if (coin.originalMultiplier !== coin.finalMultiplier) {
+                                cell.classList.add('multiplied');
+                            }
                         }
                     }
                     for (const clover of step.clovers) {
