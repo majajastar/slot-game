@@ -1009,6 +1009,9 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (contribution && (contribution.affectedCoins.length > 0 || contribution.affectedPots.length > 0)) {
                             console.log(`[Clover] Processing contribution at (${contribution.clover.row},${contribution.clover.col})`);
                             
+                            // Pretty print grid BEFORE this clover's contribution
+                            prettyPrintRainbowGrid(round, `BEFORE Clover at (${contribution.clover.row},${contribution.clover.col})`, step);
+                            
                             // Animate each affected coin one by one with before/after values
                             for (const affectedCoin of contribution.affectedCoins) {
                                 const cell = document.getElementById(`cell-${affectedCoin.row}-${affectedCoin.col}`);
@@ -1073,6 +1076,9 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                                 }
                             }
                         }
+                        
+                        // Pretty print grid AFTER this clover's contribution
+                        prettyPrintRainbowGrid(round, `AFTER Clover at (${contribution.clover.row},${contribution.clover.col})`, step);
                     }
                     
                     // Clear highlights
