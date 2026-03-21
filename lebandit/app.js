@@ -798,9 +798,12 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
 
     rainbowOverlay.classList.remove('hidden');
     
-    // Show details panel
+    // Show details panel and clear previous content
     if (rainbowDetailsPanel) {
         rainbowDetailsPanel.classList.remove('hidden');
+    }
+    if (rainbowDetailsContent) {
+        rainbowDetailsContent.innerHTML = '';
     }
 
     // Highlight rainbow position first (before any other rendering)
@@ -876,14 +879,18 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     for (const round of rainbowResult.rounds) {
         console.log(`%c[Rainbow Round ${round.round}]`, 'color: #ffd700; font-weight: bold; font-size: 14px;');
         
-        // Update details panel round number
+        // Update details panel round number (show total rounds)
         if (rainbowDetailsRound) {
-            rainbowDetailsRound.textContent = `Round ${round.round}`;
+            rainbowDetailsRound.textContent = `Round ${round.round} of ${rainbowResult.rounds.length}`;
         }
         
-        // Clear previous details
+        // Add round header to details panel (accumulate all rounds)
         if (rainbowDetailsContent) {
-            rainbowDetailsContent.innerHTML = '';
+            const roundHeader = document.createElement('div');
+            roundHeader.className = 'rainbow-round-header';
+            roundHeader.innerHTML = `<strong>Round ${round.round}</strong> (${round.coins.length} coins, ${round.clovers.length} clovers, ${round.pots.length} pots)`;
+            roundHeader.style.cssText = 'margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,215,0,0.3); color: #ffd700;';
+            rainbowDetailsContent.appendChild(roundHeader);
         }
         
         // Check if we have steps data
