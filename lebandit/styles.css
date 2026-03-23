@@ -1050,6 +1050,28 @@
     transform: none;
 }
 
+/* Glitters bonus button - gold theme */
+.buy-bonus-button.glitters {
+    background: linear-gradient(135deg, #f1c40f, #d4ac0d);
+    border-color: #f1c40f;
+    box-shadow: 0 4px 15px rgba(241, 196, 15, 0.3);
+}
+
+.buy-bonus-button.glitters:hover {
+    background: linear-gradient(135deg, #f4d03f, #f1c40f);
+    box-shadow: 0 6px 20px rgba(241, 196, 15, 0.5);
+}
+
+/* Bonus buttons row layout */
+.bonus-buttons-row {
+    display: flex;
+    gap: 10px;
+}
+
+.bonus-buttons-row .buy-bonus-button {
+    flex: 1;
+}
+
 .bonus-game-desc {
     font-size: 0.7rem;
     color: #aaa;

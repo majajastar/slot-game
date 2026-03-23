@@ -65,10 +65,6 @@ const CONFIG = {
         '105': 'Ace'
     },
     
-    // Cluster size labels for paytable columns
-    // Maps to array indices: 5, 6, 7, 8, 10, 12, 13+
-    clusterSizeLabels: ['5', '6', '7', '8', '9-10', '11-12', '13+'],
-    
     // Grid dimensions - LeBandit is 6x5
     rows: 5,
     cols: 6,

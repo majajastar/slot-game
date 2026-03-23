@@ -357,7 +357,7 @@ async function handleSpinResult(data) {
                 if (s === '' || s === null || s === undefined) return '    ·   ';
                 const icon = CONFIG.symbols[s] || '❓';
                 const id = String(s).padStart(3, ' ');
-                return `${id}${icon}`;
+                return `${icon}(${id})`;
             });
             console.log(`  Row ${i}: ${cells.join('│')}`);
         });
@@ -733,7 +733,9 @@ async function renderCascade(steps, totalWin) {
                 console.log('[Drop] New symbols falling in:');
                 droppingSymbols.forEach(m => {
                     const symbol = m.symbolInstance?.symbol || '?';
-                    console.log(`[Drop] ${symbol} (${m.symbolInstance?.id}) from buffer (${m.from.row},${m.from.col}) → (${m.to.row},${m.to.col})`);
+                    // For new symbols, calculate from position (frontend determines it)
+                    const fromRow = m.from?.row ?? calculateBufferRow(m.to.row, droppingSymbols.length);
+                    console.log(`[Drop] ${symbol} (${m.symbolInstance?.id}) from buffer (${fromRow},${m.to.col}) → (${m.to.row},${m.to.col})`);
                 });
             }
         }
@@ -818,12 +820,26 @@ function addStepDetailToPanel(step, container, round) {
                 if (step.collectedCoins && step.collectedCoins.length > 0) {
                     const totalValue = step.collectedCoins.reduce((sum, c) => sum + c.finalMultiplier, 0);
                     info += `${step.collectedCoins.length} coins = ${totalValue}x`;
+                    
+                    // Show collected pots if any
+                    if (step.collectedPots && step.collectedPots.length > 0) {
+                        const potsValue = step.collectedPots.reduce((sum, p) => sum + p.value, 0);
+                        info += ` + ${step.collectedPots.length} pots = ${potsValue}x`;
+                    }
+                    
                     if (pot.cloverMultipliers && pot.cloverMultipliers.length > 0) {
                         info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
                     }
                     info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c =>
                         `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.finalMultiplier}x</span>`
                     ).join('')}</div>`;
+                    
+                    // Show collected pots tags
+                    if (step.collectedPots && step.collectedPots.length > 0) {
+                        info += `<div class="rainbow-pot-list" style="margin-top:5px;">${step.collectedPots.map(p =>
+                            `<span class="rainbow-pot-tag" style="background:rgba(155,89,182,0.3);padding:2px 6px;border-radius:4px;">Pot (${p.row},${p.col}) ${p.value}x</span>`
+                        ).join('')}</div>`;
+                    }
                 }
             }
             break;
@@ -1130,9 +1146,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         if (contribution && (contribution.affectedCoins.length > 0 || contribution.affectedPots.length > 0)) {
                             console.log(`[Clover] Processing contribution at (${contribution.clover.row},${contribution.clover.col})`);
 
-                            // Pretty print grid BEFORE this clover's contribution
-                            prettyPrintRainbowGrid(round, `BEFORE Clover at (${contribution.clover.row},${contribution.clover.col})`, step);
-
                             // Animate each affected coin one by one with before/after values
                             for (const affectedCoin of contribution.affectedCoins) {
                                 const cell = document.getElementById(`cell-${affectedCoin.row}-${affectedCoin.col}`);
@@ -1199,7 +1212,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         }
 
                         // Pretty print grid AFTER this clover's contribution
-                        prettyPrintRainbowGrid(round, `AFTER Clover at (${contribution.clover.row},${contribution.clover.col})`, step);
+                        // prettyPrintRainbowGrid(round, `AFTER Clover at (${contribution.clover.row},${contribution.clover.col})`, step);
                     }
 
                     // Clear highlights
@@ -1260,7 +1273,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                         const potCell = document.getElementById(`cell-${step.activePot.row}-${step.activePot.col}`);
                         if (potCell) {
                             potCell.classList.add('active-pot');
-                            potCell.dataset.multiplier = step.activePot.finalMultiplier;
+                            potCell.dataset.multiplier = step.activePot.originalMultiplier;
                         }
                     }
                     await sleep(400);
@@ -1434,6 +1447,13 @@ function  highlightRemovedSymbols(removedSymbols) {
     }
 }
 
+// Calculate buffer row for new symbols (frontend determines this)
+function calculateBufferRow(toRow, newSymbolCount) {
+    // Match server logic: distribute in buffer rows (-5 to -1)
+    const bufferIndex = Math.floor((toRow / Math.max(newSymbolCount - 1, 1)) * 4);
+    return -5 + bufferIndex;
+}
+
 // Combined animation for drops and new symbols (happens simultaneously)
 // Lower symbols (larger row numbers) drop first
 async function animateCombined(movements) {
@@ -1443,10 +1463,20 @@ async function animateCombined(movements) {
     // Sort movements by destination row (descending - lower rows first)
     const sortedMovements = [...movements].sort((a, b) => b.to.row - a.to.row);
 
+    // Count new symbols per column to calculate buffer positions
+    const newSymbolsPerCol = {};
+    movements.filter(m => m.isNew).forEach(m => {
+        newSymbolsPerCol[m.to.col] = (newSymbolsPerCol[m.to.col] || 0) + 1;
+    });
+
     // 1. Create a Promise for every movement
     const animationPromises = sortedMovements.map((move) => {
         return new Promise((resolve) => {
-            const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
+            // For new symbols, calculate from position (frontend determines it)
+            const fromRow = move.from?.row ?? calculateBufferRow(move.to.row, newSymbolsPerCol[move.to.col] || 1);
+            const fromCol = move.from?.col ?? move.to.col;
+            
+            const fromCell = document.getElementById(`cell-${fromRow}-${fromCol}`);
             const targetCell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
 
             // Set up the symbol in the starting cell (buffer or old position)
@@ -1458,7 +1488,7 @@ async function animateCombined(movements) {
             }
 
             // Calculate movement math
-            const rowDiff = move.to.row - move.from.row;
+            const rowDiff = move.to.row - fromRow;
             const cellHeight = 76;
             const fallDistance = rowDiff * cellHeight;
             const delay = (4 - move.to.row) * staggerDelay;
@@ -1477,7 +1507,11 @@ async function animateCombined(movements) {
     // 4. Wait for ALL animations to complete
     return Promise.all(animationPromises).then(() => {
         sortedMovements.forEach((move) => {
-            const fromCell = document.getElementById(`cell-${move.from.row}-${move.from.col}`);
+            // For new symbols, calculate from position
+            const fromRow = move.from?.row ?? calculateBufferRow(move.to.row, newSymbolsPerCol[move.to.col] || 1);
+            const fromCol = move.from?.col ?? move.to.col;
+            
+            const fromCell = document.getElementById(`cell-${fromRow}-${fromCol}`);
             if (fromCell) {
                 // STEP 1: Kill the transition immediately
                 fromCell.style.transition = 'none';
@@ -1557,10 +1591,33 @@ function buyBonus() {
     const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
 
-    console.log(`[Buy Bonus] Buying bonus for ${bonusCost}x bet ($${bonusCost})`);
+    console.log(`[Buy Bonus] Buying Luck of the Bandit bonus for ${bonusCost}x bet ($${bonusCost})`);
 
     // Use sendSetBet with forceBonusType to trigger bonus
     sendSetBet(currentBet, 'LUCK_OF_THE_BANDIT');
+
+    updateBonusButton();
+}
+
+// Buy Glitters Bonus Function
+function buyGlittersBonus() {
+    if (!CONFIG.bonusGame.enabled) {
+        console.log('[Buy Glitters Bonus] Bonus game is disabled');
+        return;
+    }
+
+    if (isSpinning) {
+        console.log('[Buy Glitters Bonus] Cannot buy bonus while spinning');
+        return;
+    }
+
+    const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+    const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
+
+    console.log(`[Buy Glitters Bonus] Buying All That Glitters Is Gold bonus for ${bonusCost}x bet ($${bonusCost})`);
+
+    // Use sendSetBet with forceBonusType to trigger Glitters bonus
+    sendSetBet(currentBet, 'ALL_THAT_GLITTERS_IS_GOLD');
 
     updateBonusButton();
 }
@@ -1569,8 +1626,9 @@ function buyBonus() {
 function updateBonusButton() {
     const bonusSection = document.getElementById('bonusGameSection');
     const buyButton = document.getElementById('buyBonusButton');
+    const buyGlittersButton = document.getElementById('buyGlittersBonusButton');
 
-    if (!bonusSection || !buyButton) return;
+    if (!bonusSection) return;
 
     // Show/hide based on config
     if (CONFIG.bonusGame.enabled) {
@@ -1580,13 +1638,20 @@ function updateBonusButton() {
         return;
     }
 
-    // Update button text with current cost
     const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
-    buyButton.textContent = `🎁 Buy Bonus (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
 
-    // Disable if spinning or bonus is active
-    buyButton.disabled = isSpinning || bonusGameActive;
+    // Update Luck of the Bandit button
+    if (buyButton) {
+        buyButton.textContent = `🎁 Buy Bonus (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
+        buyButton.disabled = isSpinning || bonusGameActive;
+    }
+
+    // Update Glitters button
+    if (buyGlittersButton) {
+        buyGlittersButton.textContent = `✨ Buy Glitters (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
+        buyGlittersButton.disabled = isSpinning || bonusGameActive;
+    }
 }
 
 // Show Bonus Progress
@@ -1609,11 +1674,19 @@ function updateBonusProgress(bonusState) {
     const totalSpinsEl = document.getElementById('bonusTotalSpins');
     const frameCountEl = document.getElementById('bonusFrameCount');
     const totalWinEl = document.getElementById('bonusTotalWin');
+    const bonusNameEl = document.getElementById('bonusName');
 
     if (spinsLeftEl) spinsLeftEl.textContent = bonusState.spinsLeft;
     if (totalSpinsEl) totalSpinsEl.textContent = bonusState.totalSpins;
     if (frameCountEl) frameCountEl.textContent = bonusState.goldenFrames?.length || 0;
     if (totalWinEl) totalWinEl.textContent = '$' + (bonusState.totalWin || 0).toFixed(2);
+    
+    // Update bonus name display
+    if (bonusNameEl) {
+        const isGlitters = bonusState.type === 'ALL_THAT_GLITTERS_IS_GOLD';
+        bonusNameEl.textContent = isGlitters ? '✨ All That Glitters Is Gold' : '🎰 Luck of the Bandit';
+        bonusNameEl.style.color = isGlitters ? '#f1c40f' : '#9b59b6';
+    }
 }
 
 // Hide Bonus Progress
@@ -1700,6 +1773,15 @@ async function renderBonusTrigger(bonusState, grid) {
     
     console.log(`[renderBonusTrigger] Found ${scatterPositions.length} scatters`);
     
+    // Determine bonus type and display info
+    const isGlittersBonus = bonusState.type === 'ALL_THAT_GLITTERS_IS_GOLD';
+    const bonusName = isGlittersBonus ? 'All That Glitters Is Gold' : 'Luck of the Bandit';
+    const bonusSpins = isGlittersBonus ? '12' : '8';
+    const bonusDescription = isGlittersBonus 
+        ? '12 Free Spins with Persistent Golden Squares' 
+        : '8 Free Spins with Accumulating Golden Squares';
+    const bonusColor = isGlittersBonus ? '#f1c40f' : '#9b59b6'; // Gold vs Purple
+    
     // Create and show bonus trigger text overlay
     const triggerText = document.createElement('div');
     triggerText.id = 'bonusTriggerText';
@@ -1708,7 +1790,7 @@ async function renderBonusTrigger(bonusState, grid) {
         top: 20%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(155, 89, 182, 0.85);
+        background: ${isGlittersBonus ? 'rgba(241, 196, 15, 0.85)' : 'rgba(155, 89, 182, 0.85)'};
         color: #fff;
         padding: 20px 40px;
         border-radius: 15px;
@@ -1716,15 +1798,15 @@ async function renderBonusTrigger(bonusState, grid) {
         font-weight: bold;
         text-align: center;
         z-index: 1001;
-        box-shadow: 0 0 30px rgba(155, 89, 182, 0.8);
+        box-shadow: 0 0 30px ${isGlittersBonus ? 'rgba(241, 196, 15, 0.8)' : 'rgba(155, 89, 182, 0.8)'};
         animation: bonusTextPulse 1s ease-in-out 3;
         backdrop-filter: blur(5px);
     `;
     triggerText.innerHTML = `
         <div style="font-size: 2rem; margin-bottom: 10px;">🎁 BONUS TRIGGERED!</div>
         <div style="color: #ffd700;">${scatterPositions.length} SCATTERS</div>
-        <div style="font-size: 1.2rem; margin-top: 10px;">Luck of the Bandit</div>
-        <div style="font-size: 1rem; color: #ccc; margin-top: 5px;">8 Free Spins with Accumulating Golden Squares</div>
+        <div style="font-size: 1.2rem; margin-top: 10px;">${bonusName}</div>
+        <div style="font-size: 1rem; color: #ccc; margin-top: 5px;">${bonusDescription}</div>
     `;
     document.body.appendChild(triggerText);
     
@@ -1745,8 +1827,8 @@ async function renderBonusTrigger(bonusState, grid) {
     if (statusBar && statusLabel && statusStep) {
         statusBar.classList.remove('hidden');
         statusLabel.textContent = '🎁 BONUS TRIGGERED!';
-        statusStep.textContent = `${scatterPositions.length} Scatters → Luck of the Bandit`;
-        statusLabel.style.color = '#9b59b6';
+        statusStep.textContent = `${scatterPositions.length} Scatters → ${bonusName}`;
+        statusLabel.style.color = bonusColor;
         statusLabel.style.fontWeight = 'bold';
     }
     
