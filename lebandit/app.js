@@ -5,6 +5,7 @@
 
 // Data from server (populated after SyncRoomInfo)
 let SYMBOLS = {};
+let CLUSTER_PAYOUTS_KEYS = []
 let CLUSTER_PAYOUTS = {};
 let CLUSTER_SIZE_LABELS = ['5', '6', '7', '8', '9-10', '11-12', '13+']; // Default labels
 let GAME_CONFIG = {};
@@ -106,11 +107,8 @@ function renderPaytable() {
             ${CLUSTER_SIZE_LABELS.map(label => `<span>${label}</span>`).join('')}
         </div>
     `;
-
-    Object.entries(clusterPayouts).forEach(([id, data]) => {
-        // Skip Wild (id='1') - it has no direct payout, only substitutes
-        if (id === '1') return;
-
+    Object.entries(CLUSTER_PAYOUTS_KEYS).forEach(([idx, id]) => {
+        const data = clusterPayouts[id];
         // Skip symbols with no payouts (like Scatter) - check if all payouts are 0
         const hasPayout = data.payouts?.some((p, idx) => p > 0);
         if (!hasPayout) return;
@@ -118,7 +116,6 @@ function renderPaytable() {
         const display = symbols[id] || '?';
         const name = names[id] || data.name || 'Unknown';
         const payouts = data.payouts;
-        console.log(`@@@ payouts = ${payouts}`)
         
         // Dynamically generate payout cells based on payout array size
         let payoutCells = '';
@@ -281,6 +278,13 @@ function handleJoinRoom(data) {
             BET_SIZE_LIST = info.betSizeList;
             console.log('[JoinRoom] Bet sizes:', BET_SIZE_LIST);
         }
+
+        if (info.clusterPayoutsKeys){
+            CLUSTER_PAYOUTS_KEYS = info.clusterPayoutsKeys;
+            console.log('[JoinRoom] Received clusterPayoutsKeys:', CLUSTER_PAYOUTS_KEYS);
+
+        }
+
         if (info.clusterPayouts) {
             CLUSTER_PAYOUTS = info.clusterPayouts;
             console.log('[JoinRoom] Received clusterPayouts:', CLUSTER_PAYOUTS);
@@ -357,6 +361,7 @@ async function handleSpinResult(data) {
         console.log('Final Grid:');
         result.grid.forEach((row, i) => {
             const cells = row.map(s => {
+                console.log(`s = ${s}`)
                 if (s === '' || s === null || s === undefined) return '    ·   ';
                 const icon = CONFIG.symbols[s] || '❓';
                 const id = String(s).padStart(3, ' ');
@@ -961,7 +966,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         if (!potCell) return;
 
         const potRect = potCell.getBoundingClientRect();
-        const gridRect = document.querySelector('.lebandit-grid').getBoundingClientRect();
 
         // Create flying coin elements
         const flyingCoins = [];
@@ -1256,6 +1260,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             } else {
                                 cell.dataset.multiplier = '';
                             }
+                            console.log(`@@@ cell.dataset.multiplier: ${cell.dataset.multiplier}`)
                         }
                     }
 
@@ -1264,6 +1269,9 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                     if (step.collectedCoins) {
                         for (const coin of step.collectedCoins) {
                             console.log(`     - ${coin.type} at (${coin.row},${coin.col}): ${coin.finalMultiplier}x`);
+                        }
+                        for (const pot of step.collectedPots){
+                            console.log(`     - Pot at (${pot.row},${pot.col}): ${pot.value}x`);
                         }
                         console.log(`     Total collected: ${step.activePot?.finalMultiplier}x`);
 
@@ -1579,6 +1587,44 @@ function toggleRainbowMode() {
 // Bonus Game State
 let bonusGameActive = false;
 
+// Clean up previous reel effects (golden squares, animations, etc.)
+function cleanupReelEffects() {
+    console.log('[Cleanup] Cleaning previous reel effects...');
+    
+    // Clear golden squares overlay
+    const overlay = document.getElementById('goldenSquaresOverlay');
+    if (overlay) {
+        overlay.innerHTML = '';
+    }
+    
+    // Clear any ongoing animations on grid cells
+    const layout = CONFIG.gridLayout;
+    for (let r = -layout.ROWS_BUFFER; r < layout.ROWS_VISIBLE; r++) {
+        for (let c = 0; c < layout.COLS; c++) {
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            if (cell) {
+                cell.style.transition = 'none';
+                cell.style.transform = '';
+                cell.style.animation = '';
+                cell.classList.remove('highlight', 'removing', 'winning');
+            }
+        }
+    }
+    
+    // Hide any visible UI elements
+    const cascadeInfo = document.getElementById('cascadeInfo');
+    if (cascadeInfo) cascadeInfo.classList.add('hidden');
+    
+    const rainbowOverlay = document.getElementById('rainbowOverlay');
+    if (rainbowOverlay) rainbowOverlay.classList.add('hidden');
+    
+    // Clear cascade steps list
+    const cascadeStepsList = document.getElementById('cascadeStepsList');
+    if (cascadeStepsList) cascadeStepsList.innerHTML = '';
+    
+    console.log('[Cleanup] Reel effects cleaned');
+}
+
 // Buy Bonus Function
 function buyBonus() {
     if (!CONFIG.bonusGame.enabled) {
@@ -1595,6 +1641,9 @@ function buyBonus() {
     const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
 
     console.log(`[Buy Bonus] Buying Luck of the Bandit bonus for ${bonusCost}x bet ($${bonusCost})`);
+
+    // Clean up previous reel effects before buying bonus
+    cleanupReelEffects();
 
     // Use sendSetBet with forceBonusType to trigger bonus
     sendSetBet(currentBet, 'LUCK_OF_THE_BANDIT');
@@ -1618,6 +1667,9 @@ function buyGlittersBonus() {
     const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
 
     console.log(`[Buy Glitters Bonus] Buying All That Glitters Is Gold bonus for ${bonusCost}x bet ($${bonusCost})`);
+
+    // Clean up previous reel effects before buying bonus
+    cleanupReelEffects();
 
     // Use sendSetBet with forceBonusType to trigger Glitters bonus
     sendSetBet(currentBet, 'ALL_THAT_GLITTERS_IS_GOLD');
