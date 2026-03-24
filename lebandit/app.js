@@ -341,7 +341,7 @@ async function handleSpinResult(data) {
     if (!betInfo) {
         console.error('No betInfo in SetBet response', data);
         isSpinning = false;
-        document.getElementById('spinButton').disabled = false;
+        setAllButtonsDisabled(false);
         return;
     }
 
@@ -351,7 +351,7 @@ async function handleSpinResult(data) {
     if (!result) {
         console.error('No gameResult in betInfo', betInfo);
         isSpinning = false;
-        document.getElementById('spinButton').disabled = false;
+        setAllButtonsDisabled(false);
         return;
     }
 
@@ -595,7 +595,7 @@ async function handleSpinResult(data) {
 
     // All animations complete - allow next spin
     isSpinning = false;
-    document.getElementById('spinButton').disabled = false;
+    setAllButtonsDisabled(false);
     updateBonusButton();
 }
 
@@ -1709,6 +1709,30 @@ function updateBonusButton() {
     }
 }
 
+// Disable/Enable all interactive buttons during animation
+function setAllButtonsDisabled(disabled) {
+    const spinButton = document.getElementById('spinButton');
+    const buyBonusButton = document.getElementById('buyBonusButton');
+    const buyGlittersButton = document.getElementById('buyGlittersButton');
+    const increaseBetButton = document.getElementById('increaseBet');
+    const decreaseBetButton = document.getElementById('decreaseBet');
+    const quickBetButtons = document.querySelectorAll('.quick-bet');
+    const rainbowModeCheckbox = document.getElementById('rainbowMode');
+
+    if (spinButton) spinButton.disabled = disabled;
+    if (buyBonusButton) buyBonusButton.disabled = disabled || bonusGameActive;
+    if (buyGlittersButton) buyGlittersButton.disabled = disabled || bonusGameActive;
+    if (increaseBetButton) increaseBetButton.disabled = disabled;
+    if (decreaseBetButton) decreaseBetButton.disabled = disabled;
+    if (rainbowModeCheckbox) rainbowModeCheckbox.disabled = disabled;
+
+    quickBetButtons.forEach(btn => {
+        btn.disabled = disabled;
+    });
+
+    console.log(`[UI] All buttons ${disabled ? 'disabled' : 'enabled'}`);
+}
+
 // Show Bonus Progress
 function showBonusProgress(bonusState) {
     const progressDiv = document.getElementById('bonusProgress');
@@ -1939,7 +1963,7 @@ function spin() {
     if (isSpinning) return;
 
     isSpinning = true;
-    document.getElementById('spinButton').disabled = true;
+    setAllButtonsDisabled(true);
 
     // Clear previous animations
     document.querySelectorAll('.reel-cell').forEach(cell => {
