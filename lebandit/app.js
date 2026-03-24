@@ -119,17 +119,20 @@ function renderPaytable() {
         const name = names[id] || data.name || 'Unknown';
         const payouts = data.payouts;
         console.log(`@@@ payouts = ${payouts}`)
+        
+        // Dynamically generate payout cells based on payout array size
+        let payoutCells = '';
+        for (let i = 0; i < payouts.length; i++) {
+            const isHigh = i === payouts.length - 1; // Last column is highlighted
+            const className = isHigh ? 'paytable-payout high' : 'paytable-payout';
+            payoutCells += `<span class="${className}">${formatPayout(payouts[i])}</span>`;
+        }
+        
         html += `
             <div class="cluster-paytable-row">
                 <span class="paytable-icon">${display}</span>
                 <span class="paytable-name">${name}</span>
-                <span class="paytable-payout">${formatPayout(payouts[0])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[1])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[2])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[3])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[4])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[5])}</span>
-                <span class="paytable-payout high">${formatPayout(payouts[6])}</span>
+                ${payoutCells}
             </div>
         `;
     });
