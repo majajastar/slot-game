@@ -117,23 +117,24 @@ function renderPaytable() {
         if (id === '1') return;
 
         // Skip symbols with no payouts (like Scatter) - check if all payouts are 0
-        const hasPayout = data.payouts?.some((p, idx) => idx >= 5 && p > 0);
+        const hasPayout = data.payouts?.some((p, idx) => p > 0);
         if (!hasPayout) return;
 
         const display = symbols[id] || '?';
         const name = names[id] || data.name || 'Unknown';
         const payouts = data.payouts;
+        console.log(`@@@ payouts = ${payouts}`)
         html += `
             <div class="cluster-paytable-row">
                 <span class="paytable-icon">${display}</span>
                 <span class="paytable-name">${name}</span>
+                <span class="paytable-payout">${formatPayout(payouts[0])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[1])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[2])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[3])}</span>
+                <span class="paytable-payout">${formatPayout(payouts[4])}</span>
                 <span class="paytable-payout">${formatPayout(payouts[5])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[6])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[7])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[8])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[9])}</span>
-                <span class="paytable-payout">${formatPayout(payouts[11])}</span>
-                <span class="paytable-payout high">${formatPayout(payouts[13])}</span>
+                <span class="paytable-payout high">${formatPayout(payouts[6])}</span>
             </div>
         `;
     });
