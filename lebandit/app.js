@@ -6,6 +6,7 @@
 // Data from server (populated after SyncRoomInfo)
 let SYMBOLS = {};
 let CLUSTER_PAYOUTS = {};
+let CLUSTER_SIZE_LABELS = ['5', '6', '7', '8', '9-10', '11-12', '13+']; // Default labels
 let GAME_CONFIG = {};
 let BET_SIZE_LIST = [5, 10, 20, 50, 100];
 let CURRENT_BET_INDEX = 2; // Default $20
@@ -102,13 +103,7 @@ function renderPaytable() {
         <div class="cluster-paytable-header">
             <span>Icon</span>
             <span>Symbol</span>
-            <span>5</span>
-            <span>6</span>
-            <span>7</span>
-            <span>8</span>
-            <span>9-10</span>
-            <span>11-12</span>
-            <span>13+</span>
+            ${CLUSTER_SIZE_LABELS.map(label => `<span>${label}</span>`).join('')}
         </div>
     `;
 
@@ -289,6 +284,10 @@ function handleJoinRoom(data) {
             // Check first symbol's payouts
             const firstKey = Object.keys(CLUSTER_PAYOUTS)[0];
             console.log('[JoinRoom] First symbol payouts:', firstKey, CLUSTER_PAYOUTS[firstKey]?.payouts);
+        }
+        if (info.clusterSizeLabels) {
+            CLUSTER_SIZE_LABELS = info.clusterSizeLabels;
+            console.log('[JoinRoom] Received clusterSizeLabels:', CLUSTER_SIZE_LABELS);
         }
         if (info.symbols) {
             // Convert array to id -> display mapping
