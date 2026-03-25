@@ -341,7 +341,7 @@ async function handleSpinResult(data) {
     if (!betInfo) {
         console.error('No betInfo in SetBet response', data);
         isSpinning = false;
-        setAllButtonsDisabled(false);
+        document.getElementById('spinButton').disabled = false;
         return;
     }
 
@@ -351,7 +351,7 @@ async function handleSpinResult(data) {
     if (!result) {
         console.error('No gameResult in betInfo', betInfo);
         isSpinning = false;
-        setAllButtonsDisabled(false);
+        document.getElementById('spinButton').disabled = false;
         return;
     }
 
@@ -595,7 +595,7 @@ async function handleSpinResult(data) {
 
     // All animations complete - allow next spin
     isSpinning = false;
-    setAllButtonsDisabled(false);
+    document.getElementById('spinButton').disabled = false;
     updateBonusButton();
 }
 
@@ -1260,7 +1260,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             } else {
                                 cell.dataset.multiplier = '';
                             }
-                            console.log(`@@@ cell.dataset.multiplier: ${cell.dataset.multiplier}`)
+                            console.log(`@@@cell.dataset.multiplier: ${cell.dataset.multiplier}`)
                         }
                     }
 
@@ -1560,15 +1560,6 @@ function updateBetDisplay() {
     const el = document.getElementById('currentBet');
     if (el) el.textContent = '$' + bet;
 
-    // Update quick bet button active states
-    document.querySelectorAll('.quick-bet').forEach(btn => {
-        btn.classList.remove('active');
-        const btnAmount = parseInt(btn.textContent.replace('$', ''));
-        if (btnAmount === bet) {
-            btn.classList.add('active');
-        }
-    });
-
     // Update bonus button
     updateBonusButton();
 }
@@ -1587,44 +1578,6 @@ function toggleRainbowMode() {
 // Bonus Game State
 let bonusGameActive = false;
 
-// Clean up previous reel effects (golden squares, animations, etc.)
-function cleanupReelEffects() {
-    console.log('[Cleanup] Cleaning previous reel effects...');
-    
-    // Clear golden squares overlay
-    const overlay = document.getElementById('goldenSquaresOverlay');
-    if (overlay) {
-        overlay.innerHTML = '';
-    }
-    
-    // Clear any ongoing animations on grid cells
-    const layout = CONFIG.gridLayout;
-    for (let r = -layout.ROWS_BUFFER; r < layout.ROWS_VISIBLE; r++) {
-        for (let c = 0; c < layout.COLS; c++) {
-            const cell = document.getElementById(`cell-${r}-${c}`);
-            if (cell) {
-                cell.style.transition = 'none';
-                cell.style.transform = '';
-                cell.style.animation = '';
-                cell.classList.remove('highlight', 'removing', 'winning');
-            }
-        }
-    }
-    
-    // Hide any visible UI elements
-    const cascadeInfo = document.getElementById('cascadeInfo');
-    if (cascadeInfo) cascadeInfo.classList.add('hidden');
-    
-    const rainbowOverlay = document.getElementById('rainbowOverlay');
-    if (rainbowOverlay) rainbowOverlay.classList.add('hidden');
-    
-    // Clear cascade steps list
-    const cascadeStepsList = document.getElementById('cascadeStepsList');
-    if (cascadeStepsList) cascadeStepsList.innerHTML = '';
-    
-    console.log('[Cleanup] Reel effects cleaned');
-}
-
 // Buy Bonus Function
 function buyBonus() {
     if (!CONFIG.bonusGame.enabled) {
@@ -1641,9 +1594,6 @@ function buyBonus() {
     const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
 
     console.log(`[Buy Bonus] Buying Luck of the Bandit bonus for ${bonusCost}x bet ($${bonusCost})`);
-
-    // Clean up previous reel effects before buying bonus
-    cleanupReelEffects();
 
     // Use sendSetBet with forceBonusType to trigger bonus
     sendSetBet(currentBet, 'LUCK_OF_THE_BANDIT');
@@ -1677,16 +1627,43 @@ function buyGlittersBonus() {
     updateBonusButton();
 }
 
+// Buy Treasure Bonus Function
+function buyTreasureBonus() {
+    if (!CONFIG.treasureBonus.enabled) {
+        console.log('[Buy Treasure Bonus] Treasure bonus is disabled');
+        return;
+    }
+
+    if (isSpinning) {
+        console.log('[Buy Treasure Bonus] Cannot buy bonus while spinning');
+        return;
+    }
+
+    const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+    const bonusCost = currentBet * CONFIG.treasureBonus.buyCostMultiplier;
+
+    console.log(`[Buy Treasure Bonus] Buying Treasure at the End of the Rainbow bonus for ${bonusCost}x bet ($${bonusCost})`);
+
+    // Clean up previous reel effects before buying bonus
+    cleanupReelEffects();
+
+    // Use sendSetBet with forceBonusType to trigger Treasure bonus
+    sendSetBet(currentBet, 'TREASURE_AT_END_OF_RAINBOW');
+
+    updateBonusButton();
+}
+
 // Update Bonus Button State
 function updateBonusButton() {
     const bonusSection = document.getElementById('bonusGameSection');
     const buyButton = document.getElementById('buyBonusButton');
     const buyGlittersButton = document.getElementById('buyGlittersBonusButton');
+    const buyTreasureButton = document.getElementById('buyTreasureBonusButton');
 
     if (!bonusSection) return;
 
     // Show/hide based on config
-    if (CONFIG.bonusGame.enabled) {
+    if (CONFIG.bonusGame.enabled || CONFIG.treasureBonus.enabled) {
         bonusSection.classList.remove('hidden');
     } else {
         bonusSection.classList.add('hidden');
@@ -1695,42 +1672,28 @@ function updateBonusButton() {
 
     const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
+    const treasureCost = currentBet * CONFIG.treasureBonus.buyCostMultiplier;
 
     // Update Luck of the Bandit button
     if (buyButton) {
         buyButton.textContent = `🎁 Buy Bonus (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
         buyButton.disabled = isSpinning || bonusGameActive;
+        buyButton.style.display = CONFIG.bonusGame.enabled ? 'block' : 'none';
     }
 
     // Update Glitters button
     if (buyGlittersButton) {
         buyGlittersButton.textContent = `✨ Buy Glitters (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
         buyGlittersButton.disabled = isSpinning || bonusGameActive;
+        buyGlittersButton.style.display = CONFIG.bonusGame.enabled ? 'block' : 'none';
     }
-}
 
-// Disable/Enable all interactive buttons during animation
-function setAllButtonsDisabled(disabled) {
-    const spinButton = document.getElementById('spinButton');
-    const buyBonusButton = document.getElementById('buyBonusButton');
-    const buyGlittersButton = document.getElementById('buyGlittersButton');
-    const increaseBetButton = document.getElementById('increaseBet');
-    const decreaseBetButton = document.getElementById('decreaseBet');
-    const quickBetButtons = document.querySelectorAll('.quick-bet');
-    const rainbowModeCheckbox = document.getElementById('rainbowMode');
-
-    if (spinButton) spinButton.disabled = disabled;
-    if (buyBonusButton) buyBonusButton.disabled = disabled || bonusGameActive;
-    if (buyGlittersButton) buyGlittersButton.disabled = disabled || bonusGameActive;
-    if (increaseBetButton) increaseBetButton.disabled = disabled;
-    if (decreaseBetButton) decreaseBetButton.disabled = disabled;
-    if (rainbowModeCheckbox) rainbowModeCheckbox.disabled = disabled;
-
-    quickBetButtons.forEach(btn => {
-        btn.disabled = disabled;
-    });
-
-    console.log(`[UI] All buttons ${disabled ? 'disabled' : 'enabled'}`);
+    // Update Treasure button
+    if (buyTreasureButton) {
+        buyTreasureButton.textContent = `🌈 Buy Treasure (${CONFIG.treasureBonus.buyCostMultiplier}x) - $${treasureCost}`;
+        buyTreasureButton.disabled = isSpinning || bonusGameActive;
+        buyTreasureButton.style.display = CONFIG.treasureBonus.enabled ? 'block' : 'none';
+    }
 }
 
 // Show Bonus Progress
@@ -1947,7 +1910,6 @@ function changeBet(delta) {
 
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     updateBetDisplay();
-    sendSetBet(bet);
 }
 
 function setBet(amount) {
@@ -1963,7 +1925,7 @@ function spin() {
     if (isSpinning) return;
 
     isSpinning = true;
-    setAllButtonsDisabled(true);
+    document.getElementById('spinButton').disabled = true;
 
     // Clear previous animations
     document.querySelectorAll('.reel-cell').forEach(cell => {

@@ -107,6 +107,14 @@ const CONFIG = {
         buyCostMultiplier: 100,  // Cost to buy bonus (100x bet)
         freeSpins: 8,            // Number of free spins
         description: '8 free spins with accumulating golden squares until rainbow arrives'
+    },
+
+    // Treasure Bonus Settings - "Treasure at the End of the Rainbow"
+    treasureBonus: {
+        enabled: true,           // Enable/disable treasure bonus
+        buyCostMultiplier: 100,  // Cost to buy bonus (100x bet)
+        freeSpins: 10,           // Number of free spins
+        description: '10 free spins with rainbow always appearing, no bronze coins'
     }
 };
 

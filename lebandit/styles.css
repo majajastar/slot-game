@@ -441,48 +441,6 @@
     display: none;
 }
 
-/* ==========================================
-   QUICK BET BUTTONS
-   ========================================== */
-
-.quick-bets {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-top: 15px;
-}
-
-.quick-bet {
-    padding: 10px 5px;
-    font-size: 0.85rem;
-    font-weight: bold;
-    color: #ccc;
-    background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-variant-numeric: tabular-nums;
-}
-
-.quick-bet:hover {
-    background: linear-gradient(145deg, #3a3a5a, #2a2a3e);
-    border-color: rgba(255, 215, 0, 0.4);
-    color: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.quick-bet:active {
-    transform: translateY(0);
-}
-
-.quick-bet.active {
-    background: linear-gradient(145deg, #ffd700, #ffaa00);
-    color: #1a1a2e;
-    border-color: #ffd700;
-    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-}
 
 /* ==========================================
    GOLDEN SQUARES & RAINBOW STYLES
@@ -1062,6 +1020,18 @@
     box-shadow: 0 6px 20px rgba(241, 196, 15, 0.5);
 }
 
+/* Treasure bonus button - rainbow theme */
+.buy-bonus-button.treasure {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    border-color: #9b59b6;
+    box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
+}
+
+.buy-bonus-button.treasure:hover {
+    background: linear-gradient(135deg, #a569bd, #9b59b6);
+    box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5);
+}
+
 /* Bonus buttons row layout */
 .bonus-buttons-row {
     display: flex;
@@ -1344,9 +1314,6 @@
         padding: 15px 20px;
     }
     
-    .quick-bets {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }
 
 /* Bonus Trigger Overlay */
