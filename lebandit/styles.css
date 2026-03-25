@@ -1032,20 +1032,50 @@
     box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5);
 }
 
-/* Bonus buttons row layout */
-.bonus-buttons-row {
-    display: flex;
+/* Bonus buttons grid layout - 3 columns */
+.bonus-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
 }
 
-.bonus-buttons-row .buy-bonus-button {
-    flex: 1;
+.bonus-buttons-grid .buy-bonus-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 8px;
+    min-height: 70px;
+}
+
+.bonus-btn-icon {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+}
+
+.bonus-btn-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.bonus-btn-cost {
+    font-size: 0.75rem;
+    opacity: 0.9;
 }
 
 .bonus-game-desc {
     font-size: 0.7rem;
     color: #aaa;
-    margin-top: 5px;
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.bonus-game-desc span {
+    white-space: nowrap;
 }
 
 /* Bonus Progress Display */

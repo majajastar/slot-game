@@ -179,18 +179,28 @@
                         
                         <!-- Bonus Game Buttons -->
                         <div id="bonusGameSection" class="bonus-game-section hidden">
-                            <div class="bonus-buttons-row">
+                            <div class="bonus-buttons-grid">
                                 <button id="buyBonusButton" class="buy-bonus-button" onclick="buyBonus()">
-                                    🎁 Buy Bonus (100x)
+                                    <span class="bonus-btn-icon">🎁</span>
+                                    <span class="bonus-btn-text">Buy Bonus</span>
+                                    <span class="bonus-btn-cost">100x</span>
                                 </button>
                                 <button id="buyGlittersBonusButton" class="buy-bonus-button glitters" onclick="buyGlittersBonus()">
-                                    ✨ Buy Glitters (100x)
+                                    <span class="bonus-btn-icon">✨</span>
+                                    <span class="bonus-btn-text">Buy Glitters</span>
+                                    <span class="bonus-btn-cost">100x</span>
                                 </button>
                                 <button id="buyTreasureBonusButton" class="buy-bonus-button treasure" onclick="buyTreasureBonus()">
-                                    🌈 Buy Treasure (100x)
+                                    <span class="bonus-btn-icon">🌈</span>
+                                    <span class="bonus-btn-text">Buy Treasure</span>
+                                    <span class="bonus-btn-cost">100x</span>
                                 </button>
                             </div>
-                            <div class="bonus-game-desc">8 free spins with accumulating golden squares | 12 free spins with persistent golden squares | 10 free spins with guaranteed rainbow</div>
+                            <div class="bonus-game-desc">
+                                <span>🎁 8 spins (accumulating)</span>
+                                <span>✨ 12 spins (persistent)</span>
+                                <span>🌈 10 spins (rainbow always)</span>
+                            </div>
                         </div>
                         
                         <!-- Bonus Progress Display -->
