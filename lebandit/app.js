@@ -334,7 +334,43 @@ function symbolGridToGrid(symbolGrid) {
 async function handleSpinResult(data) {
     console.log('[handleSpinResult] Raw data:', data);
 
-    // Match TheLuxe structure - betInfo contains the result
+    // Step 1: Extract and validate result
+    const { betInfo, result, isValid } = extractAndValidateResult(data);
+    if (!isValid) return;
+
+    console.log('[handleSpinResult] bet:', betInfo.bet, 'finalBalance:', betInfo.finalBalance);
+
+    // Step 2: Log result details
+    logGridResult(result);
+    logCascadeSteps(result);
+    logRainbowResult(result);
+
+    // Step 3: Update balance
+    updateBalanceFromResult(betInfo);
+
+    // Step 4: Log win amount
+    logWinAmount(result);
+
+    // Step 5: Render cascade or simple grid
+    await renderSpinAnimation(result);
+
+    // Step 6: Render golden squares
+    renderGoldenSquaresFromResult(result);
+
+    // Step 7: Render rainbow feature if present
+    await renderRainbowFromResult(result);
+
+    // Step 8: Handle bonus game state
+    await handleBonusGameState(result);
+
+    // Step 9: Finalize spin (re-enable controls)
+    finalizeSpin();
+}
+
+// ==========================================
+// STEP 1: Extract and Validate Result
+// ==========================================
+function extractAndValidateResult(data) {
     const betInfo = data.betInfo?.[0];
     console.log('[handleSpinResult] betInfo:', betInfo);
 
@@ -342,26 +378,29 @@ async function handleSpinResult(data) {
         console.error('No betInfo in SetBet response', data);
         isSpinning = false;
         document.getElementById('spinButton').disabled = false;
-        return;
+        return { isValid: false };
     }
-
-    console.log('[handleSpinResult] bet:', betInfo.bet, 'finalBalance:', betInfo.finalBalance);
 
     const result = betInfo.gameResult;
     if (!result) {
         console.error('No gameResult in betInfo', betInfo);
         isSpinning = false;
         document.getElementById('spinButton').disabled = false;
-        return;
+        return { isValid: false };
     }
 
-    // Pretty print grid for debugging (show symbol IDs with icons)
+    return { betInfo, result, isValid: true };
+}
+
+// ==========================================
+// STEP 2: Logging Functions
+// ==========================================
+function logGridResult(result) {
     console.log('%c[Grid Result]', 'color: #4ecdc4; font-weight: bold;');
     if (result.grid) {
         console.log('Final Grid:');
         result.grid.forEach((row, i) => {
             const cells = row.map(s => {
-                console.log(`s = ${s}`)
                 if (s === '' || s === null || s === undefined) return '    ·   ';
                 const icon = CONFIG.symbols[s] || '❓';
                 const id = String(s).padStart(3, ' ');
@@ -370,66 +409,263 @@ async function handleSpinResult(data) {
             console.log(`  Row ${i}: ${cells.join('│')}`);
         });
     }
+}
 
-    // Pretty print cascade steps if present
+function logCascadeSteps(result) {
+    if (!result.cascadeSteps || result.cascadeSteps.length === 0) return;
+
+    if (!result.bonusGameState?.isActive && !result.bonusGameState?.accumulatedGoldenSquares) {
+        clearGoldenSquares();
+    }
+
+    console.log(`%c[Cascade: ${result.cascadeSteps.length} steps]`, 'color: #ffd700; font-weight: bold;');
+    result.cascadeSteps.forEach((step, idx) => {
+        logSingleCascadeStep(step, idx);
+    });
+
+    logGoldenSquaresSummary(result.goldenSquares);
+}
+
+function logSingleCascadeStep(step, idx) {
+    console.log(`%c  Step ${idx + 1}:`, 'color: #4ecdc4; font-weight: bold;', `${step.winningClusters.length} clusters, win: ${step.totalWin}`);
+
+    const formatRow = (symbolRow, rowIdx) => {
+        const cells = symbolRow.map(cell => {
+            const s = cell?.symbol || '';
+            if (s === '') return '    ·   ';
+            const icon = CONFIG.symbols[s] || '❓';
+            const id = String(s).padStart(3, ' ');
+            return `${id}${icon}`;
+        });
+        return `    Row ${rowIdx}: ${cells.join('│')}`;
+    };
+
+    const printSeparator = () => {
+        const sep = '───────'.repeat(6).slice(0, -1);
+        console.log(`           ${sep}`);
+    };
+
+    if (step.symbolGridBefore) {
+        console.log('%c  ┌─ BEFORE ─────────────┐', 'color: #888;');
+        step.symbolGridBefore.forEach((row, i) => {
+            console.log('%c' + formatRow(row, i), 'color: #ccc;');
+        });
+        printSeparator();
+    }
+
+    if (step.symbolGridAfterRemoval) {
+        console.log('%c  ┌─ AFTER REMOVAL ──────┐', 'color: #ff6b6b;');
+        step.symbolGridAfterRemoval.forEach((row, i) => {
+            console.log('%c' + formatRow(row, i), 'color: #ff6b6b;');
+        });
+        printSeparator();
+    }
+
+    if (step.symbolGridAfterDropAndFill) {
+        console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
+        step.symbolGridAfterDropAndFill.forEach((row, i) => {
+            console.log('%c' + formatRow(row, i), 'color: #95e1d3;');
+        });
+        printSeparator();
+    }
+
+    if (step.winningClusters.length > 0) {
+        console.log('%c  💰 Wins:', 'color: #ffd700; font-weight: bold;');
+        step.winningClusters.forEach(c => {
+            const icon = CONFIG.symbols[c.symbol] || '❓';
+            const positions = c.positions.map(p => `(${p.row},${p.col})`).join(' ');
+            console.log(`     ${c.symbol}${icon} cluster x${c.count} = $${c.payout}  [${positions}]`);
+        });
+    }
+
+    logStepGoldenSquares(step, idx);
+    console.log('');
+}
+
+function logStepGoldenSquares(step, idx) {
+    if (!step.goldenSquares || step.goldenSquares.length === 0) return;
+
+    const stepSquares = step.goldenSquares.filter(sq => sq.stepCreated === idx + 1);
+    if (stepSquares.length === 0) return;
+
+    console.log('%c  ✨ Golden Squares:', 'color: #ffd700; font-weight: bold;');
+
+    const gridLines = [];
+    gridLines.push('    ┌───┬───┬───┬───┬───┬───┐');
+    for (let r = 0; r < 5; r++) {
+        let rowStr = `  ${r} │`;
+        for (let c = 0; c < 6; c++) {
+            const isGolden = step.goldenSquares.some(sq => sq.row === r && sq.col === c);
+            const isNew = stepSquares.some(sq => sq.row === r && sq.col === c);
+            if (isNew) {
+                rowStr += ' ✨│';
+            } else if (isGolden) {
+                rowStr += ' ✓ │';
+            } else {
+                rowStr += '   │';
+            }
+        }
+        gridLines.push(rowStr);
+        if (r < 4) {
+            gridLines.push('    ├───┼───┼───┼───┼───┼───┤');
+        }
+    }
+    gridLines.push('    └───┴───┴───┴───┴───┴───┘');
+    gridLines.push('      0   1   2   3   4   5  ');
+
+    gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
+    console.log(`     New this step: ${stepSquares.length}, Total: ${step.goldenSquares.length}`);
+}
+
+function logGoldenSquaresSummary(goldenSquares) {
+    if (!goldenSquares || goldenSquares.length === 0) return;
+
+    console.log('%c[Golden Squares Summary]', 'color: #ffd700; font-weight: bold;');
+    console.log(`  Total: ${goldenSquares.length} positions`);
+
+    const gridLines = [];
+    gridLines.push('  ┌───┬───┬───┬───┬───┬───┐');
+    for (let r = 0; r < 5; r++) {
+        let rowStr = `${r} │`;
+        for (let c = 0; c < 6; c++) {
+            const isGolden = goldenSquares.some(sq => sq.row === r && sq.col === c);
+            rowStr += isGolden ? ' ✨│' : '   │';
+        }
+        gridLines.push(rowStr);
+        if (r < 4) {
+            gridLines.push('  ├───┼───┼───┼───┼───┼───┤');
+        }
+    }
+    gridLines.push('  └───┴───┴───┴───┴───┴───┘');
+    gridLines.push('    0   1   2   3   4   5  ');
+
+    gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
+}
+
+function logRainbowResult(result) {
+    if (!result.rainbowResult?.hasRainbow) return;
+
+    console.log('%c[Rainbow Feature!]', 'color: #ff6b6b; font-weight: bold;',
+        `Coin win: ${result.rainbowResult.coinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
+    console.log('[Rainbow] Position:', result.rainbowResult.rainbowPosition);
+    console.log('[Rainbow] Previous symbol:', result.rainbowResult.previousSymbol);
+
+    if (result.rainbowResult.rainbowPosition && result.grid) {
+        const { row, col } = result.rainbowResult.rainbowPosition;
+        console.log(`[Rainbow] Grid at (${row},${col}):`, result.grid[row]?.[col]);
+    }
+}
+
+function logWinAmount(result) {
+    const winAmount = result.totalWinAmount || 0;
+    if (winAmount > 0) {
+        console.log('[SpinResult] Win: +$' + winAmount.toFixed(2));
+    }
+}
+
+// ==========================================
+// STEP 3: Update Balance
+// ==========================================
+function updateBalanceFromResult(betInfo) {
+    currentBalance = betInfo.finalBalance || 0;
+    updateBalance();
+}
+
+// ==========================================
+// STEP 4: Render Spin Animation
+// ==========================================
+async function renderSpinAnimation(result) {
     if (result.cascadeSteps && result.cascadeSteps.length > 0) {
-        console.log(`%c[Cascade: ${result.cascadeSteps.length} steps]`, 'color: #ffd700; font-weight: bold;');
-        result.cascadeSteps.forEach((step, idx) => {
-            console.log(`%c  Step ${idx + 1}:`, 'color: #4ecdc4; font-weight: bold;', `${step.winningClusters.length} clusters, win: ${step.totalWin}`);
+        await renderCascade(result.cascadeSteps, result.totalWinAmount);
+        console.log('[handleSpinResult] Rendering final grid after cascade');
+        if (result.grid) {
+            renderGrid(result.grid, true);
+        }
+    } else {
+        renderGrid(result.grid);
+        showWin(result.totalWinAmount);
+    }
+}
 
-            // Helper to format grid row with symbol IDs and icons
-            const formatRow = (symbolRow, rowIdx) => {
-                const cells = symbolRow.map(cell => {
-                    const s = cell?.symbol || '';
-                    if (s === '') return '    ·   ';
-                    const icon = CONFIG.symbols[s] || '❓';
-                    const id = String(s).padStart(3, ' ');
-                    return `${id}${icon}`;
-                });
-                return `    Row ${rowIdx}: ${cells.join('│')}`;
-            };
+// ==========================================
+// STEP 5: Render Golden Squares
+// ==========================================
+function renderGoldenSquaresFromResult(result) {
+    if (result.goldenSquares && result.goldenSquares.length > 0) {
+        console.log(`[handleSpinResult] Rendering ${result.goldenSquares.length} golden squares from result`);
+        renderGoldenSquares(result.goldenSquares);
+    } else {
+        clearGoldenSquares();
+    }
+}
 
-            const printSeparator = () => {
-                const sep = '───────'.repeat(6).slice(0, -1);
-                console.log(`           ${sep}`);
-            };
+// ==========================================
+// STEP 6: Render Rainbow Feature
+// ==========================================
+async function renderRainbowFromResult(result) {
+    if (result.rainbowResult?.hasRainbow && result.rainbowResult.coinWin > 0) {
+        await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
+    }
+}
 
-            // Print grid BEFORE (initial state for this step)
-            if (step.symbolGridBefore) {
-                console.log('%c  ┌─ BEFORE ─────────────┐', 'color: #888;');
-                step.symbolGridBefore.forEach((row, i) => {
-                    console.log('%c' + formatRow(row, i), 'color: #ccc;');
-                });
-                printSeparator();
+// ==========================================
+// STEP 7: Handle Bonus Game State
+// ==========================================
+async function handleBonusGameState(result) {
+    if (!result.bonusGameState) {
+        if (bonusGameActive) {
+            hideBonusProgress();
+        }
+        return;
+    }
+
+    const bonusState = result.bonusGameState;
+    console.log(`[Bonus State] spinsLeft=${bonusState.spinsLeft}, totalSpins=${bonusState.totalSpins}, isActive=${bonusState.isActive}, bonusGameActive=${bonusGameActive}`);
+
+    const isFirstEntry = bonusState.spinsLeft === bonusState.totalSpins && !bonusGameActive;
+    const isNewBonus = bonusState.isActive && !bonusGameActive;
+    console.log(`[Bonus State] isFirstEntry=${isFirstEntry}, isNewBonus=${isNewBonus}`);
+
+    if ((isFirstEntry || isNewBonus) && bonusState.spinsLeft > 0) {
+        console.log('[Bonus Trigger] First entry or new bonus detected! Showing trigger overlay...');
+        const scatterPositions = findScatterPositions(result.grid);
+        console.log(`[Bonus Trigger] Found ${scatterPositions.length} scatters in grid`);
+        await renderBonusTrigger(bonusState, result.grid);
+    }
+
+    if (bonusState.isActive && bonusState.spinsLeft > 0) {
+        bonusGameActive = true;
+        showBonusProgress(bonusState);
+    } else {
+        hideBonusProgress();
+    }
+}
+
+function findScatterPositions(grid) {
+    const positions = [];
+    if (!grid) return positions;
+
+    for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+            if (grid[r][c] === '2' || grid[r][c] === SYMBOLS.SCATTER) {
+                positions.push({ row: r, col: c });
             }
+        }
+    }
+    return positions;
+}
 
-            // Print grid AFTER REMOVAL (winning symbols removed)
-            if (step.symbolGridAfterRemoval) {
-                console.log('%c  ┌─ AFTER REMOVAL ──────┐', 'color: #ff6b6b;');
-                step.symbolGridAfterRemoval.forEach((row, i) => {
-                    console.log('%c' + formatRow(row, i), 'color: #ff6b6b;');
-                });
-                printSeparator();
-            }
+// ==========================================
+// STEP 8: Finalize Spin
+// ==========================================
+function finalizeSpin() {
+    isSpinning = false;
+    document.getElementById('spinButton').disabled = false;
+    updateBonusButton();
+}
 
-            // Print grid AFTER DROP & FILL (combined stage)
-            if (step.symbolGridAfterDropAndFill) {
-                console.log('%c  ┌─ AFTER DROP & FILL ──┐', 'color: #95e1d3;');
-                step.symbolGridAfterDropAndFill.forEach((row, i) => {
-                    console.log('%c' + formatRow(row, i), 'color: #95e1d3;');
-                });
-                printSeparator();
-            }
-
-            // Print winning clusters
-            if (step.winningClusters.length > 0) {
-                console.log('%c  💰 Wins:', 'color: #ffd700; font-weight: bold;');
-                step.winningClusters.forEach(c => {
-                    const icon = CONFIG.symbols[c.symbol] || '❓';
-                    const positions = c.positions.map(p => `(${p.row},${p.col})`).join(' ');
-                    console.log(`     ${c.symbol}${icon} cluster x${c.count} = $${c.payout}  [${positions}]`);
-                });
-            }
+// Grid Rendering
+function renderGrid(grid, instant = false) {
 
             // Print golden squares created in this step (as grid layout)
             if (step.goldenSquares && step.goldenSquares.length > 0) {
@@ -468,7 +704,7 @@ async function handleSpinResult(data) {
 
             console.log(''); // Empty line between steps
         });
-
+        
         // Print summary of all golden squares from the cascade (as grid layout)
         if (result.goldenSquares && result.goldenSquares.length > 0) {
             console.log('%c[Golden Squares Summary]', 'color: #ffd700; font-weight: bold;');
@@ -684,7 +920,7 @@ async function renderCascade(steps, totalWin) {
 
     // Track all golden squares accumulated across steps
     const accumulatedGoldenSquares = [];
-
+    console.log
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         cascadeStepEl.textContent = step.step;
@@ -1260,7 +1496,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
                             } else {
                                 cell.dataset.multiplier = '';
                             }
-                            console.log(`@@@cell.dataset.multiplier: ${cell.dataset.multiplier}`)
                         }
                     }
 
