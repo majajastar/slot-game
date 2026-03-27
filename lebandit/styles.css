@@ -1515,3 +1515,72 @@
     box-shadow: 0 0 20px rgba(255, 107, 107, 0.8), inset 0 0 10px rgba(255, 215, 0, 0.5) !important;
     z-index: 10;
 }
+
+/* Retrigger Notification */
+.retrigger-notification {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background: linear-gradient(135deg, #ff6b6b, #ffd700);
+    border: 3px solid #fff;
+    border-radius: 15px;
+    padding: 20px 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.retrigger-notification.bonus-upgrade {
+    background: linear-gradient(135deg, #9b59b6, #f1c40f);
+    border-color: #ffd700;
+    box-shadow: 0 10px 40px rgba(155, 89, 182, 0.6);
+}
+
+.retrigger-notification.show {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+.retrigger-icon {
+    font-size: 3rem;
+    animation: bounce 0.5s ease infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-10px); }
+}
+
+.retrigger-text {
+    text-align: center;
+}
+
+.retrigger-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    margin-bottom: 5px;
+}
+
+.retrigger-details {
+    font-size: 1.1rem;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.retrigger-hint {
+    font-size: 1rem;
+    color: #ffd700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    font-weight: bold;
+}

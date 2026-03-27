@@ -128,7 +128,7 @@ function renderPaytable() {
         const display = symbols[id] || '?';
         const name = names[id] || data.name || 'Unknown';
         const payouts = data.payouts;
-        
+
         // Dynamically generate payout cells based on payout array size
         let payoutCells = '';
         for (let i = 0; i < payouts.length; i++) {
@@ -136,7 +136,7 @@ function renderPaytable() {
             const className = isHigh ? 'paytable-payout high' : 'paytable-payout';
             payoutCells += `<span class="${className}">${formatPayout(payouts[i])}</span>`;
         }
-        
+
         html += `
             <div class="cluster-paytable-row">
                 <span class="paytable-icon">${display}</span>
@@ -380,11 +380,11 @@ async function handleSpinResult(data) {
     // Step 6: Render golden squares
     renderGoldenSquaresFromResult(result);
 
-    // Step 7: Render rainbow feature if present
-    await renderRainbowFromResult(result);
-
-    // Step 8: Handle bonus game state
+    // Step 7: Handle bonus game state
     await handleBonusGameState(result);
+
+    // Step 8: Render rainbow feature if present
+    await renderRainbowFromResult(result);
 
     // Step 9: Finalize spin (re-enable controls)
     finalizeSpin();
@@ -726,7 +726,7 @@ async function renderGrid(grid, instant = false) {
     }
 
     console.log(''); // Empty line between steps
-    
+
     // Print summary of all golden squares from the cascade (as grid layout)
     if (result.goldenSquares && result.goldenSquares.length > 0) {
             console.log('%c[Golden Squares Summary]', 'color: #ffd700; font-weight: bold;');
@@ -811,9 +811,9 @@ async function renderGrid(grid, instant = false) {
     // Handle bonus game state
     if (result.bonusGameState) {
         const bonusState = result.bonusGameState;
-        
+
         console.log(`[Bonus State] spinsLeft=${bonusState.spinsLeft}, totalSpins=${bonusState.totalSpins}, isActive=${bonusState.isActive}, bonusGameActive=${bonusGameActive}`);
-        
+
         // Check if this is the first entry (buy bonus trigger) or bonus just started
         const isFirstEntry = bonusState.spinsLeft === bonusState.totalSpins && !bonusGameActive;
         const isNewBonus = bonusState.isActive && !bonusGameActive;
@@ -835,7 +835,7 @@ async function renderGrid(grid, instant = false) {
             console.log(`[Bonus Trigger] Found ${scatterPositions.length} scatters in grid`);
             await renderBonusTrigger(bonusState, result.grid);
         }
-        
+
         if (bonusState.isActive && bonusState.spinsLeft > 0) {
             // Bonus is active - show/update progress
             bonusGameActive = true;
@@ -1086,20 +1086,20 @@ function addStepDetailToPanel(step, container, round) {
                 if (step.collectedCoins && step.collectedCoins.length > 0) {
                     const totalValue = step.collectedCoins.reduce((sum, c) => sum + c.finalMultiplier, 0);
                     info += `${step.collectedCoins.length} coins = ${totalValue}x`;
-                    
+
                     // Show collected pots if any
                     if (step.collectedPots && step.collectedPots.length > 0) {
                         const potsValue = step.collectedPots.reduce((sum, p) => sum + p.value, 0);
                         info += ` + ${step.collectedPots.length} pots = ${potsValue}x`;
                     }
-                    
+
                     if (pot.cloverMultipliers && pot.cloverMultipliers.length > 0) {
                         info += ` ×${pot.cloverMultipliers.join('×')} = ${pot.finalMultiplier}x`;
                     }
                     info += `<div class="rainbow-coin-list">${step.collectedCoins.map(c =>
                         `<span class="rainbow-coin-tag">(${c.row},${c.col}) ${c.originalMultiplier}x→${c.finalMultiplier}x</span>`
                     ).join('')}</div>`;
-                    
+
                     // Show collected pots tags
                     if (step.collectedPots && step.collectedPots.length > 0) {
                         info += `<div class="rainbow-pot-list" style="margin-top:5px;">${step.collectedPots.map(p =>
@@ -1743,7 +1743,7 @@ async function animateCombined(movements) {
             // For new symbols, calculate from position (frontend determines it)
             const fromRow = move.from?.row ?? calculateBufferRow(move.to.row, newSymbolsPerCol[move.to.col] || 1);
             const fromCol = move.from?.col ?? move.to.col;
-            
+
             const fromCell = document.getElementById(`cell-${fromRow}-${fromCol}`);
             const targetCell = document.getElementById(`cell-${move.to.row}-${move.to.col}`);
 
@@ -1778,7 +1778,7 @@ async function animateCombined(movements) {
             // For new symbols, calculate from position
             const fromRow = move.from?.row ?? calculateBufferRow(move.to.row, newSymbolsPerCol[move.to.col] || 1);
             const fromCol = move.from?.col ?? move.to.col;
-            
+
             const fromCell = document.getElementById(`cell-${fromRow}-${fromCol}`);
             if (fromCell) {
                 // STEP 1: Kill the transition immediately
@@ -1968,7 +1968,7 @@ function showBonusProgress(bonusState) {
     if (!progressDiv) return;
 
     progressDiv.classList.remove('hidden');
-    
+
     // Hide buy button section during bonus
     const bonusSection = document.getElementById('bonusGameSection');
     if (bonusSection) bonusSection.classList.add('hidden');
@@ -1986,12 +1986,84 @@ function updateBonusProgress(bonusState) {
     if (spinsLeftEl) spinsLeftEl.textContent = bonusState.spinsLeft;
     if (totalSpinsEl) totalSpinsEl.textContent = bonusState.totalSpins;
     if (totalWinEl) totalWinEl.textContent = '$' + (bonusState.totalWin || 0).toFixed(2);
-    
+
     // Update bonus name display
     if (bonusNameEl) {
         const isGlitters = bonusState.type === 'ALL_THAT_GLITTERS_IS_GOLD';
         bonusNameEl.textContent = isGlitters ? '✨ All That Glitters Is Gold' : '🎰 Luck of the Bandit';
         bonusNameEl.style.color = isGlitters ? '#f1c40f' : '#9b59b6';
+    }
+
+    // Check for retrigger and show notification
+    if (bonusState.retriggerInfo) {
+        showRetriggerNotification(bonusState.retriggerInfo);
+        // Clear retrigger info after showing to prevent duplicate notifications
+        bonusState.retriggerInfo = null;
+    }
+}
+
+// Show Retrigger Notification
+function showRetriggerNotification(retriggerInfo) {
+    const { scatterCount, freeSpinsAdded, targetBonusId } = retriggerInfo;
+
+    console.log(`[Retrigger] ${scatterCount} scatters → +${freeSpinsAdded} free spins!`);
+
+    // Determine bonus type change hint
+    let bonusChangeHint = '';
+    let bonusIcon = '🎉';
+    let bonusTitle = 'BONUS RETRIGGERED!';
+
+    if (targetBonusId > 0) {
+        // Bonus type is changing
+        switch (targetBonusId) {
+            case 1:
+                bonusChangeHint = '→ Upgrading to Luck of the Bandit!';
+                bonusIcon = '🎁';
+                break;
+            case 2:
+                bonusChangeHint = '→ Upgrading to All That Glitters Is Gold!';
+                bonusIcon = '✨';
+                break;
+            case 3:
+                bonusChangeHint = '→ Upgrading to Treasure at the End of the Rainbow!';
+                bonusIcon = '🌈';
+                break;
+            default:
+                bonusChangeHint = '→ Bonus type changing!';
+        }
+        bonusTitle = 'BONUS UPGRADED!';
+    }
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'retrigger-notification';
+    if (targetBonusId > 0) {
+        notification.classList.add('bonus-upgrade');
+    }
+
+    notification.innerHTML = `
+        <div class="retrigger-icon">${bonusIcon}</div>
+        <div class="retrigger-text">
+            <div class="retrigger-title">${bonusTitle}</div>
+            <div class="retrigger-details">${scatterCount} Scatters = +${freeSpinsAdded} Free Spins!</div>
+            ${bonusChangeHint ? `<div class="retrigger-hint">${bonusChangeHint}</div>` : ''}
+        </div>
+    `;
+
+    // Add to game container
+    const gameContainer = document.getElementById('gameContainer');
+    if (gameContainer) {
+        gameContainer.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 10);
+
+        // Remove after 4 seconds (longer for upgrade messages)
+        const displayTime = targetBonusId > 0 ? 4000 : 3000;
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, displayTime);
     }
 }
 
@@ -1999,11 +2071,11 @@ function updateBonusProgress(bonusState) {
 function hideBonusProgress() {
     const progressDiv = document.getElementById('bonusProgress');
     if (progressDiv) progressDiv.classList.add('hidden');
-    
+
     // Show buy button section again
     const bonusSection = document.getElementById('bonusGameSection');
     if (bonusSection && CONFIG.bonusGame.enabled) bonusSection.classList.remove('hidden');
-    
+
     bonusGameActive = false;
     updateBonusButton();
 }
@@ -2011,15 +2083,15 @@ function hideBonusProgress() {
 // Show Bonus Trigger Overlay
 function showBonusTrigger(grid, scatterPositions) {
     console.log('[showBonusTrigger] Called with', scatterPositions.length, 'scatters');
-    
+
     const overlay = document.getElementById('bonusTriggerOverlay');
     const gridEl = document.getElementById('bonusTriggerGrid');
-    
+
     if (!overlay || !gridEl) {
         console.error('[showBonusTrigger] Missing elements:', { overlay: !!overlay, gridEl: !!gridEl });
         return;
     }
-    
+
     // Build grid HTML with highlighted scatters
     let gridHtml = '';
     for (let r = 0; r < grid.length; r++) {
@@ -2031,11 +2103,11 @@ function showBonusTrigger(grid, scatterPositions) {
         }
     }
     gridEl.innerHTML = gridHtml;
-    
+
     // Show overlay
     overlay.classList.remove('hidden');
     overlay.classList.add('active');
-    
+
     console.log('[Bonus Trigger] Overlay shown');
 }
 
@@ -2057,16 +2129,16 @@ function enterBonus() {
 // Render Bonus Trigger - Similar to rainbow feature style
 async function renderBonusTrigger(bonusState, grid) {
     console.log('[renderBonusTrigger] Rendering bonus trigger animation');
-    
+
     if (!bonusState || !grid) {
         console.log('[renderBonusTrigger] Missing bonusState or grid');
         return;
     }
-    
+
     // Remove any existing trigger text first
     const existingText = document.getElementById('bonusTriggerText');
     if (existingText) existingText.remove();
-    
+
     // Find scatter positions
     const scatterPositions = [];
     for (let r = 0; r < grid.length; r++) {
@@ -2076,18 +2148,18 @@ async function renderBonusTrigger(bonusState, grid) {
             }
         }
     }
-    
+
     console.log(`[renderBonusTrigger] Found ${scatterPositions.length} scatters`);
-    
+
     // Determine bonus type and display info
     const isGlittersBonus = bonusState.type === 'ALL_THAT_GLITTERS_IS_GOLD';
     const bonusName = isGlittersBonus ? 'All That Glitters Is Gold' : 'Luck of the Bandit';
     const bonusSpins = isGlittersBonus ? '12' : '8';
-    const bonusDescription = isGlittersBonus 
-        ? '12 Free Spins with Persistent Golden Squares' 
+    const bonusDescription = isGlittersBonus
+        ? '12 Free Spins with Persistent Golden Squares'
         : '8 Free Spins with Accumulating Golden Squares';
     const bonusColor = isGlittersBonus ? '#f1c40f' : '#9b59b6'; // Gold vs Purple
-    
+
     // Create and show bonus trigger text overlay
     const triggerText = document.createElement('div');
     triggerText.id = 'bonusTriggerText';
@@ -2115,7 +2187,7 @@ async function renderBonusTrigger(bonusState, grid) {
         <div style="font-size: 1rem; color: #ccc; margin-top: 5px;">${bonusDescription}</div>
     `;
     document.body.appendChild(triggerText);
-    
+
     // Highlight scatter positions with animation
     for (const pos of scatterPositions) {
         const cell = document.getElementById(`cell-${pos.row}-${pos.col}`);
@@ -2124,12 +2196,12 @@ async function renderBonusTrigger(bonusState, grid) {
             cell.style.animation = 'scatterPulse 0.5s ease-in-out 3';
         }
     }
-    
+
     // Show bonus triggered message
     const statusBar = document.getElementById('cascadeInfo');
     const statusLabel = document.getElementById('cascadeLabel');
     const statusStep = document.getElementById('cascadeStep');
-    
+
     if (statusBar && statusLabel && statusStep) {
         statusBar.classList.remove('hidden');
         statusLabel.textContent = '🎁 BONUS TRIGGERED!';
@@ -2137,10 +2209,10 @@ async function renderBonusTrigger(bonusState, grid) {
         statusLabel.style.color = bonusColor;
         statusLabel.style.fontWeight = 'bold';
     }
-    
+
     // Wait for animation
     await sleep(1500);
-    
+
     // Remove trigger text with fade out
     const textEl = document.getElementById('bonusTriggerText');
     if (textEl) {
@@ -2149,13 +2221,13 @@ async function renderBonusTrigger(bonusState, grid) {
         await sleep(500);
         textEl.remove();
     }
-    
+
     // Clear scatter highlights
     document.querySelectorAll('.scatter-highlight').forEach(cell => {
         cell.classList.remove('scatter-highlight');
         cell.style.animation = '';
     });
-    
+
     // Hide status after delay
     if (statusBar && statusLabel) {
         await sleep(1000);
@@ -2163,7 +2235,7 @@ async function renderBonusTrigger(bonusState, grid) {
         statusLabel.style.color = '';
         statusLabel.style.fontWeight = '';
     }
-    
+
     console.log('[renderBonusTrigger] Animation complete');
 }
 
