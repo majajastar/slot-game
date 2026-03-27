@@ -18,6 +18,7 @@ let isSpinning = false;
 let pingInterval = null;
 let currentBalance = 0;
 let rainbowModeEnabled = false; // Rainbow mode state
+let debugScatterCount = null; // Debug: force specific scatter count (null = disabled, 0-5 = force count)
 
 // Grid state
 let currentGrid = [];
@@ -29,8 +30,19 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBetDisplay();
     updateBonusButton();
     updateServerModeDisplay();
+    resetDebugScatterCount(); // Reset debug scatter count on page reload
     connect();
 });
+
+// Reset debug scatter count on page reload
+function resetDebugScatterCount() {
+    debugScatterCount = null;
+    const select = document.getElementById('debugScatterSelect');
+    if (select) {
+        select.value = ''; // Set to "Disabled (Random)"
+    }
+    console.log('[Debug Scatter] Reset to disabled on page reload');
+}
 
 // Update server mode display
 function updateServerModeDisplay() {
@@ -258,6 +270,11 @@ function sendSetBet(bet, forceBonusType = null) {
         message.forceBonusType = forceBonusType;
     }
 
+    // Add debugScatterCount if set (for testing scatter counts)
+    if (debugScatterCount !== null) {
+        message.debugScatterCount = debugScatterCount;
+    }
+
     send('100000', [{
         subType: 100070,
         subData: [{
@@ -270,6 +287,10 @@ function sendSetBet(bet, forceBonusType = null) {
 // Response Handlers
 function handleJoinRoom(data) {
     console.log('Joined room:', data);
+    if (data.balance){
+        currentBalance = data.balance
+        updateBalance();
+    }
     if (data.betInfo?.[0]) {
         const info = data.betInfo[0];
 
@@ -312,13 +333,15 @@ function handleJoinRoom(data) {
 }
 
 function handleSyncRoom(data) {
+    console.log(`Handle sync room`)
     if (data.roomInfo) {
-        currentBalance = data.roomInfo.balance || 0;
-        updateBalance();
-
-        // Restore grid if in middle of game
-        if (data.roomInfo.gameState?.grid) {
-            renderGrid(data.roomInfo.gameState.grid);
+        console.log(`data.roomInfo = ${JSON.stringify(data.roomInfo)}`)
+        if (data.roomInfo.lastResumeInfo){
+            // Restore grid if in middle of game
+            renderGrid(data.roomInfo.lastResumeInfo.grid);
+            bonusGameActive = true;
+            console.log(`bonusGameState = ${JSON.stringify(data.roomInfo.lastResumeInfo.bonusGameState)}`)
+            showBonusProgress(data.roomInfo.lastResumeInfo.bonusGameState);
         }
     }
 }
@@ -435,7 +458,7 @@ function logSingleCascadeStep(step, idx) {
             if (s === '') return '    ·   ';
             const icon = CONFIG.symbols[s] || '❓';
             const id = String(s).padStart(3, ' ');
-            return `${id}${icon}`;
+            return `${icon}(${id})`;
         });
         return `    Row ${rowIdx}: ${cells.join('│')}`;
     };
@@ -665,48 +688,47 @@ function finalizeSpin() {
 }
 
 // Grid Rendering
-function renderGrid(grid, instant = false) {
+async function renderGrid(grid, instant = false) {
 
-            // Print golden squares created in this step (as grid layout)
-            if (step.goldenSquares && step.goldenSquares.length > 0) {
-                const stepSquares = step.goldenSquares.filter(sq => sq.stepCreated === idx + 1);
-                if (stepSquares.length > 0) {
-                    console.log('%c  ✨ Golden Squares:', 'color: #ffd700; font-weight: bold;');
+    // Print golden squares created in this step (as grid layout)
+    if (step.goldenSquares && step.goldenSquares.length > 0) {
+            const stepSquares = step.goldenSquares.filter(sq => sq.stepCreated === idx + 1);
+            if (stepSquares.length > 0) {
+                console.log('%c  ✨ Golden Squares:', 'color: #ffd700; font-weight: bold;');
 
-                    // Create grid layout for golden squares
-                    const gridLines = [];
-                    gridLines.push('    ┌───┬───┬───┬───┬───┬───┐');
-                    for (let r = 0; r < 5; r++) {
-                        let rowStr = `  ${r} │`;
-                        for (let c = 0; c < 6; c++) {
-                            const isGolden = step.goldenSquares.some(sq => sq.row === r && sq.col === c);
-                            const isNew = stepSquares.some(sq => sq.row === r && sq.col === c);
-                            if (isNew) {
-                                rowStr += ' ✨│';  // New golden square this step
-                            } else if (isGolden) {
-                                rowStr += ' ✓ │';  // Existing golden square
-                            } else {
-                                rowStr += '   │';
-                            }
-                        }
-                        gridLines.push(rowStr);
-                        if (r < 4) {
-                            gridLines.push('    ├───┼───┼───┼───┼───┼───┤');
+                // Create grid layout for golden squares
+                const gridLines = [];
+                gridLines.push('    ┌───┬───┬───┬───┬───┬───┐');
+                for (let r = 0; r < 5; r++) {
+                    let rowStr = `  ${r} │`;
+                    for (let c = 0; c < 6; c++) {
+                        const isGolden = step.goldenSquares.some(sq => sq.row === r && sq.col === c);
+                        const isNew = stepSquares.some(sq => sq.row === r && sq.col === c);
+                        if (isNew) {
+                            rowStr += ' ✨│';  // New golden square this step
+                        } else if (isGolden) {
+                            rowStr += ' ✓ │';  // Existing golden square
+                        } else {
+                            rowStr += '   │';
                         }
                     }
-                    gridLines.push('    └───┴───┴───┴───┴───┴───┘');
-                    gridLines.push('      0   1   2   3   4   5  ');
-
-                    gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
-                    console.log(`     New this step: ${stepSquares.length}, Total: ${step.goldenSquares.length}`);
+                    gridLines.push(rowStr);
+                    if (r < 4) {
+                        gridLines.push('    ├───┼───┼───┼───┼───┼───┤');
+                    }
                 }
-            }
+                gridLines.push('    └───┴───┴───┴───┴───┴───┘');
+                gridLines.push('      0   1   2   3   4   5  ');
 
-            console.log(''); // Empty line between steps
-        });
-        
-        // Print summary of all golden squares from the cascade (as grid layout)
-        if (result.goldenSquares && result.goldenSquares.length > 0) {
+                gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
+                console.log(`     New this step: ${stepSquares.length}, Total: ${step.goldenSquares.length}`);
+            }
+    }
+
+    console.log(''); // Empty line between steps
+    
+    // Print summary of all golden squares from the cascade (as grid layout)
+    if (result.goldenSquares && result.goldenSquares.length > 0) {
             console.log('%c[Golden Squares Summary]', 'color: #ffd700; font-weight: bold;');
             console.log(`  Total: ${result.goldenSquares.length} positions`);
 
@@ -732,8 +754,8 @@ function renderGrid(grid, instant = false) {
             gridLines.push('    0   1   2   3   4   5  ');
 
             gridLines.forEach(line => console.log('%c' + line, 'color: #ffd700;'));
-        }
     }
+
 
     // Log rainbow result if present
     if (result.rainbowResult?.hasRainbow) {
@@ -1810,6 +1832,20 @@ function toggleRainbowMode() {
     updateBetDisplay();
 }
 
+// Debug Scatter Count Setter
+function setDebugScatterCount() {
+    const select = document.getElementById('debugScatterSelect');
+    const value = select.value;
+
+    if (value === '') {
+        debugScatterCount = null;
+        console.log('[Debug Scatter] DISABLED - Using random scatter count');
+    } else {
+        debugScatterCount = parseInt(value, 10);
+        console.log(`[Debug Scatter] ENABLED - Forcing ${debugScatterCount} scatters`);
+    }
+}
+
 // Bonus Game State
 let bonusGameActive = false;
 
@@ -1853,9 +1889,6 @@ function buyGlittersBonus() {
 
     console.log(`[Buy Glitters Bonus] Buying All That Glitters Is Gold bonus for ${bonusCost}x bet ($${bonusCost})`);
 
-    // Clean up previous reel effects before buying bonus
-    cleanupReelEffects();
-
     // Use sendSetBet with forceBonusType to trigger Glitters bonus
     sendSetBet(currentBet, 'ALL_THAT_GLITTERS_IS_GOLD');
 
@@ -1878,9 +1911,6 @@ function buyTreasureBonus() {
     const bonusCost = currentBet * CONFIG.treasureBonus.buyCostMultiplier;
 
     console.log(`[Buy Treasure Bonus] Buying Treasure at the End of the Rainbow bonus for ${bonusCost}x bet ($${bonusCost})`);
-
-    // Clean up previous reel effects before buying bonus
-    cleanupReelEffects();
 
     // Use sendSetBet with forceBonusType to trigger Treasure bonus
     sendSetBet(currentBet, 'TREASURE_AT_END_OF_RAINBOW');
@@ -1933,6 +1963,7 @@ function updateBonusButton() {
 
 // Show Bonus Progress
 function showBonusProgress(bonusState) {
+    if (!bonusState) return;
     const progressDiv = document.getElementById('bonusProgress');
     if (!progressDiv) return;
 
@@ -1949,13 +1980,11 @@ function showBonusProgress(bonusState) {
 function updateBonusProgress(bonusState) {
     const spinsLeftEl = document.getElementById('bonusSpinsLeft');
     const totalSpinsEl = document.getElementById('bonusTotalSpins');
-    const frameCountEl = document.getElementById('bonusFrameCount');
     const totalWinEl = document.getElementById('bonusTotalWin');
     const bonusNameEl = document.getElementById('bonusName');
 
     if (spinsLeftEl) spinsLeftEl.textContent = bonusState.spinsLeft;
     if (totalSpinsEl) totalSpinsEl.textContent = bonusState.totalSpins;
-    if (frameCountEl) frameCountEl.textContent = bonusState.goldenFrames?.length || 0;
     if (totalWinEl) totalWinEl.textContent = '$' + (bonusState.totalWin || 0).toFixed(2);
     
     // Update bonus name display

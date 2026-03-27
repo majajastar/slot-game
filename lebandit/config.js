@@ -6,7 +6,7 @@ const CONFIG = {
     serverMode: 'fake', // Change to 'real' for production
     
     // Fake Server (local testing)
-    fakeWsUrl: 'ws://54.238.168.141:3003',
+    fakeWsUrl: 'ws://18.183.247.231:3003',
     
     // Real API Endpoints (AWS)
     sidUrl: 'https://lbucmxb2ke.execute-api.ap-southeast-1.amazonaws.com/mock-wallet/sid',
