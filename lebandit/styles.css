@@ -1017,6 +1017,52 @@
     color: #fff;
 }
 
+/* Debug Rainbow Section */
+.debug-rainbow-section {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(78, 205, 196, 0.1);
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.debug-rainbow-section .debug-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #4ecdc4;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.debug-rainbow-section .toggle-label.debug-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #fff;
+}
+
+.debug-rainbow-section .toggle-label.debug-toggle .toggle-text {
+    background: linear-gradient(45deg, #4ecdc4, #44a08d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: bold;
+}
+
+.debug-rainbow-section .toggle-label.debug-toggle input:checked + .toggle-slider {
+    background: linear-gradient(45deg, #4ecdc4, #44a08d);
+}
+
+.debug-rainbow-desc {
+    font-size: 0.7rem;
+    color: #aaa;
+    margin-top: 5px;
+}
+
 /* Bonus Game Section - Now below grid */
 .bonus-game-section {
     margin-top: 15px;

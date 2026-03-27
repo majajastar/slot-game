@@ -19,6 +19,7 @@ let pingInterval = null;
 let currentBalance = 0;
 let rainbowModeEnabled = false; // Rainbow mode state
 let debugScatterCount = null; // Debug: force specific scatter count (null = disabled, 0-5 = force count)
+let debugForceRainbow = false; // Debug: force rainbow feature to show
 
 // Grid state
 let currentGrid = [];
@@ -37,11 +38,16 @@ document.addEventListener('DOMContentLoaded', () => {
 // Reset debug scatter count on page reload
 function resetDebugScatterCount() {
     debugScatterCount = null;
-    const select = document.getElementById('debugScatterSelect');
-    if (select) {
-        select.value = ''; // Set to "Disabled (Random)"
+    debugForceRainbow = false;
+    const scatterSelect = document.getElementById('debugScatterSelect');
+    if (scatterSelect) {
+        scatterSelect.value = ''; // Set to "Disabled (Random)"
     }
-    console.log('[Debug Scatter] Reset to disabled on page reload');
+    const rainbowCheck = document.getElementById('debugRainbowCheck');
+    if (rainbowCheck) {
+        rainbowCheck.checked = false;
+    }
+    console.log('[Debug] Reset scatter and rainbow to disabled on page reload');
 }
 
 // Update server mode display
@@ -273,6 +279,11 @@ function sendSetBet(bet, forceBonusType = null) {
     // Add debugScatterCount if set (for testing scatter counts)
     if (debugScatterCount !== null) {
         message.debugScatterCount = debugScatterCount;
+    }
+
+    // Add debugForceRainbow if set (for testing rainbow feature)
+    if (debugForceRainbow) {
+        message.debugForceRainbow = true;
     }
 
     send('100000', [{
@@ -1843,6 +1854,18 @@ function setDebugScatterCount() {
     } else {
         debugScatterCount = parseInt(value, 10);
         console.log(`[Debug Scatter] ENABLED - Forcing ${debugScatterCount} scatters`);
+    }
+}
+
+// Debug Force Rainbow Toggle
+function toggleDebugForceRainbow() {
+    const checkbox = document.getElementById('debugRainbowCheck');
+    debugForceRainbow = checkbox.checked;
+
+    if (debugForceRainbow) {
+        console.log('[Debug Rainbow] ENABLED - Rainbow will always trigger after cascade');
+    } else {
+        console.log('[Debug Rainbow] DISABLED - Normal rainbow chance (10%)');
     }
 }
 

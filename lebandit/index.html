@@ -230,6 +230,17 @@
                                 <option value="5">5 Scatters (Treasure)</option>
                             </select>
                         </div>
+                        
+                        <!-- Debug Force Rainbow (for testing) -->
+                        <div class="debug-rainbow-section">
+                            <label class="debug-label">🐛 Debug Force Rainbow:</label>
+                            <label class="toggle-label debug-toggle">
+                                <input type="checkbox" id="debugRainbowCheck" onchange="toggleDebugForceRainbow()">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Force Rainbow (100%)</span>
+                            </label>
+                            <div class="debug-rainbow-desc">Rainbow always triggers after cascade</div>
+                        </div>
                     </div>
                 </div>
             </div>
