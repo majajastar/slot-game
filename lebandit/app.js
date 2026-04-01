@@ -11,6 +11,8 @@ let CLUSTER_SIZE_LABELS = ['5', '6', '7', '8', '9-10', '11-12', '13+']; // Defau
 let GAME_CONFIG = {};
 let BET_SIZE_LIST = [5, 10, 20, 50, 100];
 let CURRENT_BET_INDEX = 2; // Default $20
+let BONUS_CONFIG = null; // Bonus config from server (with buy multipliers and rainbow mode)
+let RAINBOW_MODE_COST_MULTIPLIER = 10; // Default, will be updated from server
 
 // Game state
 let socket = null;
@@ -29,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initGrid();
     renderPaytable();
     updateBetDisplay();
-    updateBonusButton();
     updateServerModeDisplay();
     resetDebugScatterCount(); // Reset debug scatter count on page reload
     connect();
@@ -329,12 +330,29 @@ function handleJoinRoom(data) {
             console.log('[JoinRoom] Received clusterSizeLabels:', CLUSTER_SIZE_LABELS);
         }
         if (info.symbols) {
-            // Convert array to id -> display mapping
+            // Server only sends symbol IDs, map display and name from local config
             SYMBOLS = {};
             info.symbols.forEach(s => {
-                SYMBOLS[s.id] = s.display;
+                const id = s.id;
+                // Map display from CONFIG.symbols, fallback to ID if not found
+                SYMBOLS[id] = CONFIG.symbols[id] || id;
             });
-            console.log('[JoinRoom] Symbols received:', info.symbols.map(s => s.display).join(', '));
+            console.log('[JoinRoom] Symbols mapped:', Object.keys(SYMBOLS).map(id => SYMBOLS[id]).join(', '));
+        }
+        
+        // Store bonus config from server
+        if (info.bonusConfig) {
+            BONUS_CONFIG = info.bonusConfig;
+            console.log('[JoinRoom] Bonus config received:', BONUS_CONFIG);
+            
+            // Update rainbow mode cost multiplier from server
+            if (info.bonusConfig.rainbowModeCostMultiplier) {
+                RAINBOW_MODE_COST_MULTIPLIER = info.bonusConfig.rainbowModeCostMultiplier;
+                console.log('[JoinRoom] Rainbow mode cost multiplier:', RAINBOW_MODE_COST_MULTIPLIER);
+                updateRainbowModeText();
+            }
+            
+            updateBonusButtonsFromConfig();
         }
 
         renderPaytable();
@@ -346,7 +364,6 @@ function handleJoinRoom(data) {
 function handleSyncRoom(data) {
     console.log(`Handle sync room`)
     if (data.roomInfo) {
-        console.log(`data.roomInfo = ${JSON.stringify(data.roomInfo)}`)
         if (data.roomInfo.lastResumeInfo){
             // Restore grid if in middle of game
             renderGrid(data.roomInfo.lastResumeInfo.grid);
@@ -695,7 +712,11 @@ function findScatterPositions(grid) {
 function finalizeSpin() {
     isSpinning = false;
     document.getElementById('spinButton').disabled = false;
-    updateBonusButton();
+    
+    // Re-enable bonus buttons after spin
+    if (BONUS_CONFIG) {
+        updateBonusButtonsFromConfig();
+    }
 }
 
 // Grid Rendering
@@ -865,7 +886,6 @@ async function renderGrid(grid, instant = false) {
     // All animations complete - allow next spin
     isSpinning = false;
     document.getElementById('spinButton').disabled = false;
-    updateBonusButton();
 }
 
 // Grid Rendering
@@ -1828,8 +1848,18 @@ function updateBetDisplay() {
     const el = document.getElementById('currentBet');
     if (el) el.textContent = '$' + bet;
 
-    // Update bonus button
-    updateBonusButton();
+    // Update bonus button costs when bet changes
+    if (BONUS_CONFIG) {
+        updateBonusButtonsFromConfig();
+    }
+}
+
+// Update Rainbow Mode Text based on server config
+function updateRainbowModeText() {
+    const textEl = document.getElementById('rainbowModeText');
+    if (textEl) {
+        textEl.textContent = `🌈 Rainbow Mode (${RAINBOW_MODE_COST_MULTIPLIER}x)`;
+    }
 }
 
 // Rainbow Mode Toggle
@@ -1891,8 +1921,6 @@ function buyBonus() {
 
     // Use sendSetBet with forceBonusType to trigger bonus
     sendSetBet(currentBet, 'LUCK_OF_THE_BANDIT');
-
-    updateBonusButton();
 }
 
 // Buy Glitters Bonus Function
@@ -1914,8 +1942,6 @@ function buyGlittersBonus() {
 
     // Use sendSetBet with forceBonusType to trigger Glitters bonus
     sendSetBet(currentBet, 'ALL_THAT_GLITTERS_IS_GOLD');
-
-    updateBonusButton();
 }
 
 // Buy Treasure Bonus Function
@@ -1937,50 +1963,51 @@ function buyTreasureBonus() {
 
     // Use sendSetBet with forceBonusType to trigger Treasure bonus
     sendSetBet(currentBet, 'TREASURE_AT_END_OF_RAINBOW');
-
-    updateBonusButton();
 }
 
-// Update Bonus Button State
-function updateBonusButton() {
-    const bonusSection = document.getElementById('bonusGameSection');
-    const buyButton = document.getElementById('buyBonusButton');
-    const buyGlittersButton = document.getElementById('buyGlittersBonusButton');
-    const buyTreasureButton = document.getElementById('buyTreasureBonusButton');
-
-    if (!bonusSection) return;
-
-    // Show/hide based on config
-    if (CONFIG.bonusGame.enabled || CONFIG.treasureBonus.enabled) {
-        bonusSection.classList.remove('hidden');
-    } else {
-        bonusSection.classList.add('hidden');
+// Update Bonus Buttons from Server Config
+function updateBonusButtonsFromConfig() {
+    if (!BONUS_CONFIG || !BONUS_CONFIG.bonusGames) {
+        console.log('[Bonus Buttons] No bonus config from server, using defaults');
         return;
     }
 
     const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
-    const bonusCost = currentBet * CONFIG.bonusGame.buyCostMultiplier;
-    const treasureCost = currentBet * CONFIG.treasureBonus.buyCostMultiplier;
+    
+    // Update each bonus button from server config
+    BONUS_CONFIG.bonusGames.forEach(bonus => {
+        const cost = currentBet * bonus.buyCostMultiplier;
+        
+        switch (bonus.typeId) {
+            case 1: // Luck of the Bandit
+                updateBonusButtonFromConfig('buyBonusButton', '🎁', bonus.name, bonus.buyCostMultiplier, cost);
+                break;
+            case 2: // All That Glitters Is Gold
+                updateBonusButtonFromConfig('buyGlittersBonusButton', '✨', bonus.name, bonus.buyCostMultiplier, cost);
+                break;
+            case 3: // Treasure at the End of the Rainbow
+                updateBonusButtonFromConfig('buyTreasureBonusButton', '🌈', bonus.name, bonus.buyCostMultiplier, cost);
+                break;
+        }
+    });
+    
+    console.log('[Bonus Buttons] Updated from server config');
+}
 
-    // Update Luck of the Bandit button
-    if (buyButton) {
-        buyButton.textContent = `🎁 Buy Bonus (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
-        buyButton.disabled = isSpinning || bonusGameActive;
-        buyButton.style.display = CONFIG.bonusGame.enabled ? 'block' : 'none';
-    }
-
-    // Update Glitters button
-    if (buyGlittersButton) {
-        buyGlittersButton.textContent = `✨ Buy Glitters (${CONFIG.bonusGame.buyCostMultiplier}x) - $${bonusCost}`;
-        buyGlittersButton.disabled = isSpinning || bonusGameActive;
-        buyGlittersButton.style.display = CONFIG.bonusGame.enabled ? 'block' : 'none';
-    }
-
-    // Update Treasure button
-    if (buyTreasureButton) {
-        buyTreasureButton.textContent = `🌈 Buy Treasure (${CONFIG.treasureBonus.buyCostMultiplier}x) - $${treasureCost}`;
-        buyTreasureButton.disabled = isSpinning || bonusGameActive;
-        buyTreasureButton.style.display = CONFIG.treasureBonus.enabled ? 'block' : 'none';
+// Helper to update a single bonus button
+function updateBonusButtonFromConfig(buttonId, icon, name, multiplier, cost) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        const iconEl = button.querySelector('.bonus-btn-icon');
+        const textEl = button.querySelector('.bonus-btn-text');
+        const costEl = button.querySelector('.bonus-btn-cost');
+        
+        if (iconEl) iconEl.textContent = icon;
+        if (textEl) textEl.textContent = name;
+        if (costEl) costEl.textContent = `${multiplier}x ($${cost})`;
+        
+        // Update disabled state based on game state
+        button.disabled = isSpinning || bonusGameActive;
     }
 }
 
@@ -2100,7 +2127,6 @@ function hideBonusProgress() {
     if (bonusSection && CONFIG.bonusGame.enabled) bonusSection.classList.remove('hidden');
 
     bonusGameActive = false;
-    updateBonusButton();
 }
 
 // Show Bonus Trigger Overlay
