@@ -8,21 +8,7 @@ const CONFIG = {
     // Fake Server (local testing)
     fakeWsUrl: 'ws://35.78.181.205:3003',
 
-    // Real API Endpoints (AWS)
-    sidUrl: 'https://lbucmxb2ke.execute-api.ap-southeast-1.amazonaws.com/mock-wallet/sid',
-    launchUrl: 'https://1zka52hsdc.execute-api.ap-southeast-1.amazonaws.com/rest/game/launch',
-    wsBaseUrl: 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat',
-
-    // Test credentials
-    authToken: 's3cr3tV4lu3',
-    testUuid: 'test_uuid',
-    testUserId: 'demo_has_balance',
-    apiSecret: '53XbWSzKwEtAQBAjSB3wSKznHeDHMWqqcMLKNK1U',
-    operatorId: 'op001',
-
-    // Game settings
     gameTypeId: 'lebandit',
-    currency: 'USD',
 
     // Symbol emojis for display
     // Symbol IDs: WILD=1, SCATTER=2, High=201-205, Low=101-105 (10, J, Q, K, A)
@@ -118,52 +104,6 @@ const CONFIG = {
     }
 };
 
-// Helper to build WebSocket URL
-async function getWebSocketUrl() {
-    console.log(`CONFIG.serverMode = ${JSON.stringify(CONFIG.serverMode)}`)
-    if (CONFIG.serverMode === 'fake') {
-        return CONFIG.fakeWsUrl;
-    }
-    // Step 1: Get SID
-    console.log(`Get SID`)
-    const sidRes = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuid: CONFIG.testUuid, userId: CONFIG.testUserId })
-    });
-    const { sid } = await sidRes.json();
-    console.log(`Fetch sid = ${sid}`);
-
-    // Step 2: Launch API
-    console.log('Launching game...');
-    const launchRes = await fetch(CONFIG.launchUrl, {
-        method: 'POST',
-        // use 'text/plain'
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-            operatorId: CONFIG.operatorId,
-            gameTypeId: CONFIG.gameTypeId,
-            player: {
-                userId: CONFIG.testUserId,
-                currency: CONFIG.currency,
-                language: 'en',
-                sid,
-                name: 'testUser'
-            },
-            apiSecret: CONFIG.apiSecret
-        })
-    });
-    const launchData = await launchRes.json();
-    const redirectUrl = launchData.vals?.data?.redirectUrl;
-    console.log(`launchData = ${JSON.stringify(launchData)}`)
-    console.log(`redirectUrl = ${redirectUrl}`)
-    const url = new URL(redirectUrl);
-    const token = url.searchParams.get('token');
-    const lang = url.searchParams.get('lang') || 'en';
-    console.log('Token received');
-    const wsUrl = `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-    return wsUrl
-}
 // Helper to format large numbers (K, M)
 function formatPayout(value) {
     if (value >= 1000000) {

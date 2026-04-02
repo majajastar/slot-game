@@ -33,9 +33,8 @@ let megaBoostEnabled = false;
 let currentStickyFrames = null;
 
 // Real game state from server
-let socket = null;
+let wsClient = null; // Shared WebSocket client
 let isSpinning = false;
-let pingInterval = null;
 let currentBalance = 0;
 
 // Initialize on page load
@@ -361,72 +360,35 @@ function updateBetSizeListDisplay() {
 // ==================== CONNECTION ====================
 
 async function connect() {
-    updateLoading('Fetching token...');
+    updateLoading('Connecting...');
 
     try {
-        // Step 1: Get SID
-        const sidRes = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uuid: CONFIG.testUuid, userId: CONFIG.testUserId })
+        // Create shared WebSocket client
+        wsClient = new SlotGameWebSocketClient('theluxe', CONFIG);
+
+        // Set up event handlers
+        wsClient.on('login', (data) => {
+            console.log(`On login!`)
+            handleLogin(data.vals?.data);
         });
-        const { sid } = await sidRes.json();
-        log('SID fetched');
 
-        // Step 2: Launch API
-        updateLoading('Launching game...');
-        const launchRes = await fetch(CONFIG.launchUrl, {
-            method: 'POST',
-            // use 'text/plain'
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-                operatorId: CONFIG.operatorId,
-                gameTypeId: CONFIG.gameTypeId,
-                player: {
-                    userId: CONFIG.testUserId,
-                    currency: CONFIG.currency,
-                    language: 'en',
-                    sid,
-                    name: 'testUser'
-                },
-                apiSecret: CONFIG.apiSecret
-            })
+        wsClient.on('joinRoom', (data) => {
+            console.log(`On joinRoom!`)
+            handleJoinRoom(data);
         });
-        const launchData = await launchRes.json();
-        const redirectUrl = launchData.vals?.data?.redirectUrl;
-        const url = new URL(redirectUrl);
-        const token = url.searchParams.get('token');
-        const lang = url.searchParams.get('lang') || 'en';
-        log('Token received');
+        wsClient.on('syncRoom', (data) => {
+            console.log(`On syncRoom!`)
+            handleSyncRoom(data);
+        });
 
-        // Step 3: WebSocket
-        updateLoading('Connecting to game...');
-        const wsUrl = `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-        // const localWsUrl = `ws://54.238.168.141:3002`;
+        wsClient.on('setBet', (data) => {
+            handleSpinResult(data);
+        });
 
-        socket = new WebSocket(wsUrl);
-
-        socket.onopen = () => {
-            log('WebSocket connected');
-            send({ type: '0', data: [{ subType: 0 }] }); // Login
-        };
-
-        socket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            console.log(`msg = ${JSON.stringify(msg)}`)
-            handleMessage(msg);
-        };
-
-        socket.onerror = (err) => {
-            log('WebSocket error', 'error');
-            updateLoading('Connection failed - retry?', true);
-        };
-
-        socket.onclose = () => {
-            log('WebSocket closed');
-            updateLoading('Disconnected', true);
-            clearInterval(pingInterval);
-        };
+        // Connect (this gets SID, calls launch API, and connects WebSocket)
+        await wsClient.connect();
+        log('WebSocket connected');
+        updateLoading('Connected! Loading game...');
 
     } catch (err) {
         log('Connection failed: ' + err.message, 'error');
@@ -435,33 +397,11 @@ async function connect() {
 }
 
 function send(msg) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify(msg));
+    if (wsClient && wsClient.isSocketConnected()) {
+        wsClient.send(msg);
     }
 }
 
-// ==================== MESSAGE HANDLER ====================
-
-function handleMessage(msg) {
-    if (msg.errCode !== 0) {
-        log('Server error: ' + msg.errCode, 'error');
-        return;
-    }
-
-    const { type, data } = msg.vals;
-
-    switch (type) {
-        case 1: // Login
-            handleLogin(data);
-            break;
-        case 3: // Lobby
-            handleLobby(data);
-            break;
-        case 100000: // Game messages
-            handleGameMessage(data);
-            break;
-    }
-}
 
 function handleLogin(data) {
     log(`Logged in: ${data.sessionId}`);
@@ -485,19 +425,6 @@ function handleLobby(data) {
     }, 20000);
 }
 
-function handleGameMessage(data) {
-    const subType = data.subType;
-    const subData = data.subData?.[0];
-
-    switch (subType) {
-        case 100005: // Join room
-            handleJoinRoom(subData);
-            break;
-        case 100071: // Sub data
-            handleSubData(subData);
-            break;
-    }
-}
 
 function handleJoinRoom(data) {
     log(`Joined room: ${data.roomId}`);
@@ -591,73 +518,64 @@ function updateBetSizeListDisplay() {
     }
 }
 
-function handleSubData(subData) {
-    if (!subData?.opCode) return;
-
-    switch (subData.opCode) {
-        case 'SyncRoomInfo':
-            if (subData.roomInfo) {
-                // Load game data from server
-                if (subData.roomInfo.symbols) {
-                    SYMBOLS = subData.roomInfo.symbols;
-                    renderPaytable();
-                }
-                if (subData.roomInfo.paylines) {
-                    PAYLINES = subData.roomInfo.paylines;
-                    renderPaylines();
-                }
-                if (subData.roomInfo.jackpots) {
-                    JACKPOTS = subData.roomInfo.jackpots;
-                    renderJackpots();
-                }
-                if (subData.roomInfo.bonuses) {
-                    BONUSES = subData.roomInfo.bonuses;
-                    renderBonusInfo();
-                }
-                if (subData.roomInfo.gameConfig) {
-                    GAME_CONFIG = subData.roomInfo.gameConfig;
-                    updateGameInfo();
-                }
-                if (subData.roomInfo.betSizeList) {
-                    BET_SIZE_LIST = subData.roomInfo.betSizeList;
-                    // Validate current index is still valid, adjust if needed
-                    CURRENT_BET_INDEX = Math.max(0, Math.min(CURRENT_BET_INDEX, BET_SIZE_LIST.length - 1));
-                    // Update display to ensure it matches the tracked index
-                    const display = document.getElementById('betDisplay');
-                    if (display && BET_SIZE_LIST.length > 0) {
-                        const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
-                        display.textContent = '$' + formatBet(bet);
-                        display.dataset.baseBet = String(bet); // Fix: Set baseBet for spin()
-                    }
-                    updateBetSizeListDisplay();
-                }
-
-                // Restore previous game state if available
-                const lastResumeInfo = subData.roomInfo.lastResumeInfo;
-                if (lastResumeInfo) {
-                    log('Restoring previous game state');
-
-                    // Render the previous grid
-                    if (lastResumeInfo.grid) {
-                        renderGrid(lastResumeInfo.grid, lastResumeInfo.stickyFrames);
-                    }
-
-                    // Check if bonus is active and restore it
-                    if (lastResumeInfo.bonusGameState && lastResumeInfo.bonusGameState.spinsLeft > 0) {
-                        fakeState.inBonus = true;
-                        fakeState.bonusType = lastResumeInfo.bonusGameState.type;
-                        fakeState.bonusSpinsLeft = lastResumeInfo.bonusGameState.spinsLeft;
-                        fakeState.totalWin = lastResumeInfo.bonusGameState.totalWin || 0;
-                        showBonusBanner(lastResumeInfo.bonusGameState.type, lastResumeInfo.bonusGameState.spinsLeft, lastResumeInfo.bonusGameState.totalSpins, fakeState.totalWin);
-                        log('Bonus game restored: ' + lastResumeInfo.bonusGameState.type + ' with ' + lastResumeInfo.bonusGameState.spinsLeft + ' spins left, total win: $' + fakeState.totalWin);
-                    }
-                }
+function handleSyncRoom(data) {
+    console.log(`Handle sync room...`)
+    if (subData?.roomInfo) {
+        // Load game data from server
+        if (subData.roomInfo.symbols) {
+            SYMBOLS = subData.roomInfo.symbols;
+            renderPaytable();
+        }
+        if (subData.roomInfo.paylines) {
+            PAYLINES = subData.roomInfo.paylines;
+            renderPaylines();
+        }
+        if (subData.roomInfo.jackpots) {
+            JACKPOTS = subData.roomInfo.jackpots;
+            renderJackpots();
+        }
+        if (subData.roomInfo.bonuses) {
+            BONUSES = subData.roomInfo.bonuses;
+            renderBonusInfo();
+        }
+        if (subData.roomInfo.gameConfig) {
+            GAME_CONFIG = subData.roomInfo.gameConfig;
+            updateGameInfo();
+        }
+        if (subData.roomInfo.betSizeList) {
+            BET_SIZE_LIST = subData.roomInfo.betSizeList;
+            // Validate current index is still valid, adjust if needed
+            CURRENT_BET_INDEX = Math.max(0, Math.min(CURRENT_BET_INDEX, BET_SIZE_LIST.length - 1));
+            // Update display to ensure it matches the tracked index
+            const display = document.getElementById('betDisplay');
+            if (display && BET_SIZE_LIST.length > 0) {
+                const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+                display.textContent = '$' + formatBet(bet);
+                display.dataset.baseBet = String(bet); // Fix: Set baseBet for spin()
             }
-            break;
+            updateBetSizeListDisplay();
+        }
 
-        case 'SetBet':
-            handleSpinResult(subData);
-            break;
+        // Restore previous game state if available
+        const lastResumeInfo = subData.roomInfo.lastResumeInfo;
+        if (lastResumeInfo) {
+            log('Restoring previous game state');
+
+            // Render the previous grid
+            if (lastResumeInfo.grid) {
+                renderGrid(lastResumeInfo.grid, lastResumeInfo.stickyFrames);
+            }
+
+            // Check if bonus is active and restore it
+            if (lastResumeInfo.bonusGameState && lastResumeInfo.bonusGameState.spinsLeft > 0) {
+                fakeState.inBonus = true;
+                fakeState.bonusType = lastResumeInfo.bonusGameState.type;
+                fakeState.bonusSpinsLeft = lastResumeInfo.bonusGameState.spinsLeft;
+                fakeState.totalWin = lastResumeInfo.bonusGameState.totalWin || 0;
+                showBonusBanner(lastResumeInfo.bonusGameState.type, lastResumeInfo.bonusGameState.spinsLeft, lastResumeInfo.bonusGameState.totalSpins, fakeState.totalWin);
+                log('Bonus game restored: ' + lastResumeInfo.bonusGameState.type + ' with ' + lastResumeInfo.bonusGameState.spinsLeft + ' spins left, total win: $' + fakeState.totalWin);
+            }
+        }
     }
 }
 

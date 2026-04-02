@@ -3,6 +3,23 @@
  * Handles connection, message routing, and common game operations
  */
 
+const WS_CONFIG = {
+    // Real API Endpoints (AWS)
+    sidUrl: 'https://lbucmxb2ke.execute-api.ap-southeast-1.amazonaws.com/mock-wallet/sid',
+    launchUrl: 'https://1zka52hsdc.execute-api.ap-southeast-1.amazonaws.com/rest/game/launch',
+    wsBaseUrl: 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat',
+
+    // Test credentials
+    authToken: 's3cr3tV4lu3',
+    testUuid: 'test_uuid',
+    testUserId: 'demo_has_balance',
+    apiSecret: '53XbWSzKwEtAQBAjSB3wSKznHeDHMWqqcMLKNK1U',
+    operatorId: 'op001',
+
+    // Game settings
+    currency: 'USD'
+}
+
 class SlotGameWebSocketClient {
     constructor(gameType, config) {
         this.gameType = gameType; // 'lebandit' or 'theluxe'
@@ -23,8 +40,8 @@ class SlotGameWebSocketClient {
     // ==========================================
 
     async connect() {
-        return new Promise((resolve, reject) => {
-            const wsUrl = this.getWebSocketUrl();
+        return new Promise(async (resolve, reject) => {
+            const wsUrl = await this.getWebSocketUrl();
             console.log(`[${this.gameType}] Connecting to ${wsUrl}`);
 
             this.socket = new WebSocket(wsUrl);
@@ -61,12 +78,53 @@ class SlotGameWebSocketClient {
         });
     }
 
-    getWebSocketUrl() {
+    async getWebSocketUrl() {
+        console.log(`config.serverMode = ${JSON.stringify(this.config.serverMode)}`)
         if (this.config.serverMode === 'fake') {
             return this.config.fakeWsUrl;
         }
         // Real server - would need token from auth
-        return `${this.config.wsBaseUrl}?token=demo&lang=en`;
+        
+        // Step 1: Get SID
+        console.log(`Getting SID...`)
+        const sidRes = await fetch(`${WS_CONFIG.sidUrl}?authToken=${WS_CONFIG.authToken}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid: WS_CONFIG.testUuid, userId: WS_CONFIG.testUserId })
+        });
+        const { sid } = await sidRes.json();
+        console.log(`Fetch sid = ${sid}`);
+
+        // Step 2: Launch API
+        console.log('Launching game...');
+        const launchRes = await fetch(WS_CONFIG.launchUrl, {
+            method: 'POST',
+            // use 'text/plain'
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+                operatorId: WS_CONFIG.operatorId,
+                gameTypeId: this.gameType,
+                player: {
+                    userId: WS_CONFIG.testUserId,
+                    currency: WS_CONFIG.currency,
+                    language: 'en',
+                    sid,
+                    name: 'testUser'
+                },
+                apiSecret: WS_CONFIG.apiSecret
+            })
+        });
+        const launchData = await launchRes.json();
+        const redirectUrl = launchData.vals?.data?.redirectUrl;
+        console.log(`launchData = ${JSON.stringify(launchData)}`)
+        console.log(`redirectUrl = ${redirectUrl}`)
+        const url = new URL(redirectUrl);
+        const token = url.searchParams.get('token');
+        const lang = url.searchParams.get('lang') || 'en';
+        console.log(`Token received, token = ${token}, lang = ${lang}`);
+        const wsUrl = `${WS_CONFIG.wsBaseUrl}?token=${token}&lang=${lang}`
+        console.log(`wsUrl = ${wsUrl}`)
+        return Promise.resolve(wsUrl);
     }
 
     disconnect() {

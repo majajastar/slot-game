@@ -158,12 +158,7 @@ function renderPaytable() {
 // WebSocket Connection using shared client
 async function connect() {
     // Create shared WebSocket client
-    wsClient = new SlotGameWebSocketClient('lebandit', {
-        serverMode: CONFIG.serverMode,
-        fakeWsUrl: CONFIG.fakeWsUrl,
-        wsBaseUrl: CONFIG.wsBaseUrl,
-        pingInterval: CONFIG.pingInterval || 20000
-    });
+    wsClient = new SlotGameWebSocketClient('lebandit', CONFIG);
 
     // Set up event handlers
     wsClient.on('joinRoom', (data) => {
@@ -178,13 +173,6 @@ async function connect() {
         handleSpinResult(data);
     });
 
-    wsClient.on('message', (data) => {
-        // Handle any other messages
-        const type = data.vals?.type || data.type;
-        if (type === 1) {
-            handleLoginResponse(data);
-        }
-    });
 
     // Connect and join room
     try {
@@ -194,43 +182,10 @@ async function connect() {
         await wsClient.connect();
         hideLoading();
         
-        await wsClient.joinRoom();
-        await wsClient.syncRoom();
     } catch (err) {
         console.error('[LeBandit] Connection error:', err);
         showLoading('Reconnecting...');
         setTimeout(connect, 3000);
-    }
-}
-
-// Legacy send function (wrapper for compatibility)
-function send(type, data) {
-    if (!wsClient || !wsClient.isSocketConnected()) {
-        console.error('Socket not ready');
-        return;
-    }
-    const msg = { type: String(type), data: data || [] };
-    console.log('→ Sending:', msg);
-    wsClient.send(msg);
-}
-
-// Message handlers
-function handleMessage(msg) {
-
-    if (!msg.vals) return;
-    console.log()
-    const type = msg.vals.type;
-    const data = msg.vals.data;
-    //console.log(`type = ${type}`)
-    //console.log(`data = ${JSON.stringify(data)}`)
-
-    switch (type) {
-        case 1: // Login response
-            handleLoginResponse(data);
-            break;
-        case 100000: // Room messages
-            handleRoomMessage(data);
-            break;
     }
 }
 
@@ -376,7 +331,7 @@ function handleJoinRoom(data) {
 }
 
 function handleSyncRoom(data) {
-    console.log(`Handle sync room`)
+    console.log(`Handle sync room, dat a= ${JSON.stringify(data)}`)
     if (data.roomInfo) {
         if (data.roomInfo.lastResumeInfo){
             // Restore grid if in middle of game

@@ -1,20 +1,12 @@
 // Configuration for TheLuxe Frontend
 const CONFIG = {
-    // API Endpoints
-    sidUrl: 'https://lbucmxb2ke.execute-api.ap-southeast-1.amazonaws.com/mock-wallet/sid',
-    launchUrl: 'https://1zka52hsdc.execute-api.ap-southeast-1.amazonaws.com/rest/game/launch',
-    wsBaseUrl: 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat',
-    
-    // Test credentials
-    authToken: 's3cr3tV4lu3',
-    testUuid: 'test_uuid',
-    testUserId: 'demo_has_balance',
-    apiSecret: '53XbWSzKwEtAQBAjSB3wSKznHeDHMWqqcMLKNK1U',
-    operatorId: 'op001',
-    
     // Game settings
+    serverMode: 'real', // Change to 'real' for production
+
+    // Fake Server (local testing)
+    fakeWsUrl: 'ws://35.78.181.205:3002',
+
     gameTypeId: 'theluxe',
-    currency: 'USD',
     
     // Symbol emojis for display (frontend decides icons)
     // Symbol IDs: WILD=1, SCATTER=26, High=201-205, Low=101-104, COLLECT=777
