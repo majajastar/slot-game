@@ -15,9 +15,8 @@ let BONUS_CONFIG = null; // Bonus config from server (with buy multipliers and r
 let RAINBOW_MODE_COST_MULTIPLIER = 10; // Default, will be updated from server
 
 // Game state
-let socket = null;
+let wsClient = null; // Shared WebSocket client
 let isSpinning = false;
-let pingInterval = null;
 let currentBalance = 0;
 let rainbowModeEnabled = false; // Rainbow mode state
 let debugScatterCount = null; // Debug: force specific scatter count (null = disabled, 0-5 = force count)
@@ -156,50 +155,63 @@ function renderPaytable() {
     container.innerHTML = html;
 }
 
-// WebSocket Connection
+// WebSocket Connection using shared client
 async function connect() {
-    const wsUrl = await getWebSocketUrl();
-    const modeText = CONFIG.serverMode === 'fake' ? 'FAKE' : 'REAL';
-    console.log(`[LeBandit] Connecting to ${modeText} server:`, wsUrl);
+    // Create shared WebSocket client
+    wsClient = new SlotGameWebSocketClient('lebandit', {
+        serverMode: CONFIG.serverMode,
+        fakeWsUrl: CONFIG.fakeWsUrl,
+        wsBaseUrl: CONFIG.wsBaseUrl,
+        pingInterval: CONFIG.pingInterval || 20000
+    });
 
-    socket = new WebSocket(wsUrl);
+    // Set up event handlers
+    wsClient.on('joinRoom', (data) => {
+        handleJoinRoom(data);
+    });
 
-    socket.onopen = () => {
-        console.log(`[LeBandit] Connected to ${modeText} server`);
-        hideLoading();
-        sendLogin();
-    };
+    wsClient.on('syncRoom', (data) => {
+        handleSyncRoom(data);
+    });
 
-    socket.onmessage = (event) => {
-        try {
-            const msg = JSON.parse(event.data);
-            handleMessage(msg);
-        } catch (e) {
-            console.error('Failed to parse message:', e);
+    wsClient.on('setBet', (data) => {
+        handleSpinResult(data);
+    });
+
+    wsClient.on('message', (data) => {
+        // Handle any other messages
+        const type = data.vals?.type || data.type;
+        if (type === 1) {
+            handleLoginResponse(data);
         }
-    };
+    });
 
-    socket.onclose = () => {
-        console.log('WebSocket closed');
+    // Connect and join room
+    try {
+        const modeText = CONFIG.serverMode === 'fake' ? 'FAKE' : 'REAL';
+        console.log(`[LeBandit] Connecting to ${modeText} server...`);
+        
+        await wsClient.connect();
+        hideLoading();
+        
+        await wsClient.joinRoom();
+        await wsClient.syncRoom();
+    } catch (err) {
+        console.error('[LeBandit] Connection error:', err);
         showLoading('Reconnecting...');
         setTimeout(connect, 3000);
-    };
-
-    socket.onerror = (err) => {
-        console.error('WebSocket error:', err);
-    };
+    }
 }
 
-// Send message wrapper
+// Legacy send function (wrapper for compatibility)
 function send(type, data) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
+    if (!wsClient || !wsClient.isSocketConnected()) {
         console.error('Socket not ready');
         return;
     }
-
     const msg = { type: String(type), data: data || [] };
     console.log('→ Sending:', msg);
-    socket.send(JSON.stringify(msg));
+    wsClient.send(msg);
 }
 
 // Message handlers
@@ -266,7 +278,8 @@ function sendSyncRoom() {
     }]);
 }
 
-function sendSetBet(bet, forceBonusType = null) {
+// API Calls - now use shared client
+async function sendSetBet(bet, forceBonusType = null) {
     const message = {
         bet: bet,
         rainbowMode: rainbowModeEnabled
@@ -287,13 +300,14 @@ function sendSetBet(bet, forceBonusType = null) {
         message.debugForceRainbow = true;
     }
 
-    send('100000', [{
-        subType: 100070,
-        subData: [{
-            opCode: 'SetBet',
-            message: message
-        }]
-    }]);
+    try {
+        const result = await wsClient.setBet(message);
+        await handleSpinResult(result);
+    } catch (err) {
+        console.error('[sendSetBet] Error:', err);
+        isSpinning = false;
+        document.getElementById('spinButton').disabled = false;
+    }
 }
 
 // Response Handlers

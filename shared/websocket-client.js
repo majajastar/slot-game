@@ -1,0 +1,257 @@
+/**
+ * Shared WebSocket Client for Slot Games
+ * Handles connection, message routing, and common game operations
+ */
+
+class SlotGameWebSocketClient {
+    constructor(gameType, config) {
+        this.gameType = gameType; // 'lebandit' or 'theluxe'
+        this.config = config;
+        this.socket = null;
+        this.pingInterval = null;
+        this.sessionId = null;
+        this.userId = null;
+        this.currentBalance = 0;
+        this.isConnected = false;
+        this.messageHandlers = new Map();
+        this.pendingRequests = new Map();
+        this.requestId = 0;
+    }
+
+    // ==========================================
+    // CONNECTION
+    // ==========================================
+
+    async connect() {
+        return new Promise((resolve, reject) => {
+            const wsUrl = this.getWebSocketUrl();
+            console.log(`[${this.gameType}] Connecting to ${wsUrl}`);
+
+            this.socket = new WebSocket(wsUrl);
+
+            this.socket.onopen = () => {
+                console.log(`[${this.gameType}] WebSocket connected`);
+                this.isConnected = true;
+                this.sendLogin();
+            };
+
+            this.socket.onmessage = (event) => {
+                this.handleMessage(JSON.parse(event.data));
+            };
+
+            this.socket.onclose = () => {
+                console.log(`[${this.gameType}] WebSocket closed`);
+                this.isConnected = false;
+                this.stopPing();
+            };
+
+            this.socket.onerror = (error) => {
+                console.error(`[${this.gameType}] WebSocket error:`, error);
+                reject(error);
+            };
+
+            // Set up login response handler
+            this.once('login', (data) => {
+                this.sessionId = data.vals?.data?.sessionId;
+                this.userId = data.vals?.data?.userId;
+                this.currentBalance = data.vals?.data?.balance || 0;
+                this.startPing();
+                resolve(data);
+            });
+        });
+    }
+
+    getWebSocketUrl() {
+        if (this.config.serverMode === 'fake') {
+            return this.config.fakeWsUrl;
+        }
+        // Real server - would need token from auth
+        return `${this.config.wsBaseUrl}?token=demo&lang=en`;
+    }
+
+    disconnect() {
+        if (this.socket) {
+            this.socket.close();
+            this.socket = null;
+        }
+        this.stopPing();
+        this.isConnected = false;
+    }
+
+    // ==========================================
+    // MESSAGE HANDLING
+    // ==========================================
+
+    handleMessage(data) {
+        const type = data.vals?.type || data.type;
+        
+        // Handle specific message types
+        switch (type) {
+            case 1: // Login response
+                this.emit('login', data);
+                break;
+            case 100000:
+                const subType = data.vals?.data?.subType;
+                if (subType === 100005) {
+                    this.emit('joinRoom', data.vals.data.subData[0]);
+                } else if (subType === 100071) {
+                    const opCode = data.vals?.data?.subData?.[0]?.opCode;
+                    if (opCode === 'SyncRoomInfo') {
+                        this.emit('syncRoom', data.vals.data.subData[0]);
+                    } else if (opCode === 'SetBet') {
+                        this.emit('setBet', data.vals.data.subData[0]);
+                    }
+                }
+                break;
+        }
+
+        // Emit for general handlers
+        this.emit('message', data);
+    }
+
+    // Event emitter pattern
+    on(event, handler) {
+        if (!this.messageHandlers.has(event)) {
+            this.messageHandlers.set(event, []);
+        }
+        this.messageHandlers.get(event).push(handler);
+    }
+
+    once(event, handler) {
+        const onceHandler = (data) => {
+            handler(data);
+            this.off(event, onceHandler);
+        };
+        this.on(event, onceHandler);
+    }
+
+    off(event, handler) {
+        if (this.messageHandlers.has(event)) {
+            const handlers = this.messageHandlers.get(event);
+            const index = handlers.indexOf(handler);
+            if (index > -1) {
+                handlers.splice(index, 1);
+            }
+        }
+    }
+
+    emit(event, data) {
+        if (this.messageHandlers.has(event)) {
+            this.messageHandlers.get(event).forEach(handler => {
+                try {
+                    handler(data);
+                } catch (err) {
+                    console.error(`[${this.gameType}] Error in handler:`, err);
+                }
+            });
+        }
+    }
+
+    // ==========================================
+    // CORE OPERATIONS
+    // ==========================================
+
+    sendLogin() {
+        this.send({ type: '0' });
+    }
+
+    async joinRoom() {
+        return new Promise((resolve) => {
+            this.once('joinRoom', (data) => {
+                resolve(data);
+            });
+            
+            this.send({
+                type: '100000',
+                data: [{ subType: 100004 }]
+            });
+        });
+    }
+
+    async syncRoom() {
+        return new Promise((resolve) => {
+            this.once('syncRoom', (data) => {
+                resolve(data);
+            });
+            
+            this.send({
+                type: '100000',
+                data: [{
+                    subType: 100070,
+                    subData: [{ opCode: 'SyncRoomInfo' }]
+                }]
+            });
+        });
+    }
+
+    async setBet(message) {
+        return new Promise((resolve) => {
+            this.once('setBet', (data) => {
+                resolve(data);
+            });
+            
+            this.send({
+                type: '100000',
+                data: [{
+                    subType: 100070,
+                    subData: [{
+                        opCode: 'SetBet',
+                        message: message
+                    }]
+                }]
+            });
+        });
+    }
+
+    // ==========================================
+    // LOW LEVEL
+    // ==========================================
+
+    send(data) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(data));
+        } else {
+            console.error(`[${this.gameType}] WebSocket not connected`);
+        }
+    }
+
+    startPing() {
+        this.pingInterval = setInterval(() => {
+            if (this.isConnected) {
+                this.send({ type: 'ping' });
+            }
+        }, this.config.pingInterval || 20000);
+    }
+
+    stopPing() {
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+            this.pingInterval = null;
+        }
+    }
+
+    // ==========================================
+    // GETTERS
+    // ==========================================
+
+    getBalance() {
+        return this.currentBalance;
+    }
+
+    getSessionId() {
+        return this.sessionId;
+    }
+
+    getUserId() {
+        return this.userId;
+    }
+
+    isSocketConnected() {
+        return this.isConnected;
+    }
+}
+
+// Export for use in both games
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { SlotGameWebSocketClient };
+}
