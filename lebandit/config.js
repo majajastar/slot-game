@@ -3,7 +3,7 @@
 
 const CONFIG = {
     // Server Mode: 'real' for AWS backend, 'fake' for local testing
-    serverMode: 'fake', // Change to 'real' for production
+    serverMode: 'real', // Change to 'real' for production
 
     // Fake Server (local testing)
     fakeWsUrl: 'ws://35.78.181.205:3003',
