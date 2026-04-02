@@ -27,13 +27,13 @@ let debugForceRainbow = false; // Debug: force rainbow feature to show
 let currentGrid = [];
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initGrid();
     renderPaytable();
     updateBetDisplay();
     updateServerModeDisplay();
     resetDebugScatterCount(); // Reset debug scatter count on page reload
-    connect();
+    await connect();
 });
 
 // Reset debug scatter count on page reload
@@ -157,8 +157,8 @@ function renderPaytable() {
 }
 
 // WebSocket Connection
-function connect() {
-    const wsUrl = getWebSocketUrl(CONFIG.authToken, 'en');
+async function connect() {
+    const wsUrl = await getWebSocketUrl();
     const modeText = CONFIG.serverMode === 'fake' ? 'FAKE' : 'REAL';
     console.log(`[LeBandit] Connecting to ${modeText} server:`, wsUrl);
 
@@ -339,19 +339,19 @@ function handleJoinRoom(data) {
             });
             console.log('[JoinRoom] Symbols mapped:', Object.keys(SYMBOLS).map(id => SYMBOLS[id]).join(', '));
         }
-        
+
         // Store bonus config from server
         if (info.bonusConfig) {
             BONUS_CONFIG = info.bonusConfig;
             console.log('[JoinRoom] Bonus config received:', BONUS_CONFIG);
-            
+
             // Update rainbow mode cost multiplier from server
             if (info.bonusConfig.rainbowModeCostMultiplier) {
                 RAINBOW_MODE_COST_MULTIPLIER = info.bonusConfig.rainbowModeCostMultiplier;
                 console.log('[JoinRoom] Rainbow mode cost multiplier:', RAINBOW_MODE_COST_MULTIPLIER);
                 updateRainbowModeText();
             }
-            
+
             updateBonusButtonsFromConfig();
         }
 
@@ -712,7 +712,7 @@ function findScatterPositions(grid) {
 function finalizeSpin() {
     isSpinning = false;
     document.getElementById('spinButton').disabled = false;
-    
+
     // Re-enable bonus buttons after spin
     if (BONUS_CONFIG) {
         updateBonusButtonsFromConfig();
@@ -1973,11 +1973,11 @@ function updateBonusButtonsFromConfig() {
     }
 
     const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
-    
+
     // Update each bonus button from server config
     BONUS_CONFIG.bonusGames.forEach(bonus => {
         const cost = currentBet * bonus.buyCostMultiplier;
-        
+
         switch (bonus.typeId) {
             case 1: // Luck of the Bandit
                 updateBonusButtonFromConfig('buyBonusButton', '🎁', bonus.name, bonus.buyCostMultiplier, cost);
@@ -1990,7 +1990,7 @@ function updateBonusButtonsFromConfig() {
                 break;
         }
     });
-    
+
     console.log('[Bonus Buttons] Updated from server config');
 }
 
@@ -2001,11 +2001,11 @@ function updateBonusButtonFromConfig(buttonId, icon, name, multiplier, cost) {
         const iconEl = button.querySelector('.bonus-btn-icon');
         const textEl = button.querySelector('.bonus-btn-text');
         const costEl = button.querySelector('.bonus-btn-cost');
-        
+
         if (iconEl) iconEl.textContent = icon;
         if (textEl) textEl.textContent = name;
         if (costEl) costEl.textContent = `${multiplier}x ($${cost})`;
-        
+
         // Update disabled state based on game state
         button.disabled = isSpinning || bonusGameActive;
     }

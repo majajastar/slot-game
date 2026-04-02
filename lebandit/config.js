@@ -3,27 +3,27 @@
 
 const CONFIG = {
     // Server Mode: 'real' for AWS backend, 'fake' for local testing
-    serverMode: 'fake', // Change to 'real' for production
-    
+    serverMode: 'real', // Change to 'real' for production
+
     // Fake Server (local testing)
     fakeWsUrl: 'ws://18.183.247.231:3003',
-    
+
     // Real API Endpoints (AWS)
     sidUrl: 'https://lbucmxb2ke.execute-api.ap-southeast-1.amazonaws.com/mock-wallet/sid',
     launchUrl: 'https://1zka52hsdc.execute-api.ap-southeast-1.amazonaws.com/rest/game/launch',
     wsBaseUrl: 'wss://br9131tad1.execute-api.ap-southeast-1.amazonaws.com/uat',
-    
+
     // Test credentials
     authToken: 's3cr3tV4lu3',
     testUuid: 'test_uuid',
     testUserId: 'demo_has_balance',
     apiSecret: '53XbWSzKwEtAQBAjSB3wSKznHeDHMWqqcMLKNK1U',
     operatorId: 'op001',
-    
+
     // Game settings
     gameTypeId: 'lebandit',
     currency: 'USD',
-    
+
     // Symbol emojis for display
     // Symbol IDs: WILD=1, SCATTER=2, High=201-205, Low=101-105 (10, J, Q, K, A)
     symbols: {
@@ -49,7 +49,7 @@ const CONFIG = {
         '304': '🍀',  // FOUR_LEAF_CLOVER
         '305': '🏺',  // POT_OF_GOLD
     },
-    
+
     // Symbol names for paytable (Wild excluded - no direct payout)
     symbolNames: {
         '201': 'Crown',
@@ -64,11 +64,11 @@ const CONFIG = {
         '104': 'King',
         '105': 'Ace'
     },
-    
+
     // Grid dimensions - LeBandit is 6x5
     rows: 5,
     cols: 6,
-    
+
     // Grid layout constants - SINGLE SOURCE OF TRUTH for all grid sizing
     gridLayout: {
         ROWS_VISIBLE: 5,        // Number of visible rows
@@ -79,8 +79,8 @@ const CONFIG = {
         CELL_GAP: 6,            // Gap between cells in pixels
         PADDING: 15,            // Grid padding in pixels
         get CONTAINER_HEIGHT() { // Total container height
-            return this.ROWS_VISIBLE * this.CELL_HEIGHT + 
-                   (this.ROWS_VISIBLE - 1) * this.CELL_GAP + 
+            return this.ROWS_VISIBLE * this.CELL_HEIGHT +
+                   (this.ROWS_VISIBLE - 1) * this.CELL_GAP +
                    2 * this.PADDING;
         },
         get BUFFER_OFFSET() {   // Offset to hide buffer rows
@@ -90,17 +90,17 @@ const CONFIG = {
         BORDER_RADIUS_SMALL: 6, // Smaller border radius for responsive
         BORDER_RADIUS_MOBILE: 4 // Mobile border radius
     },
-    
+
     // Ping interval (ms)
     pingInterval: 20000,
-    
+
     // Rainbow Mode Settings
     rainbowMode: {
         enabled: true,
         costMultiplier: 10, // 10x normal bet cost
         description: 'Guaranteed rainbow feature after every cascade'
     },
-    
+
     // Bonus Game Settings - "Luck of the Bandit"
     bonusGame: {
         enabled: true,           // Enable/disable bonus game
@@ -119,13 +119,51 @@ const CONFIG = {
 };
 
 // Helper to build WebSocket URL
-function getWebSocketUrl(token, lang) {
+async function getWebSocketUrl() {
+    console.log(`CONFIG.serverMode = ${JSON.stringify(CONFIG.serverMode)}`)
     if (CONFIG.serverMode === 'fake') {
         return CONFIG.fakeWsUrl;
     }
-    return `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
-}
+    // Step 1: Get SID
+    console.log(`Get SID`)
+    const sidRes = await fetch(`${CONFIG.sidUrl}?authToken=${CONFIG.authToken}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uuid: CONFIG.testUuid, userId: CONFIG.testUserId })
+    });
+    const { sid } = await sidRes.json();
+    console.log(`Fetch sid = ${sid}`);
 
+    // Step 2: Launch API
+    console.log('Launching game...');
+    const launchRes = await fetch(CONFIG.launchUrl, {
+        method: 'POST',
+        // use 'text/plain'
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+            operatorId: CONFIG.operatorId,
+            gameTypeId: CONFIG.gameTypeId,
+            player: {
+                userId: CONFIG.testUserId,
+                currency: CONFIG.currency,
+                language: 'en',
+                sid,
+                name: 'testUser'
+            },
+            apiSecret: CONFIG.apiSecret
+        })
+    });
+    const launchData = await launchRes.json();
+    const redirectUrl = launchData.vals?.data?.redirectUrl;
+    console.log(`launchData = ${JSON.stringify(launchData)}`)
+    console.log(`redirectUrl = ${redirectUrl}`)
+    const url = new URL(redirectUrl);
+    const token = url.searchParams.get('token');
+    const lang = url.searchParams.get('lang') || 'en';
+    console.log('Token received');
+    const wsUrl = `${CONFIG.wsBaseUrl}?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
+    return wsUrl
+}
 // Helper to format large numbers (K, M)
 function formatPayout(value) {
     if (value >= 1000000) {
