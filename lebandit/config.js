@@ -1,12 +1,28 @@
 // Configuration for LeBandit Frontend
-// This references backend config - CLUSTER_PAYOUT_TABLE is the single source of truth
+// Uses GLOBAL_CONFIG for server settings
 
 const CONFIG = {
-    // Server Mode: 'real' for AWS backend, 'fake' for local testing
-    serverMode: 'real', // Change to 'real' for production
-
-    // Fake Server (local testing)
-    fakeWsUrl: 'ws://35.78.181.205:3003',
+    // Use global server mode (fake/real)
+    get serverMode() { return GLOBAL_CONFIG.serverMode; },
+    
+    // Use global fake server URL
+    get fakeWsUrl() { return GLOBAL_CONFIG.fakeServers.lebandit; },
+    
+    // Use global real server URLs
+    get sidUrl() { return GLOBAL_CONFIG.realServers.sidUrl; },
+    get launchUrl() { return GLOBAL_CONFIG.realServers.launchUrl; },
+    get wsBaseUrl() { return GLOBAL_CONFIG.realServers.wsBaseUrl; },
+    
+    // Use global credentials
+    get authToken() { return GLOBAL_CONFIG.credentials.authToken; },
+    get testUuid() { return GLOBAL_CONFIG.credentials.testUuid; },
+    get testUserId() { return GLOBAL_CONFIG.credentials.testUserId; },
+    get apiSecret() { return GLOBAL_CONFIG.credentials.apiSecret; },
+    get operatorId() { return GLOBAL_CONFIG.credentials.operatorId; },
+    get currency() { return GLOBAL_CONFIG.credentials.currency; },
+    
+    // Use global ping interval
+    get pingInterval() { return GLOBAL_CONFIG.gameSettings.pingInterval; },
 
     gameTypeId: 'lebandit',
 
@@ -76,9 +92,6 @@ const CONFIG = {
         BORDER_RADIUS_SMALL: 6, // Smaller border radius for responsive
         BORDER_RADIUS_MOBILE: 4 // Mobile border radius
     },
-
-    // Ping interval (ms)
-    pingInterval: 20000,
 
     // Rainbow Mode Settings
     rainbowMode: {

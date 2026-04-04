@@ -53,7 +53,7 @@ class SlotGameWebSocketClient {
             };
 
             this.socket.onmessage = (event) => {
-                this.handleMessage(JSON.parse(event.data));
+                this.handleMessage(event);
             };
 
             this.socket.onclose = () => {
@@ -140,31 +140,60 @@ class SlotGameWebSocketClient {
     // MESSAGE HANDLING
     // ==========================================
 
-    handleMessage(data) {
-        const type = data.vals?.type || data.type;
-        
-        // Handle specific message types
-        switch (type) {
-            case 1: // Login response
-                this.emit('login', data);
-                break;
-            case 100000:
-                const subType = data.vals?.data?.subType;
-                if (subType === 100005) {
-                    this.emit('joinRoom', data.vals.data.subData[0]);
-                } else if (subType === 100071) {
-                    const opCode = data.vals?.data?.subData?.[0]?.opCode;
-                    if (opCode === 'SyncRoomInfo') {
-                        this.emit('syncRoom', data.vals.data.subData[0]);
-                    } else if (opCode === 'SetBet') {
-                        this.emit('setBet', data.vals.data.subData[0]);
-                    }
-                }
-                break;
-        }
+    sendLobbyRequest(){
+        this.send({ type: '2', data: [{ subType: 0 }] }); // Lobby
+    }
 
-        // Emit for general handlers
-        this.emit('message', data);
+    joinRoom() {
+        this.send('100000', [{
+            subType: 100004,
+            subData: [{ roomId: 'lebandit-room-001' }]
+        }]);
+    }
+
+    handleLobbyResponse() {
+        // Join room request
+        this.send({ type: '100000', data: [{ subType: 100004 }] });
+
+        // Sync room info - only called once on initial connection (page refresh)
+        this.send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
+
+        console.log(`Set interval = ${this.config.pingInterval}`)
+        setInterval(() => {
+            this.send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
+        }, 20000 || this.config.pingInterval);
+    }
+
+    handleMessage(event) {
+        try{
+            const data = JSON.parse(event.data);
+            const type = data.vals?.type || data.type;
+            console.log(`type = ${type}, data = ${JSON.stringify(data)}`)
+            // Handle specific message types
+            switch (type) {
+                case 1: // Login response
+                    this.sendLobbyRequest()
+                    break;
+                case 3: // Lobby response
+                    this.handleLobbyResponse()
+                    break;
+                case 100000:
+                    const subType = data.vals?.data?.subType;
+                    if (subType === 100005) {
+                        this.emit('joinRoom', data.vals.data.subData[0]);
+                    } else if (subType === 100071) {
+                        const opCode = data.vals?.data?.subData?.[0]?.opCode;
+                        if (opCode === 'SyncRoomInfo') {
+                            this.emit('syncRoom', data.vals.data.subData[0]);
+                        } else if (opCode === 'SetBet') {
+                            this.emit('setBet', data.vals.data.subData[0]);
+                        }
+                    }
+                    break;
+            }
+        } catch (err) {
+            console.warn(`[${this.gameType}] Error parsing message:`, err);
+        }
     }
 
     // Event emitter pattern

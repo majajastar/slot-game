@@ -1,10 +1,28 @@
 // Configuration for TheLuxe Frontend
-const CONFIG = {
-    // Game settings
-    serverMode: 'real', // Change to 'real' for production
+// Uses GLOBAL_CONFIG for server settings
 
-    // Fake Server (local testing)
-    fakeWsUrl: 'ws://35.78.181.205:3002',
+const CONFIG = {
+    // Use global server mode (fake/real)
+    get serverMode() { return GLOBAL_CONFIG.serverMode; },
+    
+    // Use global fake server URL
+    get fakeWsUrl() { return GLOBAL_CONFIG.fakeServers.theluxe; },
+    
+    // Use global real server URLs
+    get sidUrl() { return GLOBAL_CONFIG.realServers.sidUrl; },
+    get launchUrl() { return GLOBAL_CONFIG.realServers.launchUrl; },
+    get wsBaseUrl() { return GLOBAL_CONFIG.realServers.wsBaseUrl; },
+    
+    // Use global credentials
+    get authToken() { return GLOBAL_CONFIG.credentials.authToken; },
+    get testUuid() { return GLOBAL_CONFIG.credentials.testUuid; },
+    get testUserId() { return GLOBAL_CONFIG.credentials.testUserId; },
+    get apiSecret() { return GLOBAL_CONFIG.credentials.apiSecret; },
+    get operatorId() { return GLOBAL_CONFIG.credentials.operatorId; },
+    get currency() { return GLOBAL_CONFIG.credentials.currency; },
+    
+    // Use global ping interval
+    get pingInterval() { return GLOBAL_CONFIG.gameSettings.pingInterval; },
 
     gameTypeId: 'theluxe',
     
@@ -30,10 +48,7 @@ const CONFIG = {
     
     // Grid dimensions
     rows: 4,
-    cols: 5,
-    
-    // Ping interval (ms)
-    pingInterval: 20000
+    cols: 5
 };
 
 // Helper to build WebSocket URL

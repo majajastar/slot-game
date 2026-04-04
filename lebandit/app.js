@@ -163,6 +163,7 @@ async function connect() {
     // Set up event handlers
     wsClient.on('joinRoom', (data) => {
         handleJoinRoom(data);
+        hideLoading();
     });
 
     wsClient.on('syncRoom', (data) => {
@@ -178,59 +179,13 @@ async function connect() {
     try {
         const modeText = CONFIG.serverMode === 'fake' ? 'FAKE' : 'REAL';
         console.log(`[LeBandit] Connecting to ${modeText} server...`);
-        
         await wsClient.connect();
-        hideLoading();
         
     } catch (err) {
         console.error('[LeBandit] Connection error:', err);
         showLoading('Reconnecting...');
         setTimeout(connect, 3000);
     }
-}
-
-function handleLoginResponse(data) {
-    console.log('Login successful:', data);
-    if (data.sessionId) {
-        joinRoom();
-    }
-}
-
-function handleRoomMessage(data) {
-    const subType = data.subType;
-    const subData = data.subData?.[0];
-
-    switch (subType) {
-        case 100005: // Join room response
-            handleJoinRoom(subData);
-            break;
-        case 100071: // Sync room info AND SetBet response (same as TheLuxe)
-            if (subData?.opCode === 'SyncRoomInfo') {
-                handleSyncRoom(subData);
-            } else if (subData?.opCode === 'SetBet') {
-                handleSpinResult(subData);
-            }
-            break;
-    }
-}
-
-// API Calls
-function sendLogin() {
-    send('0', [{ subType: 0 }]);
-}
-
-function joinRoom() {
-    send('100000', [{
-        subType: 100004,
-        subData: [{ roomId: 'lebandit-room-001' }]
-    }]);
-}
-
-function sendSyncRoom() {
-    send('100000', [{
-        subType: 100070,
-        subData: [{ opCode: 'SyncRoomInfo' }]
-    }]);
 }
 
 // API Calls - now use shared client
@@ -327,7 +282,6 @@ function handleJoinRoom(data) {
         renderPaytable();
         updateBetDisplay();
     }
-    sendSyncRoom();
 }
 
 function handleSyncRoom(data) {

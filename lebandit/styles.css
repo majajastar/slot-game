@@ -518,7 +518,7 @@
     overflow-y: auto;
 }
 
-/* Rainbow Details Panel - Below Grid */
+/* Rainbow Details Panel - Below Grid, same width as grid */
 .rainbow-details-panel {
     background: rgba(0, 0, 0, 0.8);
     border: 2px solid #ffd700;
@@ -527,6 +527,9 @@
     margin-top: 10px;
     max-height: 300px;
     overflow-y: auto;
+    width: 100%;
+    max-width: 720px;
+    box-sizing: border-box;
 }
 
 .rainbow-details-panel.hidden {
@@ -1063,13 +1066,16 @@
     margin-top: 5px;
 }
 
-/* Bonus Game Section - Now below grid */
+/* Bonus Game Section - Now below grid, same width as grid */
 .bonus-game-section {
     margin-top: 15px;
     padding: 15px;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 215, 0, 0.2);
     border-radius: 10px;
+    width: 100%;
+    max-width: 720px;
+    box-sizing: border-box;
 }
 
 .buy-bonus-button {

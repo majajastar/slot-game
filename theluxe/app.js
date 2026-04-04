@@ -408,23 +408,6 @@ function handleLogin(data) {
     send({ type: '2', data: [{ subType: 0 }] }); // Lobby
 }
 
-function handleLobby(data) {
-    log(`Lobby: ${data.gameId}, Balance: ${data.balance}`);
-    currentBalance = data.balance;
-    updateBalance(data.balance);
-
-    // Join room
-    send({ type: '100000', data: [{ subType: 100004 }] });
-
-    // Sync room info - only called once on initial connection (page refresh)
-    send({ type: '100000', data: [{ subType: 100070, subData: [{ opCode: 'SyncRoomInfo' }] }] });
-
-    // Start ping - simple keepalive, not SyncRoomInfo
-    pingInterval = setInterval(() => {
-        send({ type: '100000', data: [{ subType: 100072 }] }); // Heartbeat only
-    }, 20000);
-}
-
 
 function handleJoinRoom(data) {
     log(`Joined room: ${data.roomId}`);
@@ -518,9 +501,9 @@ function updateBetSizeListDisplay() {
     }
 }
 
-function handleSyncRoom(data) {
-    console.log(`Handle sync room...`)
-    if (subData?.roomInfo) {
+function handleSyncRoom(subData) {
+    console.log(`Handle sync room, subData = ${subData}`)
+    if (subData.roomInfo) {
         // Load game data from server
         if (subData.roomInfo.symbols) {
             SYMBOLS = subData.roomInfo.symbols;
