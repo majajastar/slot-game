@@ -13,7 +13,8 @@ This guide explains how to build a frontend for the LeBandit slot game using the
 7. [Cascade Animation](#cascade-animation)
 8. [Rainbow Feature](#rainbow-feature)
 9. [Bonus Games](#bonus-games)
-10. [Complete Example](#complete-example)
+10. [Bonus Boost Mode](#bonus-boost-mode)
+11. [Complete Example](#complete-example)
 
 ---
 
@@ -132,6 +133,13 @@ const CONFIG = {
         costMultiplier: 10
     },
     
+    // Bonus Boost mode - cost multiplier from server
+    bonusBoostMode: {
+        enabled: true,
+        costMultiplier: 5,  // Default, will be updated from server config
+        description: '3x bonus entry chance'
+    },
+    
     // Bonus games
     bonusGame: {
         enabled: true,
@@ -207,6 +215,28 @@ Fired when `subType === 100005`. Contains game configuration.
 | `clusterSizeLabels` | `string[]` | Cluster size column labels |
 | `bonusConfig` | `object` | Bonus buy configuration |
 
+**Bonus Config Structure:**
+
+```javascript
+{
+    buyBonusEnabled: true,
+    rainbowModeEnabled: true,
+    rainbowModeCostMultiplier: 10,
+    bonusBoostEnabled: true,        // Whether bonus boost is available
+    bonusBoostCostMultiplier: 3,    // Cost multiplier for bonus boost mode
+    bonusGames: [
+        {
+            typeId: 1,
+            name: 'Luck of the Bandit',
+            buyCostMultiplier: 100,
+            freeSpins: 8,
+            description: '8 spins with accumulating golden squares'
+        },
+        // ... more bonus games
+    ]
+}
+```
+
 **Example:**
 
 ```javascript
@@ -224,6 +254,13 @@ function handleJoinRoom(data) {
     
     if (info.bonusConfig) {
         BONUS_CONFIG = info.bonusConfig;
+        
+        // Update bonus boost cost multiplier from server
+        if (info.bonusConfig.bonusBoostCostMultiplier) {
+            bonusBoostCostMultiplier = info.bonusConfig.bonusBoostCostMultiplier;
+            updateBonusBoostText();
+        }
+        
         updateBonusButtons();
     }
 }
@@ -309,7 +346,8 @@ async function handleSpinResult(data) {
 ```javascript
 await wsClient.setBet({
     bet: 20,
-    rainbowMode: false
+    rainbowMode: false,
+    bonusBoost: false
 });
 ```
 
@@ -318,7 +356,18 @@ await wsClient.setBet({
 ```javascript
 await wsClient.setBet({
     bet: 20,
-    rainbowMode: true  // Costs 10x
+    rainbowMode: true,  // Costs 10x
+    bonusBoost: false
+});
+```
+
+### Bonus Boost Mode Spin
+
+```javascript
+await wsClient.setBet({
+    bet: 20,
+    rainbowMode: false,
+    bonusBoost: true    // Costs 3x (configurable server-side), 3x bonus entry chance
 });
 ```
 
@@ -344,7 +393,8 @@ await wsClient.setBet({
 await wsClient.setBet({
     bet: 20,
     debugScatterCount: 3,     // Force 3 scatters
-    debugForceRainbow: true   // Force rainbow
+    debugForceRainbow: true,    // Force rainbow
+    bonusBoost: true          // Enable bonus boost mode
 });
 ```
 
@@ -531,6 +581,7 @@ Here's a minimal complete frontend:
     <div id="goldenSquaresOverlay"></div>
     <button id="spinBtn" onclick="spin()">Spin ($20)</button>
     <button id="rainbowBtn" onclick="spinRainbow()">Rainbow ($200)</button>
+    <button id="boostBtn" onclick="spinBonusBoost()">Boost ($60)</button>
     
     <script>
         let wsClient;
@@ -616,8 +667,14 @@ Here's a minimal complete frontend:
         
         async function spinRainbow() {
             document.getElementById('rainbowBtn').disabled = true;
-            await wsClient.setBet({ bet, rainbowMode: true });
+            await wsClient.setBet({ bet, rainbowMode: true, bonusBoost: false });
             document.getElementById('rainbowBtn').disabled = false;
+        }
+        
+        async function spinBonusBoost() {
+            document.getElementById('boostBtn').disabled = true;
+            await wsClient.setBet({ bet, rainbowMode: false, bonusBoost: true });
+            document.getElementById('boostBtn').disabled = false;
         }
         
         init().catch(console.error);
@@ -655,3 +712,100 @@ Change `GLOBAL_CONFIG.serverMode` to `'real'` in `shared/global-config.js`.
 - **Full API Reference:** `../shared/API.md`
 - **Backend Integration:** `minesweeper_login_lambda/src/services/game/lebandit/`
 - **WebSocket Client:** `../shared/websocket-client.js`
+
+---
+
+## Bonus Boost Mode
+
+Bonus Boost mode increases the chance of entering bonus games during normal spins.
+
+### How It Works
+
+- **Cost**: 3x normal bet (configurable server-side via `bonusBoostCostMultiplier`)
+- **Effect**: 3x higher bonus entry chance (increased scatter weights)
+- **Server-driven**: Cost multiplier comes from backend config, not hardcoded
+
+### Configuration
+
+Backend config (`bonus-buy-config.ts`):
+
+```typescript
+export const DEFAULT_BONUS_BOOST_CONFIG: BonusBoostConfig = {
+    enabled: true,
+    costMultiplier: 3,        // 3x bet cost
+    bonusBoostMultiplier: 5,    // 5x scatter weight multiplier
+    description: '3x cost with 5x bonus entry chance'
+}
+```
+
+### Frontend Implementation
+
+```javascript
+// State variables
+let bonusBoostEnabled = false;
+let bonusBoostCostMultiplier = 5; // Updated from server
+
+// Toggle function
+function toggleBonusBoostMode() {
+    const checkbox = document.getElementById('bonusBoostCheck');
+    bonusBoostEnabled = checkbox.checked;
+    updateBetDisplay();
+}
+
+// Update display text from server config
+function updateBonusBoostText() {
+    const textEl = document.getElementById('bonusBoostText');
+    if (textEl) {
+        textEl.textContent = `🚀 Bonus Boost (${bonusBoostCostMultiplier}x)`;
+    }
+}
+
+// Calculate total cost
+function updateBetDisplay() {
+    const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+    let cost = bet;
+    if (rainbowModeEnabled) cost *= RAINBOW_MODE_COST_MULTIPLIER;
+    if (bonusBoostEnabled) cost *= bonusBoostCostMultiplier;
+    
+    // Update spin button to show total cost
+    const spinBtn = document.getElementById('spinButton');
+    if (cost !== bet) {
+        spinBtn.textContent = `🎰 SPIN ($${cost})`;
+    } else {
+        spinBtn.textContent = '🎰 SPIN';
+    }
+}
+```
+
+### HTML Toggle
+
+```html
+<div class="bonus-boost-toggle">
+    <label class="toggle-label">
+        <input type="checkbox" id="bonusBoostCheck" onchange="toggleBonusBoostMode()">
+        <span class="toggle-slider"></span>
+        <span class="toggle-text" id="bonusBoostText">🚀 Bonus Boost (3x)</span>
+    </label>
+    <div class="bonus-boost-desc">3x bonus entry chance</div>
+</div>
+```
+
+### CSS Styles
+
+```css
+.bonus-boost-toggle {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.bonus-boost-toggle .toggle-text {
+    font-weight: bold;
+    background: linear-gradient(45deg, #ff6b6b, #ee5a5a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+```

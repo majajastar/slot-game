@@ -8,7 +8,7 @@ const GLOBAL_CONFIG = {
     // SERVER MODE
     // ==========================================
     // Set to 'fake' for local testing, 'real' for production
-    serverMode: 'fake', // 'fake' | 'real'
+    serverMode: 'real', // 'fake' | 'real'
 
     // ==========================================
     // FAKE SERVER (Local Testing)
