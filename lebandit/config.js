@@ -100,6 +100,13 @@ const CONFIG = {
         description: 'Guaranteed rainbow feature after every cascade'
     },
 
+    // Bonus Boost Mode Settings - will be overridden by server config
+    bonusBoostMode: {
+        enabled: true,
+        costMultiplier: 5, // Default, will be updated from server
+        description: 'Bonus boost mode'
+    },
+
     // Bonus Game Settings - "Luck of the Bandit"
     bonusGame: {
         enabled: true,           // Enable/disable bonus game

@@ -1448,7 +1448,69 @@
     
 }
 
-/* Bonus Trigger Overlay */
+/* Bonus Boost Toggle */
+.bonus-boost-toggle {
+    margin: 10px 0;
+    padding: 10px;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.bonus-boost-toggle .toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+.bonus-boost-toggle .toggle-label input {
+    display: none;
+}
+
+.bonus-boost-toggle .toggle-label input:checked + .toggle-slider {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a5a);
+}
+
+.bonus-boost-toggle .toggle-text {
+    font-weight: bold;
+    background: linear-gradient(45deg, #ff6b6b, #ee5a5a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.bonus-boost-desc {
+    font-size: 0.7rem;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+/* Bonus Boost Active State */
+.bonus-boost-toggle.active {
+    background: rgba(255, 107, 107, 0.2);
+    border-color: rgba(255, 107, 107, 0.5);
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+}
+
+/* Responsive adjustments for bonus boost */
+@media (max-width: 600px) {
+    .bonus-boost-toggle {
+        padding: 8px;
+    }
+    
+    .bonus-boost-toggle .toggle-text {
+        font-size: 0.8rem;
+    }
+    
+    .bonus-boost-desc {
+        font-size: 0.65rem;
+    }
+}
 .bonus-trigger-overlay {
     position: fixed;
     top: 0;

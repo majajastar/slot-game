@@ -19,6 +19,8 @@ let wsClient = null; // Shared WebSocket client
 let isSpinning = false;
 let currentBalance = 0;
 let rainbowModeEnabled = false; // Rainbow mode state
+let bonusBoostEnabled = false; // Bonus boost mode state
+let bonusBoostCostMultiplier = 5; // Will be updated from server
 let debugScatterCount = null; // Debug: force specific scatter count (null = disabled, 0-5 = force count)
 let debugForceRainbow = false; // Debug: force rainbow feature to show
 
@@ -192,7 +194,8 @@ async function connect() {
 async function sendSetBet(bet, forceBonusType = null) {
     const message = {
         bet: bet,
-        rainbowMode: rainbowModeEnabled
+        rainbowMode: rainbowModeEnabled,
+        bonusBoost: bonusBoostEnabled
     };
 
     // Add forceBonusType if provided (for buying bonus)
@@ -274,6 +277,13 @@ function handleJoinRoom(data) {
                 RAINBOW_MODE_COST_MULTIPLIER = info.bonusConfig.rainbowModeCostMultiplier;
                 console.log('[JoinRoom] Rainbow mode cost multiplier:', RAINBOW_MODE_COST_MULTIPLIER);
                 updateRainbowModeText();
+            }
+
+            // Update bonus boost cost multiplier from server
+            if (info.bonusConfig.bonusBoostCostMultiplier) {
+                bonusBoostCostMultiplier = info.bonusConfig.bonusBoostCostMultiplier;
+                console.log('[JoinRoom] Bonus boost cost multiplier:', bonusBoostCostMultiplier);
+                updateBonusBoostText();
             }
 
             updateBonusButtonsFromConfig();
@@ -1775,6 +1785,20 @@ function updateBetDisplay() {
     if (BONUS_CONFIG) {
         updateBonusButtonsFromConfig();
     }
+
+    // Update spin button to show total cost
+    const spinBtn = document.getElementById('spinButton');
+    if (spinBtn) {
+        let cost = bet;
+        if (rainbowModeEnabled) cost *= RAINBOW_MODE_COST_MULTIPLIER;
+        if (bonusBoostEnabled) cost *= bonusBoostCostMultiplier;
+        
+        if (cost !== bet) {
+            spinBtn.textContent = `🎰 SPIN ($${cost})`;
+        } else {
+            spinBtn.textContent = '🎰 SPIN';
+        }
+    }
 }
 
 // Update Rainbow Mode Text based on server config
@@ -1782,6 +1806,14 @@ function updateRainbowModeText() {
     const textEl = document.getElementById('rainbowModeText');
     if (textEl) {
         textEl.textContent = `🌈 Rainbow Mode (${RAINBOW_MODE_COST_MULTIPLIER}x)`;
+    }
+}
+
+// Update Bonus Boost Text based on server config
+function updateBonusBoostText() {
+    const textEl = document.getElementById('bonusBoostText');
+    if (textEl) {
+        textEl.textContent = `🚀 Bonus Boost (${bonusBoostCostMultiplier}x)`;
     }
 }
 
@@ -1794,6 +1826,25 @@ function toggleRainbowMode() {
 
     // Update UI to show cost
     updateBetDisplay();
+}
+
+// Bonus Boost Mode Toggle
+function toggleBonusBoostMode() {
+    const checkbox = document.getElementById('bonusBoostCheck');
+    bonusBoostEnabled = checkbox.checked;
+
+    console.log('[Bonus Boost]', bonusBoostEnabled ? 'ENABLED' : 'DISABLED');
+
+    // Update UI to show cost
+    updateBetDisplay();
+}
+
+// Update Bonus Boost Text from server config
+function updateBonusBoostText() {
+    const text = document.getElementById('bonusBoostText');
+    if (text) {
+        text.textContent = `🚀 Bonus Boost (${bonusBoostCostMultiplier}x)`;
+    }
 }
 
 // Debug Scatter Count Setter
