@@ -906,10 +906,11 @@ async function renderCascade(steps, totalWin) {
     cascadeInfo.classList.remove('hidden');
     cascadeHistory.classList.remove('hidden');
     cascadeStepsList.innerHTML = '';
+    console.log(`[renderCascade] Unhidden cascadeHistory, classList=${cascadeHistory.classList}`);
 
     // Track all golden squares accumulated across steps
     const accumulatedGoldenSquares = [];
-    console.log
+    console.log(`[renderCascade] Starting cascade with ${steps.length} steps, totalWin=${totalWin}`);
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         cascadeStepEl.textContent = step.step;
@@ -2305,7 +2306,7 @@ function spin() {
     // Clear golden squares
     //clearGoldenSquares();
 
-    // Clear history displays
+    // Clear history displays but keep them visible for new results
     document.getElementById('cascadeHistory').classList.add('hidden');
     document.getElementById('rainbowHistory').classList.add('hidden');
     document.getElementById('cascadeStepsList').innerHTML = '';
