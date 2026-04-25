@@ -1511,6 +1511,20 @@
         font-size: 0.65rem;
     }
 }
+/* Win amount animation */
+.win-animation {
+    animation: winPulse 1s ease-in-out;
+    color: #ffd700 !important;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes winPulse {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.3); }
+    50% { transform: scale(1.1); }
+    75% { transform: scale(1.2); }
+}
+
 .bonus-trigger-overlay {
     position: fixed;
     top: 0;

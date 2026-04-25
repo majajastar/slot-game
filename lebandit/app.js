@@ -542,6 +542,7 @@ function logRainbowResult(result) {
 
 function logWinAmount(result) {
     const winAmount = result.totalWinAmount || 0;
+    console.log(`[SpinResult] Win: +$${winAmount.toFixed(2)} (totalWinAmount=${result.totalWinAmount}, cascadeWin=${result.cascadeWin}, coinWin=${result.coinWin})`);
     if (winAmount > 0) {
         console.log('[SpinResult] Win: +$' + winAmount.toFixed(2));
     }
@@ -565,6 +566,8 @@ async function renderSpinAnimation(result) {
         if (result.grid) {
             renderGrid(result.grid, true);
         }
+        // Show win amount after cascade animation completes
+        showWin(result.totalWinAmount);
     } else {
         renderGrid(result.grid);
         showWin(result.totalWinAmount);
@@ -1765,7 +1768,12 @@ async function animateCombined(movements) {
 
 // UI Helpers
 function showWin(amount) {
+    console.log('[showWin] Called with amount:', amount);
     const winEl = document.getElementById('winAmount');
+    if (!winEl) {
+        console.error('[showWin] winAmount element not found!');
+        return;
+    }
     winEl.textContent = amount.toFixed(2);
     winEl.classList.add('win-animation');
     setTimeout(() => winEl.classList.remove('win-animation'), 1000);
