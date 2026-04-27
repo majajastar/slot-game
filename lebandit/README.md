@@ -295,15 +295,19 @@ function handleSyncRoom(data) {
         const resume = data.roomInfo.lastResumeInfo;
         
         // Restore the grid
-        renderGrid(resume.grid);
+        if (resume.grid) {
+            renderGrid(resume.grid);
+        }
         
         // Restore golden squares
         if (resume.goldenSquares?.length > 0) {
             renderGoldenSquares(resume.goldenSquares);
+        } else {
+            clearGoldenSquares();
         }
         
         // Restore bonus game state
-        if (resume.bonusGameState) {
+        if (resume.bonusGameState?.isActive) {
             showBonusProgress(resume.bonusGameState);
         }
         
@@ -348,20 +352,21 @@ async function handleSpinResult(data) {
     // Render cascade animation (if there are cascade steps)
     if (result.cascadeSteps?.length > 0) {
         await renderCascade(result.cascadeSteps, result.totalWinAmount);
+        // Render final grid after cascade completes
+        if (result.grid) {
+            renderGrid(result.grid, true);
+        }
     } else {
         // Simple grid render (no cascade)
         renderGrid(result.grid);
         showWin(result.totalWinAmount);
     }
     
-    // Render final grid after cascade
-    if (result.grid) {
-        renderGrid(result.grid, true);
-    }
-    
     // Render golden squares
     if (result.goldenSquares?.length > 0) {
         renderGoldenSquares(result.goldenSquares);
+    } else {
+        clearGoldenSquares();
     }
     
     // Handle rainbow feature
@@ -559,22 +564,44 @@ The rainbow feature transforms golden squares into coins, clovers, and pots.
 
 ```javascript
 {
-    type: 'LUCK_OF_THE_BANDIT',
+    type: 'LUCK_OF_THE_BANDIT',           // Bonus type name
+    typeId: 1,                            // 1=Luck, 2=Glitters, 3=Treasure
     spinsLeft: 5,
     totalSpins: 8,
+    roundTotalSpins: 8,                   // Spins for current round
+    accumulatedGoldenSquares: [...],      // For Luck of the Bandit
+    persistentGoldenSquares: [...],       // For Glitters/Treasure
+    totalWin: 150.50,                     // Accumulated bonus win
     isActive: true,
-    accumulatedGoldenSquares: [...]
+    retriggerInfo: {                      // If retriggered
+        scatterCount: 3,
+        freeSpinsAdded: 4,
+        targetBonusId: 0
+    }
 }
 ```
 
 ### Detecting Bonus Entry
 
 ```javascript
-const isFirstEntry = bonusState.spinsLeft === bonusState.totalSpins;
-const isNewBonus = bonusState.isActive && !wasAlreadyInBonus;
+const bonusState = result.bonusGameState;
+
+// Check if this is first entry (spinsLeft === totalSpins) or retrigger
+const isFirstEntry = bonusState.spinsLeft === bonusState.totalSpins && !bonusGameActive;
+const isNewBonus = bonusState.isActive && !bonusGameActive;
 
 if ((isFirstEntry || isNewBonus) && bonusState.spinsLeft > 0) {
-    await renderBonusTrigger(bonusState);
+    // Show bonus trigger overlay
+    await renderBonusTrigger(bonusState, result.grid);
+}
+
+// Update bonus progress display
+if (bonusState.isActive && bonusState.spinsLeft > 0) {
+    bonusGameActive = true;
+    showBonusProgress(bonusState);
+} else {
+    bonusGameActive = false;
+    hideBonusProgress();
 }
 ```
 
