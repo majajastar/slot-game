@@ -270,12 +270,22 @@ function handleJoinRoom(data) {
 
 Fired when `subType === 100071` with `opCode: 'SyncRoomInfo'`. Used for state restoration after disconnect.
 
-**Parameters:**
+**Parameters in `data.roomInfo.lastResumeInfo`:**
+
+The `lastResumeInfo` contains the full `SpinResult` from the last spin, including:
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `roomInfo.lastResumeInfo.grid` | `string[][]` | Grid to restore |
-| `roomInfo.lastResumeInfo.bonusGameState` | `object` | Active bonus state |
+| `grid` | `string[][]` | Final symbol grid (6x5) |
+| `totalWinAmount` | `number` | Total win from last spin |
+| `cascadeSteps` | `array` | Cascade step data (if cascade occurred) |
+| `rainbowResult` | `object` | Rainbow feature result (if triggered) |
+| `goldenSquares` | `array` | Golden square positions |
+| `bonusGameState` | `object` | Active bonus game state |
+| `bet` | `number` | Bet amount |
+| `cost` | `number` | Cost amount |
+
+**Note:** `lastResumeInfo` is only present if there was a previous spin in this session.
 
 **Example:**
 
@@ -283,10 +293,23 @@ Fired when `subType === 100071` with `opCode: 'SyncRoomInfo'`. Used for state re
 function handleSyncRoom(data) {
     if (data.roomInfo?.lastResumeInfo) {
         const resume = data.roomInfo.lastResumeInfo;
+        
+        // Restore the grid
         renderGrid(resume.grid);
         
+        // Restore golden squares
+        if (resume.goldenSquares?.length > 0) {
+            renderGoldenSquares(resume.goldenSquares);
+        }
+        
+        // Restore bonus game state
         if (resume.bonusGameState) {
             showBonusProgress(resume.bonusGameState);
+        }
+        
+        // Show last win amount
+        if (resume.totalWinAmount > 0) {
+            showWin(resume.totalWinAmount);
         }
     }
 }
@@ -301,11 +324,16 @@ Fired when `subType === 100071` with `opCode: 'SetBet'`. Contains the full spin 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `grid` | `string[][]` | Final 6x5 symbol grid |
-| `totalWinAmount` | `number` | Total win for this spin |
+| `totalWinAmount` | `number` | Total win for this spin (includes cascade + rainbow) |
 | `cascadeSteps` | `array` | Step-by-step cascade data |
+| `cascadeWin` | `number` | Win from cascade only |
 | `rainbowResult` | `object` | Rainbow feature result |
+| `coinWin` | `number` | Win from rainbow coins/pots |
 | `goldenSquares` | `array` | Accumulated golden square positions |
 | `bonusGameState` | `object` | Active bonus state |
+| `bet` | `number` | Bet amount |
+| `cost` | `number` | Cost amount (bet × multipliers) |
+| `isRainbowMode` | `boolean` | Whether rainbow mode was active |
 
 **Example:**
 
@@ -317,17 +345,28 @@ async function handleSpinResult(data) {
     // Update balance
     currentBalance = betInfo.finalBalance;
     
-    // Render cascade animation
+    // Render cascade animation (if there are cascade steps)
     if (result.cascadeSteps?.length > 0) {
-        await renderCascade(result.cascadeSteps);
+        await renderCascade(result.cascadeSteps, result.totalWinAmount);
+    } else {
+        // Simple grid render (no cascade)
+        renderGrid(result.grid);
+        showWin(result.totalWinAmount);
     }
     
-    // Render final grid
-    renderGrid(result.grid);
+    // Render final grid after cascade
+    if (result.grid) {
+        renderGrid(result.grid, true);
+    }
+    
+    // Render golden squares
+    if (result.goldenSquares?.length > 0) {
+        renderGoldenSquares(result.goldenSquares);
+    }
     
     // Handle rainbow feature
     if (result.rainbowResult?.hasRainbow) {
-        await renderRainbowFeature(result.rainbowResult);
+        await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
     }
     
     // Handle bonus state
