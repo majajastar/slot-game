@@ -563,13 +563,15 @@ async function renderSpinAnimation(result) {
     console.log('[renderSpinAnimation] cascadeSteps:', result.cascadeSteps?.length, 'totalWinAmount:', result.totalWinAmount);
     if (result.cascadeSteps && result.cascadeSteps.length > 0) {
         console.log('[renderSpinAnimation] Calling renderCascade with', result.cascadeSteps.length, 'steps');
-        await renderCascade(result.cascadeSteps, result.totalWinAmount);
+        // Calculate cascade win only (without rainbow)
+        const cascadeWin = result.cascadeWin || 0;
+        await renderCascade(result.cascadeSteps, cascadeWin);
         console.log('[handleSpinResult] Rendering final grid after cascade');
         if (result.grid) {
             renderGrid(result.grid, true);
         }
-        // Show win amount after cascade animation completes
-        showWin(result.totalWinAmount);
+        // Show cascade win amount (without rainbow - rainbow shown separately)
+        showWin(cascadeWin);
     } else {
         console.log('[renderSpinAnimation] No cascade steps, rendering simple grid');
         renderGrid(result.grid);
@@ -1026,7 +1028,9 @@ async function renderCascade(steps, totalWin) {
     }
 
     cascadeInfo.classList.add('hidden');
-    showWin(totalWin);
+    // Note: showWin is called in renderSpinAnimation after cascade completes
+    // Do NOT call showWin here to avoid double display
+    // showWin(totalWin);
     
     // Add cascade summary to history
     const summaryDiv = document.createElement('div');
@@ -1038,6 +1042,7 @@ async function renderCascade(steps, totalWin) {
         </div>
     `;
     cascadeStepsList.appendChild(summaryDiv);
+}
 }
 
 // Add step detail to rainbow details panel
@@ -1676,13 +1681,13 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
 
         // Show win amounts (with bet)
         detailsHtml += '<div style="margin-top: 8px;">';
-        detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Win Amount:</span><br/>';
+        detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Rainbow Win:</span><br/>';
         if (rainbowResult.totalCoinWin > 0) {
-            detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinWin.toFixed(2)}x</span>`;
+            detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinWin.toFixed(2)}</span>`;
         }
         if (rainbowResult.totalPotWin > 0) {
             if (rainbowResult.totalCoinWin > 0) detailsHtml += ' | ';
-            detailsHtml += `<span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotWin.toFixed(2)}x</span>`;
+            detailsHtml += `<span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotWin.toFixed(2)}</span>`;
         }
         detailsHtml += '</div>';
 
