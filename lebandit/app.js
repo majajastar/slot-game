@@ -560,7 +560,9 @@ function updateBalanceFromResult(betInfo) {
 // STEP 4: Render Spin Animation
 // ==========================================
 async function renderSpinAnimation(result) {
+    console.log('[renderSpinAnimation] cascadeSteps:', result.cascadeSteps?.length, 'totalWinAmount:', result.totalWinAmount);
     if (result.cascadeSteps && result.cascadeSteps.length > 0) {
+        console.log('[renderSpinAnimation] Calling renderCascade with', result.cascadeSteps.length, 'steps');
         await renderCascade(result.cascadeSteps, result.totalWinAmount);
         console.log('[handleSpinResult] Rendering final grid after cascade');
         if (result.grid) {
@@ -569,6 +571,7 @@ async function renderSpinAnimation(result) {
         // Show win amount after cascade animation completes
         showWin(result.totalWinAmount);
     } else {
+        console.log('[renderSpinAnimation] No cascade steps, rendering simple grid');
         renderGrid(result.grid);
         showWin(result.totalWinAmount);
     }
@@ -988,9 +991,11 @@ async function renderCascade(steps, totalWin) {
         // Add to history
         const stepDiv = document.createElement('div');
         stepDiv.className = 'cascade-step-item';
+        const stepWin = step.totalWin || 0;
+        console.log(`[renderCascade] Step ${step.step} win: ${stepWin}`);
         stepDiv.innerHTML = `
             <span class="step-number">${step.step}</span>
-            <span class="step-win">+$${step.totalWin.toFixed(2)}</span>
+            <span class="step-win">+$${stepWin.toFixed(2)}</span>
         `;
         cascadeStepsList.appendChild(stepDiv);
 

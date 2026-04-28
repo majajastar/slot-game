@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cascade History Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .cascade-history { border: 2px solid red; padding: 10px; margin: 10px; }
+        .cascade-step-item { border: 1px solid blue; margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div id="cascadeHistory" class="cascade-history hidden">
+        <div class="cascade-history-title">🌊 Cascade Steps</div>
+        <div id="cascadeStepsList" class="cascade-steps-list"></div>
+    </div>
+    
+    <button onclick="testCascadeHistory()">Test Cascade History</button>
+    
+    <script>
+        function testCascadeHistory() {
+            const cascadeHistory = document.getElementById('cascadeHistory');
+            const cascadeStepsList = document.getElementById('cascadeStepsList');
+            
+            // Unhide
+            cascadeHistory.classList.remove('hidden');
+            console.log('classList after remove:', cascadeHistory.classList);
+            
+            // Add test items
+            cascadeStepsList.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'cascade-step-item';
+                stepDiv.innerHTML = `
+                    <span class="step-number">${i}</span>
+                    <span class="step-win">+$${(i * 10).toFixed(2)}</span>
+                `;
+                cascadeStepsList.appendChild(stepDiv);
+            }
+            
+            console.log('Added', cascadeStepsList.children.length, 'items');
+        }
+    </script>
+</body>
+</html>
