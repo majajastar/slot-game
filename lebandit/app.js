@@ -169,7 +169,7 @@ async function connect() {
     });
 
     wsClient.on('syncRoom', (data) => {
-        handleSyncRoom(data);
+        // handleSyncRoom(data);
     });
 
     wsClient.on('setBet', (data) => {
@@ -529,7 +529,7 @@ function logRainbowResult(result) {
     if (!result.rainbowResult?.hasRainbow) return;
 
     console.log('%c[Rainbow Feature!]', 'color: #ff6b6b; font-weight: bold;',
-        `Coin win: ${result.rainbowResult.totalCoinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
+        `Coin win: ${result.rainbowResult.totalWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
     console.log('[Rainbow] Position:', result.rainbowResult.rainbowPosition);
     console.log('[Rainbow] Previous symbol:', result.rainbowResult.previousSymbol);
 
@@ -541,7 +541,7 @@ function logRainbowResult(result) {
 
 function logWinAmount(result) {
     const winAmount = result.totalWinAmount || 0;
-    console.log(`[SpinResult] Win: +$${winAmount.toFixed(2)} (totalWinAmount=${result.totalWinAmount}, cascadeWin=${result.cascadeWin}, coinWin=${result.totalCoinWin})`);
+    console.log(`[SpinResult] Win: +$${winAmount.toFixed(2)} (totalWinAmount=${result.totalWinAmount}, cascadeWin=${result.cascadeWin}, totalWin=${result.totalWin})`);
     if (winAmount > 0) {
         console.log('[SpinResult] Win: +$' + winAmount.toFixed(2));
     }
@@ -594,7 +594,7 @@ function renderGoldenSquaresFromResult(result) {
 // STEP 6: Render Rainbow Feature
 // ==========================================
 async function renderRainbowFromResult(result) {
-    if (result.rainbowResult?.hasRainbow && result.rainbowResult.totalCoinWin > 0) {
+    if (result.rainbowResult?.hasRainbow && result.rainbowResult.totalWin > 0) {
         await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
     }
 }
@@ -732,7 +732,7 @@ async function renderGrid(grid, instant = false) {
     // Log rainbow result if present
     if (result.rainbowResult?.hasRainbow) {
         console.log('%c[Rainbow Feature!]', 'color: #ff6b6b; font-weight: bold;',
-            `Coin win: ${result.rainbowResult.totalCoinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
+            `Coin win: ${result.rainbowResult.totalWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
         console.log('[Rainbow] Position:', result.rainbowResult.rainbowPosition);
         console.log('[Rainbow] Previous symbol:', result.rainbowResult.previousSymbol);
 
@@ -777,7 +777,7 @@ async function renderGrid(grid, instant = false) {
         clearGoldenSquares();
     }
     // Render rainbow feature if present AND there's a win from it
-    if (result.rainbowResult?.hasRainbow && result.rainbowResult.totalCoinWin > 0) {
+    if (result.rainbowResult?.hasRainbow && result.rainbowResult.totalWin > 0) {
         await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
     }
 
@@ -1041,30 +1041,38 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
             <div class="rainbow-header">
                 <span class="rainbow-icon">🌈</span>
                 <span class="rainbow-title">Rainbow Feature</span>
-                <span class="rainbow-win">+$${rainbowResult.totalCoinWin.toFixed(2)}</span>
+                <span class="rainbow-win">+$${rainbowResult.totalWin.toFixed(2)}</span>
             </div>
         `;
         
         // Show each round with FULL details
+        // Filter out the rainbow position (it shows the rainbow symbol, not coin/clover/pot)
+        const rainbowPos = rainbowResult.rainbowPosition;
+        
         for (const round of rainbowResult.rounds) {
             rainbowHtml += `<div class="rainbow-round">`;
             
             // Round header with totals
-            const roundCoinValue = round.coins.reduce((sum, c) => sum + (c.finalMultiplier || 0), 0);
-            const roundPotValue = round.pots.reduce((sum, p) => sum + (p.finalMultiplier || 0), 0);
+            // Filter out items at rainbow position
+            const filteredCoins = round.coins.filter(c => !(rainbowPos && c.row === rainbowPos.row && c.col === rainbowPos.col));
+            const filteredClovers = round.clovers.filter(c => !(rainbowPos && c.row === rainbowPos.row && c.col === rainbowPos.col));
+            const filteredPots = round.pots.filter(p => !(rainbowPos && p.row === rainbowPos.row && p.col === rainbowPos.col));
+            
+            const roundCoinValue = filteredCoins.reduce((sum, c) => sum + (c.finalMultiplier || 0), 0);
+            const roundPotValue = filteredPots.reduce((sum, p) => sum + (p.finalMultiplier || 0), 0);
             const roundTotal = roundCoinValue + roundPotValue;
             
             rainbowHtml += `
                 <div class="rainbow-round-header">
                     <strong>Round ${round.round}</strong> 
-                    <span class="round-summary">${round.coins.length} coins, ${round.clovers.length} clovers, ${round.pots.length} pots = ${roundTotal.toFixed(2)}x</span>
+                    <span class="round-summary">${filteredCoins.length} coins, ${filteredClovers.length} clovers, ${filteredPots.length} pots = ${roundTotal.toFixed(2)}x</span>
                 </div>
             `;
             
-            // ALL coins in this round
-            if (round.coins && round.coins.length > 0) {
+            // ALL coins in this round (excluding rainbow position)
+            if (filteredCoins && filteredCoins.length > 0) {
                 rainbowHtml += `<div class="rainbow-section"><span class="section-label">💰 Coins:</span>`;
-                for (const coin of round.coins) {
+                for (const coin of filteredCoins) {
                     const cloverTag = coin.cloverMultipliers?.length > 0 
                         ? `<span class="clover-tag">×${coin.cloverMultipliers.join('×')}</span>` 
                         : '';
@@ -1079,10 +1087,10 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
                 rainbowHtml += `</div>`;
             }
             
-            // ALL clovers in this round
-            if (round.clovers && round.clovers.length > 0) {
+            // ALL clovers in this round (excluding rainbow position)
+            if (filteredClovers && filteredClovers.length > 0) {
                 rainbowHtml += `<div class="rainbow-section"><span class="section-label">🍀 Clovers:</span>`;
-                for (const clover of round.clovers) {
+                for (const clover of filteredClovers) {
                     rainbowHtml += `
                         <div class="rainbow-item">
                             <span class="item-pos">(${clover.row},${clover.col})</span>
@@ -1093,10 +1101,10 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
                 rainbowHtml += `</div>`;
             }
             
-            // ALL pots in this round
-            if (round.pots && round.pots.length > 0) {
+            // ALL pots in this round (excluding rainbow position)
+            if (filteredPots && filteredPots.length > 0) {
                 rainbowHtml += `<div class="rainbow-section"><span class="section-label">🏺 Pots:</span>`;
-                for (const pot of round.pots) {
+                for (const pot of filteredPots) {
                     const collectedInfo = pot.collectedCoins?.length > 0 
                         ? ` (${pot.collectedCoins.length} coins` + (pot.collectedPots?.length > 0 ? ` + ${pot.collectedPots.length} pots` : '') + `)`
                         : '';
@@ -1113,10 +1121,14 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
                 rainbowHtml += `</div>`;
             }
             
-            // ALL steps with detailed changes
+            // ALL steps with detailed changes (filter out rainbow position)
             if (round.steps && round.steps.length > 0) {
                 rainbowHtml += `<div class="rainbow-steps">`;
                 for (const step of round.steps) {
+                    // Skip if this step is at the rainbow position
+                    if (rainbowPos && step.activeClover && step.activeClover.row === rainbowPos.row && step.activeClover.col === rainbowPos.col) continue;
+                    if (rainbowPos && step.activePot && step.activePot.row === rainbowPos.row && step.activePot.col === rainbowPos.col) continue;
+                    
                     let stepTitle = '';
                     let stepDetail = '';
                     
@@ -1124,23 +1136,32 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
                         case 'initial':
                             stepTitle = '🎲 Initial Reveal';
                             stepDetail = `<div class="step-symbols">`;
-                            // Show all coins at initial state
+                            // Show all coins at initial state (excluding rainbow position)
                             if (step.coins && step.coins.length > 0) {
-                                stepDetail += `<div class="step-coins">${step.coins.map(c => 
-                                    `<span class="coin-tag ${c.type}">${c.type} ${c.finalMultiplier}x</span>`
-                                ).join('')}</div>`;
+                                const stepCoins = step.coins.filter(c => !(rainbowPos && c.row === rainbowPos.row && c.col === rainbowPos.col));
+                                if (stepCoins.length > 0) {
+                                    stepDetail += `<div class="step-coins">${stepCoins.map(c => 
+                                        `<span class="coin-tag ${c.type}">${c.type} ${c.finalMultiplier}x</span>`
+                                    ).join('')}</div>`;
+                                }
                             }
-                            // Show all clovers
+                            // Show all clovers (excluding rainbow position)
                             if (step.clovers && step.clovers.length > 0) {
-                                stepDetail += `<div class="step-clovers">${step.clovers.map(c => 
-                                    `<span class="clover-tag">🍀 ×${c.multiplier}</span>`
-                                ).join('')}</div>`;
+                                const stepClovers = step.clovers.filter(c => !(rainbowPos && c.row === rainbowPos.row && c.col === rainbowPos.col));
+                                if (stepClovers.length > 0) {
+                                    stepDetail += `<div class="step-clovers">${stepClovers.map(c => 
+                                        `<span class="clover-tag">🍀 ×${c.multiplier}</span>`
+                                    ).join('')}</div>`;
+                                }
                             }
-                            // Show all pots
+                            // Show all pots (excluding rainbow position)
                             if (step.pots && step.pots.length > 0) {
-                                stepDetail += `<div class="step-pots">${step.pots.map(p => 
-                                    `<span class="pot-tag">🏺 ${p.finalMultiplier}x</span>`
-                                ).join('')}</div>`;
+                                const stepPots = step.pots.filter(p => !(rainbowPos && p.row === rainbowPos.row && p.col === rainbowPos.col));
+                                if (stepPots.length > 0) {
+                                    stepDetail += `<div class="step-pots">${stepPots.map(p => 
+                                        `<span class="pot-tag">🏺 ${p.finalMultiplier}x</span>`
+                                    ).join('')}</div>`;
+                                }
                             }
                             stepDetail += `</div>`;
                             break;
@@ -1151,32 +1172,38 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
                                 stepTitle = `🍀 Clover ×${clover.multiplier} at (${clover.row},${clover.col})`;
                                 stepDetail = `<div class="affected-list">`;
                                 
-                                // Show affected coins with before/after
+                                // Show affected coins with before/after (excluding rainbow position)
                                 if (step.affectedCoins && step.affectedCoins.length > 0) {
-                                    stepDetail += `<div class="affected-coins">`;
-                                    for (const coin of step.affectedCoins) {
-                                        stepDetail += `
-                                            <div class="affected-item">
-                                                <span class="item-pos">(${coin.row},${coin.col})</span>
-                                                <span class="before-after">${coin.originalMultiplier}x → ${coin.finalMultiplier}x</span>
-                                            </div>
-                                        `;
+                                    const affectedCoins = step.affectedCoins.filter(c => !(rainbowPos && c.row === rainbowPos.row && c.col === rainbowPos.col));
+                                    if (affectedCoins.length > 0) {
+                                        stepDetail += `<div class="affected-coins">`;
+                                        for (const coin of affectedCoins) {
+                                            stepDetail += `
+                                                <div class="affected-item">
+                                                    <span class="item-pos">(${coin.row},${coin.col})</span>
+                                                    <span class="before-after">${coin.originalMultiplier}x → ${coin.finalMultiplier}x</span>
+                                                </div>
+                                            `;
+                                        }
+                                        stepDetail += `</div>`;
                                     }
-                                    stepDetail += `</div>`;
                                 }
                                 
-                                // Show affected pots with before/after
+                                // Show affected pots with before/after (excluding rainbow position)
                                 if (step.affectedPots && step.affectedPots.length > 0) {
-                                    stepDetail += `<div class="affected-pots">`;
-                                    for (const pot of step.affectedPots) {
-                                        stepDetail += `
-                                            <div class="affected-item">
-                                                <span class="item-pos">(${pot.row},${pot.col})</span>
-                                                <span class="before-after">${pot.originalMultiplier}x → ${pot.finalMultiplier}x</span>
-                                            </div>
-                                        `;
+                                    const affectedPots = step.affectedPots.filter(p => !(rainbowPos && p.row === rainbowPos.row && p.col === rainbowPos.col));
+                                    if (affectedPots.length > 0) {
+                                        stepDetail += `<div class="affected-pots">`;
+                                        for (const pot of affectedPots) {
+                                            stepDetail += `
+                                                <div class="affected-item">
+                                                    <span class="item-pos">(${pot.row},${pot.col})</span>
+                                                    <span class="before-after">${pot.originalMultiplier}x → ${pot.finalMultiplier}x</span>
+                                                </div>
+                                            `;
+                                        }
+                                        stepDetail += `</div>`;
                                     }
-                                    stepDetail += `</div>`;
                                 }
                                 
                                 stepDetail += `</div>`;
@@ -1189,32 +1216,38 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
                                 stepTitle = `🏺 Pot at (${activePot.row},${activePot.col}) collects`;
                                 stepDetail = `<div class="collection-list">`;
                                 
-                                // Show collected coins
+                                // Show collected coins (excluding rainbow position)
                                 if (step.collectedCoins && step.collectedCoins.length > 0) {
-                                    stepDetail += `<div class="collected-coins">`;
-                                    for (const coin of step.collectedCoins) {
-                                        stepDetail += `
-                                            <div class="collected-item">
-                                                <span class="item-pos">(${coin.row},${coin.col})</span>
-                                                <span class="item-value">${coin.originalMultiplier}x → ${coin.finalMultiplier}x</span>
-                                            </div>
-                                        `;
+                                    const collectedCoins = step.collectedCoins.filter(c => !(rainbowPos && c.row === rainbowPos.row && c.col === rainbowPos.col));
+                                    if (collectedCoins.length > 0) {
+                                        stepDetail += `<div class="collected-coins">`;
+                                        for (const coin of collectedCoins) {
+                                            stepDetail += `
+                                                <div class="collected-item">
+                                                    <span class="item-pos">(${coin.row},${coin.col})</span>
+                                                    <span class="item-value">${coin.originalMultiplier}x → ${coin.finalMultiplier}x</span>
+                                                </div>
+                                            `;
+                                        }
+                                        stepDetail += `</div>`;
                                     }
-                                    stepDetail += `</div>`;
                                 }
                                 
-                                // Show collected pots
+                                // Show collected pots (excluding rainbow position)
                                 if (step.collectedPots && step.collectedPots.length > 0) {
-                                    stepDetail += `<div class="collected-pots">`;
-                                    for (const pot of step.collectedPots) {
-                                        stepDetail += `
-                                            <div class="collected-item">
-                                                <span class="item-pos">(${pot.row},${pot.col})</span>
-                                                <span class="item-value">${pot.value}x</span>
-                                            </div>
-                                        `;
+                                    const collectedPots = step.collectedPots.filter(p => !(rainbowPos && p.row === rainbowPos.row && p.col === rainbowPos.col));
+                                    if (collectedPots.length > 0) {
+                                        stepDetail += `<div class="collected-pots">`;
+                                        for (const pot of collectedPots) {
+                                            stepDetail += `
+                                                <div class="collected-item">
+                                                    <span class="item-pos">(${pot.row},${pot.col})</span>
+                                                    <span class="item-value">${pot.value}x</span>
+                                                </div>
+                                            `;
+                                        }
+                                        stepDetail += `</div>`;
                                     }
-                                    stepDetail += `</div>`;
                                 }
                                 
                                 // Final pot value
@@ -1870,8 +1903,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     }
 
     // Add overall total win to details panel
-    if (rainbowDetailsContent && rainbowResult.totalCoinWin !== undefined) {
-        const overallTotal = rainbowResult.totalCoinWin;
+    if (rainbowDetailsContent && rainbowResult.totalWin !== undefined) {
+        const overallTotal = rainbowResult.totalWin;
         const totalDiv = document.createElement('div');
         totalDiv.className = 'rainbow-total-win';
 
@@ -1889,8 +1922,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         // Show win amounts (with bet)
         detailsHtml += '<div style="margin-top: 8px;">';
         detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Rainbow Win:</span><br/>';
-        if (rainbowResult.totalCoinWin > 0) {
-            detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinWin.toFixed(2)}</span>`;
+        if (rainbowResult.totalWin > 0) {
+            detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalWin.toFixed(2)}</span>`;
         }
         detailsHtml += '</div>';
 
