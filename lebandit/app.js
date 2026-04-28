@@ -215,7 +215,6 @@ async function sendSetBet(bet, forceBonusType = null) {
 
     try {
         const result = await wsClient.setBet(message);
-        await handleSpinResult(result);
     } catch (err) {
         console.error('[sendSetBet] Error:', err);
         isSpinning = false;
@@ -295,7 +294,7 @@ function handleJoinRoom(data) {
 }
 
 function handleSyncRoom(data) {
-    console.log(`Handle sync room, dat a= ${JSON.stringify(data)}`)
+    console.log(`Handle sync room, data= ${JSON.stringify(data)}`)
     if (data.roomInfo) {
         if (data.roomInfo.lastResumeInfo){
             // Restore grid if in middle of game
@@ -530,7 +529,7 @@ function logRainbowResult(result) {
     if (!result.rainbowResult?.hasRainbow) return;
 
     console.log('%c[Rainbow Feature!]', 'color: #ff6b6b; font-weight: bold;',
-        `Coin win: ${result.rainbowResult.coinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
+        `Coin win: ${result.rainbowResult.totalCoinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
     console.log('[Rainbow] Position:', result.rainbowResult.rainbowPosition);
     console.log('[Rainbow] Previous symbol:', result.rainbowResult.previousSymbol);
 
@@ -542,7 +541,7 @@ function logRainbowResult(result) {
 
 function logWinAmount(result) {
     const winAmount = result.totalWinAmount || 0;
-    console.log(`[SpinResult] Win: +$${winAmount.toFixed(2)} (totalWinAmount=${result.totalWinAmount}, cascadeWin=${result.cascadeWin}, coinWin=${result.coinWin})`);
+    console.log(`[SpinResult] Win: +$${winAmount.toFixed(2)} (totalWinAmount=${result.totalWinAmount}, cascadeWin=${result.cascadeWin}, coinWin=${result.totalCoinWin})`);
     if (winAmount > 0) {
         console.log('[SpinResult] Win: +$' + winAmount.toFixed(2));
     }
@@ -565,7 +564,7 @@ async function renderSpinAnimation(result) {
         console.log('[renderSpinAnimation] Calling renderCascade with', result.cascadeSteps.length, 'steps');
         // Calculate cascade win only (without rainbow)
         const cascadeWin = result.cascadeWin || 0;
-        await renderCascade(result.cascadeSteps, cascadeWin);
+        await renderCascade(result.cascadeSteps, cascadeWin, result.rainbowResult);
         console.log('[handleSpinResult] Rendering final grid after cascade');
         if (result.grid) {
             renderGrid(result.grid, true);
@@ -595,7 +594,7 @@ function renderGoldenSquaresFromResult(result) {
 // STEP 6: Render Rainbow Feature
 // ==========================================
 async function renderRainbowFromResult(result) {
-    if (result.rainbowResult?.hasRainbow && result.rainbowResult.coinWin > 0) {
+    if (result.rainbowResult?.hasRainbow && result.rainbowResult.totalCoinWin > 0) {
         await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
     }
 }
@@ -733,7 +732,7 @@ async function renderGrid(grid, instant = false) {
     // Log rainbow result if present
     if (result.rainbowResult?.hasRainbow) {
         console.log('%c[Rainbow Feature!]', 'color: #ff6b6b; font-weight: bold;',
-            `Coin win: ${result.rainbowResult.coinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
+            `Coin win: ${result.rainbowResult.totalCoinWin}, Rounds: ${result.rainbowResult.rounds?.length}`);
         console.log('[Rainbow] Position:', result.rainbowResult.rainbowPosition);
         console.log('[Rainbow] Previous symbol:', result.rainbowResult.previousSymbol);
 
@@ -756,7 +755,8 @@ async function renderGrid(grid, instant = false) {
 
     // Render cascade if present
     if (result.cascadeSteps && result.cascadeSteps.length > 0) {
-        await renderCascade(result.cascadeSteps, result.totalWinAmount);
+        console.log(`A@@@@@@@@@@@@ renderCascade!!`)
+        await renderCascade(result.cascadeSteps, result.totalWinAmount, result.rainbowResult);
         // After cascade animation, render the final grid (includes rainbow symbol if triggered)
         console.log('[handleSpinResult] Rendering final grid after cascade');
         if (result.grid) {
@@ -777,7 +777,7 @@ async function renderGrid(grid, instant = false) {
         clearGoldenSquares();
     }
     // Render rainbow feature if present AND there's a win from it
-    if (result.rainbowResult?.hasRainbow && result.rainbowResult.coinWin > 0) {
+    if (result.rainbowResult?.hasRainbow && result.rainbowResult.totalCoinWin > 0) {
         await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
     }
 
@@ -902,7 +902,7 @@ function clearGoldenSquares() {
 }
 
 // Cascade Animation
-async function renderCascade(steps, totalWin) {
+async function renderCascade(steps, totalWin, rainbowResult = null) {
     const cascadeInfo = document.getElementById('cascadeInfo');
     const cascadeStepEl = document.getElementById('cascadeStep');
     const cascadeHistory = document.getElementById('cascadeHistory');
@@ -1032,6 +1032,220 @@ async function renderCascade(steps, totalWin) {
     // Do NOT call showWin here to avoid double display
     // showWin(totalWin);
     
+    // Add rainbow info to cascade history if present
+    if (rainbowResult && rainbowResult.hasRainbow && rainbowResult.rounds.length > 0) {
+        const rainbowDiv = document.createElement('div');
+        rainbowDiv.className = 'cascade-rainbow-info';
+        
+        let rainbowHtml = `
+            <div class="rainbow-header">
+                <span class="rainbow-icon">🌈</span>
+                <span class="rainbow-title">Rainbow Feature</span>
+                <span class="rainbow-win">+$${rainbowResult.totalCoinWin.toFixed(2)}</span>
+            </div>
+        `;
+        
+        // Show each round with FULL details
+        for (const round of rainbowResult.rounds) {
+            rainbowHtml += `<div class="rainbow-round">`;
+            
+            // Round header with totals
+            const roundCoinValue = round.coins.reduce((sum, c) => sum + (c.finalMultiplier || 0), 0);
+            const roundPotValue = round.pots.reduce((sum, p) => sum + (p.finalMultiplier || 0), 0);
+            const roundTotal = roundCoinValue + roundPotValue;
+            
+            rainbowHtml += `
+                <div class="rainbow-round-header">
+                    <strong>Round ${round.round}</strong> 
+                    <span class="round-summary">${round.coins.length} coins, ${round.clovers.length} clovers, ${round.pots.length} pots = ${roundTotal.toFixed(2)}x</span>
+                </div>
+            `;
+            
+            // ALL coins in this round
+            if (round.coins && round.coins.length > 0) {
+                rainbowHtml += `<div class="rainbow-section"><span class="section-label">💰 Coins:</span>`;
+                for (const coin of round.coins) {
+                    const cloverTag = coin.cloverMultipliers?.length > 0 
+                        ? `<span class="clover-tag">×${coin.cloverMultipliers.join('×')}</span>` 
+                        : '';
+                    rainbowHtml += `
+                        <div class="rainbow-item">
+                            <span class="item-pos">(${coin.row},${coin.col})</span>
+                            <span class="item-type ${coin.type}">${coin.type}</span>
+                            <span class="item-value">${coin.originalMultiplier}x${cloverTag} = ${coin.finalMultiplier}x</span>
+                        </div>
+                    `;
+                }
+                rainbowHtml += `</div>`;
+            }
+            
+            // ALL clovers in this round
+            if (round.clovers && round.clovers.length > 0) {
+                rainbowHtml += `<div class="rainbow-section"><span class="section-label">🍀 Clovers:</span>`;
+                for (const clover of round.clovers) {
+                    rainbowHtml += `
+                        <div class="rainbow-item">
+                            <span class="item-pos">(${clover.row},${clover.col})</span>
+                            <span class="item-value">×${clover.multiplier}</span>
+                        </div>
+                    `;
+                }
+                rainbowHtml += `</div>`;
+            }
+            
+            // ALL pots in this round
+            if (round.pots && round.pots.length > 0) {
+                rainbowHtml += `<div class="rainbow-section"><span class="section-label">🏺 Pots:</span>`;
+                for (const pot of round.pots) {
+                    const collectedInfo = pot.collectedCoins?.length > 0 
+                        ? ` (${pot.collectedCoins.length} coins` + (pot.collectedPots?.length > 0 ? ` + ${pot.collectedPots.length} pots` : '') + `)`
+                        : '';
+                    const cloverTag = pot.cloverMultipliers?.length > 0 
+                        ? `<span class="clover-tag">×${pot.cloverMultipliers.join('×')}</span>` 
+                        : '';
+                    rainbowHtml += `
+                        <div class="rainbow-item">
+                            <span class="item-pos">(${pot.row},${pot.col})</span>
+                            <span class="item-value">${pot.originalMultiplier}x${cloverTag}${collectedInfo} = ${pot.finalMultiplier}x</span>
+                        </div>
+                    `;
+                }
+                rainbowHtml += `</div>`;
+            }
+            
+            // ALL steps with detailed changes
+            if (round.steps && round.steps.length > 0) {
+                rainbowHtml += `<div class="rainbow-steps">`;
+                for (const step of round.steps) {
+                    let stepTitle = '';
+                    let stepDetail = '';
+                    
+                    switch (step.stepType) {
+                        case 'initial':
+                            stepTitle = '🎲 Initial Reveal';
+                            stepDetail = `<div class="step-symbols">`;
+                            // Show all coins at initial state
+                            if (step.coins && step.coins.length > 0) {
+                                stepDetail += `<div class="step-coins">${step.coins.map(c => 
+                                    `<span class="coin-tag ${c.type}">${c.type} ${c.finalMultiplier}x</span>`
+                                ).join('')}</div>`;
+                            }
+                            // Show all clovers
+                            if (step.clovers && step.clovers.length > 0) {
+                                stepDetail += `<div class="step-clovers">${step.clovers.map(c => 
+                                    `<span class="clover-tag">🍀 ×${c.multiplier}</span>`
+                                ).join('')}</div>`;
+                            }
+                            // Show all pots
+                            if (step.pots && step.pots.length > 0) {
+                                stepDetail += `<div class="step-pots">${step.pots.map(p => 
+                                    `<span class="pot-tag">🏺 ${p.finalMultiplier}x</span>`
+                                ).join('')}</div>`;
+                            }
+                            stepDetail += `</div>`;
+                            break;
+                            
+                        case 'clover':
+                            const clover = step.activeClover;
+                            if (clover) {
+                                stepTitle = `🍀 Clover ×${clover.multiplier} at (${clover.row},${clover.col})`;
+                                stepDetail = `<div class="affected-list">`;
+                                
+                                // Show affected coins with before/after
+                                if (step.affectedCoins && step.affectedCoins.length > 0) {
+                                    stepDetail += `<div class="affected-coins">`;
+                                    for (const coin of step.affectedCoins) {
+                                        stepDetail += `
+                                            <div class="affected-item">
+                                                <span class="item-pos">(${coin.row},${coin.col})</span>
+                                                <span class="before-after">${coin.originalMultiplier}x → ${coin.finalMultiplier}x</span>
+                                            </div>
+                                        `;
+                                    }
+                                    stepDetail += `</div>`;
+                                }
+                                
+                                // Show affected pots with before/after
+                                if (step.affectedPots && step.affectedPots.length > 0) {
+                                    stepDetail += `<div class="affected-pots">`;
+                                    for (const pot of step.affectedPots) {
+                                        stepDetail += `
+                                            <div class="affected-item">
+                                                <span class="item-pos">(${pot.row},${pot.col})</span>
+                                                <span class="before-after">${pot.originalMultiplier}x → ${pot.finalMultiplier}x</span>
+                                            </div>
+                                        `;
+                                    }
+                                    stepDetail += `</div>`;
+                                }
+                                
+                                stepDetail += `</div>`;
+                            }
+                            break;
+                            
+                        case 'pot':
+                            const activePot = step.activePot;
+                            if (activePot) {
+                                stepTitle = `🏺 Pot at (${activePot.row},${activePot.col}) collects`;
+                                stepDetail = `<div class="collection-list">`;
+                                
+                                // Show collected coins
+                                if (step.collectedCoins && step.collectedCoins.length > 0) {
+                                    stepDetail += `<div class="collected-coins">`;
+                                    for (const coin of step.collectedCoins) {
+                                        stepDetail += `
+                                            <div class="collected-item">
+                                                <span class="item-pos">(${coin.row},${coin.col})</span>
+                                                <span class="item-value">${coin.originalMultiplier}x → ${coin.finalMultiplier}x</span>
+                                            </div>
+                                        `;
+                                    }
+                                    stepDetail += `</div>`;
+                                }
+                                
+                                // Show collected pots
+                                if (step.collectedPots && step.collectedPots.length > 0) {
+                                    stepDetail += `<div class="collected-pots">`;
+                                    for (const pot of step.collectedPots) {
+                                        stepDetail += `
+                                            <div class="collected-item">
+                                                <span class="item-pos">(${pot.row},${pot.col})</span>
+                                                <span class="item-value">${pot.value}x</span>
+                                            </div>
+                                        `;
+                                    }
+                                    stepDetail += `</div>`;
+                                }
+                                
+                                // Final pot value
+                                stepDetail += `
+                                    <div class="pot-final">
+                                        <strong>Pot value: ${activePot.originalMultiplier}x → ${activePot.finalMultiplier}x</strong>
+                                    </div>
+                                `;
+                                
+                                stepDetail += `</div>`;
+                            }
+                            break;
+                    }
+                    
+                    rainbowHtml += `
+                        <div class="rainbow-step-detail">
+                            <div class="step-title">${stepTitle}</div>
+                            <div class="step-content">${stepDetail}</div>
+                        </div>
+                    `;
+                }
+                rainbowHtml += `</div>`;
+            }
+            
+            rainbowHtml += `</div>`;
+        }
+        
+        rainbowDiv.innerHTML = rainbowHtml;
+        cascadeStepsList.appendChild(rainbowDiv);
+    }
+    
     // Add cascade summary to history
     const summaryDiv = document.createElement('div');
     summaryDiv.className = 'cascade-summary';
@@ -1042,7 +1256,6 @@ async function renderCascade(steps, totalWin) {
         </div>
     `;
     cascadeStepsList.appendChild(summaryDiv);
-}
 }
 
 // Add step detail to rainbow details panel
@@ -1305,7 +1518,7 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
 
         // Add round header to details panel (accumulate all rounds)
         if (rainbowDetailsContent) {
-            const roundTotal = round.totalCoinValue + round.totalPotValue;
+            const roundTotal = round.totalCoinValue;
             const roundHeader = document.createElement('div');
             roundHeader.className = 'rainbow-round-header';
             roundHeader.innerHTML = `<strong>Round ${round.round}</strong> (${round.coins.length} coins, ${round.clovers.length} clovers, ${round.pots.length} pots) - <span style="color:#4ecdc4">Win: ${roundTotal}x</span>`;
@@ -1657,8 +1870,8 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
     }
 
     // Add overall total win to details panel
-    if (rainbowDetailsContent && rainbowResult.totalCoinWin !== undefined && rainbowResult.totalPotWin !== undefined) {
-        const overallTotal = rainbowResult.totalCoinWin + rainbowResult.totalPotWin;
+    if (rainbowDetailsContent && rainbowResult.totalCoinWin !== undefined) {
+        const overallTotal = rainbowResult.totalCoinWin;
         const totalDiv = document.createElement('div');
         totalDiv.className = 'rainbow-total-win';
 
@@ -1666,16 +1879,10 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         let detailsHtml = '';
 
         // Show raw values (before bet)
-        if (rainbowResult.totalCoinValue > 0 || rainbowResult.totalPotValue > 0) {
+        if (rainbowResult.totalCoinValue > 0) {
             detailsHtml += '<div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,215,0,0.3);">';
             detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Raw Multipliers:</span><br/>';
-            if (rainbowResult.totalCoinValue > 0) {
-                detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinValue.toFixed(2)}x</span>`;
-            }
-            if (rainbowResult.totalPotValue > 0) {
-                if (rainbowResult.totalCoinValue > 0) detailsHtml += ' | ';
-                detailsHtml += `<span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotValue.toFixed(2)}x</span>`;
-            }
+            detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinValue.toFixed(2)}x</span>`;
             detailsHtml += '</div>';
         }
 
@@ -1684,10 +1891,6 @@ async function renderRainbowFeature(rainbowResult, goldenSquares) {
         detailsHtml += '<span style="color: #888; font-size: 0.85rem;">Rainbow Win:</span><br/>';
         if (rainbowResult.totalCoinWin > 0) {
             detailsHtml += `<span style="color: #4ecdc4; font-size: 0.9rem;">Coins: ${rainbowResult.totalCoinWin.toFixed(2)}</span>`;
-        }
-        if (rainbowResult.totalPotWin > 0) {
-            if (rainbowResult.totalCoinWin > 0) detailsHtml += ' | ';
-            detailsHtml += `<span style="color: #9b59b6; font-size: 0.9rem;">Pots: ${rainbowResult.totalPotWin.toFixed(2)}</span>`;
         }
         detailsHtml += '</div>';
 

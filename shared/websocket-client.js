@@ -168,7 +168,7 @@ class SlotGameWebSocketClient {
         try{
             const data = JSON.parse(event.data);
             const type = data.vals?.type || data.type;
-            console.log(`type = ${type}, data = ${JSON.stringify(data)}`)
+            // console.log(`type = ${type}, data = ${JSON.stringify(data)}`)
             // Handle specific message types
             switch (type) {
                 case 1: // Login response

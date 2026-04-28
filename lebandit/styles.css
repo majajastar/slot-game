@@ -1581,6 +1581,192 @@
     font-family: monospace;
 }
 
+/* Rainbow info in cascade history */
+.cascade-rainbow-info {
+    margin: 10px 0;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.1));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+}
+
+.cascade-rainbow-info .rainbow-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.cascade-rainbow-info .rainbow-icon {
+    font-size: 1.5rem;
+}
+
+.cascade-rainbow-info .rainbow-title {
+    font-weight: bold;
+    color: #ffd700;
+    font-size: 1rem;
+    flex: 1;
+}
+
+.cascade-rainbow-info .rainbow-win {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4ecdc4;
+}
+
+.cascade-rainbow-info .rainbow-round {
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+.cascade-rainbow-info .rainbow-round-header {
+    font-size: 0.85rem;
+    color: #ffd700;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.cascade-rainbow-info .rainbow-step {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cascade-rainbow-info .rainbow-step:last-child {
+    border-bottom: none;
+}
+
+.cascade-rainbow-info .rainbow-step-title {
+    color: #ccc;
+}
+
+.cascade-rainbow-info .rainbow-step-detail {
+    color: #888;
+    font-size: 0.75rem;
+}
+
+/* Detailed rainbow sections */
+.cascade-rainbow-info .rainbow-section {
+    margin: 8px 0;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+}
+
+.cascade-rainbow-info .section-label {
+    display: block;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+}
+
+.cascade-rainbow-info .rainbow-item {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+    font-size: 0.75rem;
+    align-items: center;
+}
+
+.cascade-rainbow-info .item-pos {
+    color: #666;
+    font-family: monospace;
+    min-width: 50px;
+}
+
+.cascade-rainbow-info .item-type {
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.cascade-rainbow-info .item-type.bronze {
+    background: rgba(205, 127, 50, 0.3);
+    color: #cd7f32;
+}
+
+.cascade-rainbow-info .item-type.silver {
+    background: rgba(192, 192, 192, 0.3);
+    color: #c0c0c0;
+}
+
+.cascade-rainbow-info .item-type.gold {
+    background: rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+}
+
+.cascade-rainbow-info .item-value {
+    color: #ccc;
+}
+
+.cascade-rainbow-info .clover-tag {
+    color: #2ecc71;
+    font-size: 0.7rem;
+}
+
+/* Steps detail */
+.cascade-rainbow-info .rainbow-steps {
+    margin-top: 8px;
+}
+
+.cascade-rainbow-info .rainbow-step-detail {
+    margin: 6px 0;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    border-left: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.cascade-rainbow-info .step-title {
+    font-weight: bold;
+    color: #ffd700;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.cascade-rainbow-info .step-content {
+    font-size: 0.75rem;
+}
+
+.cascade-rainbow-info .affected-list,
+.cascade-rainbow-info .collection-list {
+    margin-top: 4px;
+}
+
+.cascade-rainbow-info .affected-item,
+.cascade-rainbow-info .collected-item {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+    align-items: center;
+}
+
+.cascade-rainbow-info .before-after {
+    color: #4ecdc4;
+}
+
+.cascade-rainbow-info .pot-final {
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+}
+
+.cascade-rainbow-info .round-summary {
+    color: #888;
+    font-size: 0.8rem;
+    margin-left: 8px;
+}
+
 /* Win amount animation */
 .win-animation {
     animation: winPulse 1s ease-in-out;
