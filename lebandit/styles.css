@@ -756,6 +756,42 @@
     font-weight: bold;
 }
 
+.cascade-step-item .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.cascade-step-item .step-contribution {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cascade-step-item .cluster-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.cascade-step-item .cluster-symbol {
+    font-size: 1.2rem;
+}
+
+.cascade-step-item .cluster-count {
+    color: #888;
+}
+
+.cascade-step-item .cluster-payout {
+    color: #4ecdc4;
+    font-weight: bold;
+    margin-left: auto;
+}
+
 /* Status Bar - Compact layout for win and cascade */
 .status-bar {
     display: flex;
@@ -1512,6 +1548,31 @@
         font-size: 0.65rem;
     }
 }
+.cascade-summary {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 5px;
+}
+
+.cascade-summary .summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cascade-summary .summary-label {
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.cascade-summary .summary-win {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4ecdc4;
+}
+
 /* Win amount animation */
 .win-animation {
     animation: winPulse 1s ease-in-out;

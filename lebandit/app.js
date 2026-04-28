@@ -988,14 +988,34 @@ async function renderCascade(steps, totalWin) {
 
         await sleep(400);
 
-        // Add to history
+        // Add to history with detailed winning information
         const stepDiv = document.createElement('div');
         stepDiv.className = 'cascade-step-item';
         const stepWin = step.totalWin || 0;
-        console.log(`[renderCascade] Step ${step.step} win: ${stepWin}`);
+        
+        // Build detailed contribution info
+        let contributionHtml = '';
+        if (step.winningClusters && step.winningClusters.length > 0) {
+            contributionHtml = '<div class="step-contribution">';
+            for (const cluster of step.winningClusters) {
+                const symbolIcon = CONFIG.symbols[cluster.symbol] || '❓';
+                contributionHtml += `
+                    <div class="cluster-info">
+                        <span class="cluster-symbol">${symbolIcon}</span>
+                        <span class="cluster-count">${cluster.count} symbols</span>
+                        <span class="cluster-payout">+$${cluster.payout.toFixed(2)}</span>
+                    </div>
+                `;
+            }
+            contributionHtml += '</div>';
+        }
+        
         stepDiv.innerHTML = `
-            <span class="step-number">${step.step}</span>
-            <span class="step-win">+$${stepWin.toFixed(2)}</span>
+            <div class="step-header">
+                <span class="step-number">Step ${step.step}</span>
+                <span class="step-win">+$${stepWin.toFixed(2)}</span>
+            </div>
+            ${contributionHtml}
         `;
         cascadeStepsList.appendChild(stepDiv);
 
@@ -1004,6 +1024,17 @@ async function renderCascade(steps, totalWin) {
 
     cascadeInfo.classList.add('hidden');
     showWin(totalWin);
+    
+    // Add cascade summary to history
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'cascade-summary';
+    summaryDiv.innerHTML = `
+        <div class="summary-total">
+            <span class="summary-label">Cascade Total</span>
+            <span class="summary-win">+$${totalWin.toFixed(2)}</span>
+        </div>
+    `;
+    cascadeStepsList.appendChild(summaryDiv);
 }
 
 // Add step detail to rainbow details panel
