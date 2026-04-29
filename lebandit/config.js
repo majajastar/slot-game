@@ -4,15 +4,15 @@
 const CONFIG = {
     // Use global server mode (fake/real)
     get serverMode() { return GLOBAL_CONFIG.serverMode; },
-    
+
     // Use global fake server URL
     get fakeWsUrl() { return GLOBAL_CONFIG.fakeServers.lebandit; },
-    
+
     // Use global real server URLs
     get sidUrl() { return GLOBAL_CONFIG.realServers.sidUrl; },
     get launchUrl() { return GLOBAL_CONFIG.realServers.launchUrl; },
     get wsBaseUrl() { return GLOBAL_CONFIG.realServers.wsBaseUrl; },
-    
+
     // Use global credentials
     get authToken() { return GLOBAL_CONFIG.credentials.authToken; },
     get testUuid() { return GLOBAL_CONFIG.credentials.testUuid; },
@@ -20,7 +20,7 @@ const CONFIG = {
     get apiSecret() { return GLOBAL_CONFIG.credentials.apiSecret; },
     get operatorId() { return GLOBAL_CONFIG.credentials.operatorId; },
     get currency() { return GLOBAL_CONFIG.credentials.currency; },
-    
+
     // Use global ping interval
     get pingInterval() { return GLOBAL_CONFIG.gameSettings.pingInterval; },
 

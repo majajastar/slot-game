@@ -62,17 +62,17 @@ Controls fake/real server mode and credentials:
 ```javascript
 const GLOBAL_CONFIG = {
     serverMode: 'fake', // 'fake' for local testing, 'real' for production
-    
+
     fakeServers: {
         lebandit: 'ws://localhost:3003'
     },
-    
+
     realServers: {
         sidUrl: 'https://.../sid',
         launchUrl: 'https://.../game/launch',
         wsBaseUrl: 'wss://.../uat'
     },
-    
+
     credentials: {
         authToken: 's3cr3tV4lu3',
         testUuid: 'test_uuid',
@@ -81,7 +81,7 @@ const GLOBAL_CONFIG = {
         operatorId: 'op001',
         currency: 'USD'
     },
-    
+
     gameSettings: {
         pingInterval: 20000
     }
@@ -98,13 +98,13 @@ const CONFIG = {
     get serverMode() { return GLOBAL_CONFIG.serverMode; },
     get fakeWsUrl() { return GLOBAL_CONFIG.fakeServers.lebandit; },
     get wsBaseUrl() { return GLOBAL_CONFIG.realServers.wsBaseUrl; },
-    
+
     gameTypeId: 'lebandit',
-    
+
     // Grid dimensions
     rows: 5,
     cols: 6,
-    
+
     // Symbol mappings
     symbols: {
         '1': '💎',      // WILD
@@ -126,27 +126,27 @@ const CONFIG = {
         '304': '🍀',    // FOUR_LEAF_CLOVER
         '305': '🏺'     // POT_OF_GOLD
     },
-    
+
     // Rainbow mode
     rainbowMode: {
         enabled: true,
         costMultiplier: 10
     },
-    
+
     // Bonus Boost mode - cost multiplier from server
     bonusBoostMode: {
         enabled: true,
         costMultiplier: 5,  // Default, will be updated from server config
         description: '3x bonus entry chance'
     },
-    
+
     // Bonus games
     bonusGame: {
         enabled: true,
         buyCostMultiplier: 100,
         freeSpins: 8
     },
-    
+
     treasureBonus: {
         enabled: true,
         buyCostMultiplier: 100,
@@ -242,25 +242,25 @@ Fired when `subType === 100005`. Contains game configuration.
 ```javascript
 function handleJoinRoom(data) {
     const info = data.betInfo?.[0];
-    
+
     if (info.betSizeList) {
         BET_SIZE_LIST = info.betSizeList;
     }
-    
+
     if (info.clusterPayouts) {
         CLUSTER_PAYOUTS = info.clusterPayouts;
         renderPaytable();
     }
-    
+
     if (info.bonusConfig) {
         BONUS_CONFIG = info.bonusConfig;
-        
+
         // Update bonus boost cost multiplier from server
         if (info.bonusConfig.bonusBoostCostMultiplier) {
             bonusBoostCostMultiplier = info.bonusConfig.bonusBoostCostMultiplier;
             updateBonusBoostText();
         }
-        
+
         updateBonusButtons();
     }
 }
@@ -293,24 +293,24 @@ The `lastResumeInfo` contains the full `SpinResult` from the last spin, includin
 function handleSyncRoom(data) {
     if (data.roomInfo?.lastResumeInfo) {
         const resume = data.roomInfo.lastResumeInfo;
-        
+
         // Restore the grid
         if (resume.grid) {
             renderGrid(resume.grid);
         }
-        
+
         // Restore golden squares
         if (resume.goldenSquares?.length > 0) {
             renderGoldenSquares(resume.goldenSquares);
         } else {
             clearGoldenSquares();
         }
-        
+
         // Restore bonus game state
         if (resume.bonusGameState?.isActive) {
             showBonusProgress(resume.bonusGameState);
         }
-        
+
         // Show last win amount
         if (resume.totalWinAmount > 0) {
             showWin(resume.totalWinAmount);
@@ -345,10 +345,10 @@ Fired when `subType === 100071` with `opCode: 'SetBet'`. Contains the full spin 
 async function handleSpinResult(data) {
     const betInfo = data.betInfo?.[0];
     const result = betInfo?.gameResult;
-    
+
     // Update balance
     currentBalance = betInfo.finalBalance;
-    
+
     // Render cascade animation (if there are cascade steps)
     if (result.cascadeSteps?.length > 0) {
         await renderCascade(result.cascadeSteps, result.totalWinAmount);
@@ -361,19 +361,19 @@ async function handleSpinResult(data) {
         renderGrid(result.grid);
         showWin(result.totalWinAmount);
     }
-    
+
     // Render golden squares
     if (result.goldenSquares?.length > 0) {
         renderGoldenSquares(result.goldenSquares);
     } else {
         clearGoldenSquares();
     }
-    
+
     // Handle rainbow feature
     if (result.rainbowResult?.hasRainbow) {
         await renderRainbowFeature(result.rainbowResult, result.goldenSquares);
     }
-    
+
     // Handle bonus state
     if (result.bonusGameState) {
         showBonusProgress(result.bonusGameState);
@@ -458,7 +458,7 @@ LeBandit uses a **6x5 grid** with **5 buffer rows above** for cascade animations
 function initGrid() {
     const grid = document.getElementById('reelGrid');
     grid.innerHTML = '';
-    
+
     // Buffer rows (hidden above)
     for (let r = -5; r < 0; r++) {
         for (let c = 0; c < 6; c++) {
@@ -468,7 +468,7 @@ function initGrid() {
             grid.appendChild(cell);
         }
     }
-    
+
     // Visible rows
     for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 6; c++) {
@@ -632,10 +632,10 @@ Golden squares accumulate across bonus spins and persist until the rainbow featu
 function renderGoldenSquares(squares) {
     const overlay = document.getElementById('goldenSquaresOverlay');
     overlay.innerHTML = '';
-    
+
     for (const sq of squares) {
         if (sq.row < 0 || sq.row >= 5) continue;
-        
+
         const el = document.createElement('div');
         el.className = 'golden-square';
         el.style.gridColumn = sq.col + 1;
@@ -667,48 +667,48 @@ Here's a minimal complete frontend:
     <button id="spinBtn" onclick="spin()">Spin ($20)</button>
     <button id="rainbowBtn" onclick="spinRainbow()">Rainbow ($200)</button>
     <button id="boostBtn" onclick="spinBonusBoost()">Boost ($60)</button>
-    
+
     <script>
         let wsClient;
         let balance = 0;
         let bet = 20;
-        
+
         // Initialize
         async function init() {
             initGrid();
-            
+
             wsClient = new SlotGameWebSocketClient('lebandit', CONFIG);
-            
+
             wsClient.on('joinRoom', (data) => {
                 const info = data.betInfo?.[0];
                 if (info?.betSizeList) {
                     bet = info.defaultBet || info.betSizeList[0];
                 }
             });
-            
+
             wsClient.on('syncRoom', (data) => {
                 if (data.roomInfo?.lastResumeInfo?.grid) {
                     renderGrid(data.roomInfo.lastResumeInfo.grid);
                 }
             });
-            
+
             wsClient.on('setBet', (data) => {
                 const betInfo = data.betInfo?.[0];
                 const result = betInfo?.gameResult;
-                
+
                 balance = betInfo.finalBalance || 0;
                 document.getElementById('balance').textContent = `Balance: $${balance}`;
-                
+
                 renderGrid(result.grid);
-                
+
                 if (result.goldenSquares?.length > 0) {
                     renderGoldenSquares(result.goldenSquares);
                 }
             });
-            
+
             await wsClient.connect();
         }
-        
+
         function initGrid() {
             const grid = document.getElementById('reelGrid');
             for (let r = -5; r < 5; r++) {
@@ -720,7 +720,7 @@ Here's a minimal complete frontend:
                 }
             }
         }
-        
+
         function renderGrid(gridData) {
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 6; c++) {
@@ -730,7 +730,7 @@ Here's a minimal complete frontend:
                 }
             }
         }
-        
+
         function renderGoldenSquares(squares) {
             const overlay = document.getElementById('goldenSquaresOverlay');
             overlay.innerHTML = '';
@@ -743,25 +743,25 @@ Here's a minimal complete frontend:
                 overlay.appendChild(el);
             }
         }
-        
+
         async function spin() {
             document.getElementById('spinBtn').disabled = true;
             await wsClient.setBet({ bet, rainbowMode: false });
             document.getElementById('spinBtn').disabled = false;
         }
-        
+
         async function spinRainbow() {
             document.getElementById('rainbowBtn').disabled = true;
             await wsClient.setBet({ bet, rainbowMode: true, bonusBoost: false });
             document.getElementById('rainbowBtn').disabled = false;
         }
-        
+
         async function spinBonusBoost() {
             document.getElementById('boostBtn').disabled = true;
             await wsClient.setBet({ bet, rainbowMode: false, bonusBoost: true });
             document.getElementById('boostBtn').disabled = false;
         }
-        
+
         init().catch(console.error);
     </script>
 </body>
@@ -851,7 +851,7 @@ function updateBetDisplay() {
     let cost = bet;
     if (rainbowModeEnabled) cost *= RAINBOW_MODE_COST_MULTIPLIER;
     if (bonusBoostEnabled) cost *= bonusBoostCostMultiplier;
-    
+
     // Update spin button to show total cost
     const spinBtn = document.getElementById('spinButton');
     if (cost !== bet) {
