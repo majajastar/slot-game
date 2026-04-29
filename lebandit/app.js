@@ -1001,8 +1001,13 @@ async function renderCascade(steps, totalWin, rainbowResult = null) {
             contributionHtml = '<div class="step-contribution">';
             for (const cluster of step.winningClusters) {
                 const symbolIcon = CONFIG.symbols[cluster.symbol] || '❓';
-                // Build position list
-                const positionList = cluster.positions.map(p => `(${p.row},${p.col})`).join(', ');
+                // Build position list with symbols
+                const positionList = cluster.positions.map(p => {
+                    const cell = step.symbolGridBefore[p.row]?.[p.col];
+                    const symbol = cell?.symbol || cluster.symbol;
+                    const posSymbol = CONFIG.symbols[symbol] || '❓';
+                    return `(${p.row},${p.col})${posSymbol}`;
+                }).join(', ');
                 contributionHtml += `
                     <div class="cluster-info">
                         <span class="cluster-symbol">${symbolIcon}</span>
