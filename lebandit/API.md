@@ -271,7 +271,7 @@ Main game action - place a bet and spin the reels.
             "cascadeSteps": [...],
             "rainbowResult": {
               "hasRainbow": true,
-              "coinWin": 75.50,
+              "totalCoinWin": 75.50,
               "rounds": [...]
             },
             "goldenSquares": [...],
@@ -313,7 +313,7 @@ Main game action - place a bet and spin the reels.
 | `clusterWins` | array | Winning clusters information |
 | `cascadeSteps` | array | Cascade/tumbling steps |
 | `rainbowResult` | object | Rainbow feature result |
-| `goldenSquares` | array | Golden square positions |
+| `goldenSquares` | array | Golden square positions (persists until rainbow in bonus) |
 | `bonusGameState` | object | Active bonus game state |
 | `bet` | number | Bet amount |
 | `cost` | number | Actual cost (includes rainbow multiplier) |
@@ -373,7 +373,7 @@ socket.onmessage = (event) => {
 ```javascript
 function handleMessage(data) {
   const type = data.vals?.type || data.type;
-  
+
   switch (type) {
     case 1:
       // Login response
@@ -419,6 +419,8 @@ function sendSpin(bet, rainbowMode = false) {
 3. **Handle reconnection** by checking `lastResumeInfo` in SyncRoomInfo
 4. **Disable UI** during spin processing to prevent double-clicks
 5. **Use `symbolMap`** for tracking symbol lifecycle during animations
+6. **Golden squares persist** in bonus mode until rainbow triggers (Luck of the Bandit)
+7. **Rainbow symbol** should not be replaced by scatters - it persists on the grid
 
 ## Debug Mode
 

@@ -332,7 +332,7 @@ Fired when `subType === 100071` with `opCode: 'SetBet'`. Contains the full spin 
 | `cascadeSteps` | `array` | Step-by-step cascade data |
 | `cascadeWin` | `number` | Win from cascade only |
 | `rainbowResult` | `object` | Rainbow feature result |
-| `coinWin` | `number` | Win from rainbow coins/pots |
+| `totalCoinWin` | `number` | Win from rainbow feature (with bet applied) |
 | `goldenSquares` | `array` | Accumulated golden square positions |
 | `bonusGameState` | `object` | Active bonus state |
 | `bet` | `number` | Bet amount |
@@ -534,7 +534,7 @@ The rainbow feature transforms golden squares into coins, clovers, and pots.
 ```javascript
 {
     hasRainbow: true,
-    coinWin: 75.50,
+    totalCoinWin: 75.50,
     rainbowPosition: { row: 2, col: 3 },
     rounds: [
         {
@@ -547,6 +547,15 @@ The rainbow feature transforms golden squares into coins, clovers, and pots.
     ]
 }
 ```
+
+### Rainbow Result Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `hasRainbow` | boolean | Whether rainbow feature triggered |
+| `totalCoinWin` | number | Total win amount from rainbow (with bet) |
+| `rainbowPosition` | object | Position of rainbow symbol `{row, col}` |
+| `rounds` | array | Collection rounds with coins/clovers/pots |
 
 ### Step Types
 
@@ -567,9 +576,8 @@ The rainbow feature transforms golden squares into coins, clovers, and pots.
     type: 'LUCK_OF_THE_BANDIT',           // Bonus type name
     typeId: 1,                            // 1=Luck, 2=Glitters, 3=Treasure
     spinsLeft: 5,
-    totalSpins: 8,
-    roundTotalSpins: 8,                   // Spins for current round
-    accumulatedGoldenSquares: [...],      // For Luck of the Bandit
+    totalSpins: 8,                        // Total spins including retriggered spins
+    accumulatedGoldenSquares: [...],      // For Luck of the Bandit (persists until rainbow)
     persistentGoldenSquares: [...],       // For Glitters/Treasure
     totalWin: 150.50,                     // Accumulated bonus win
     isActive: true,
@@ -607,7 +615,18 @@ if (bonusState.isActive && bonusState.spinsLeft > 0) {
 
 ### Golden Squares in Bonus
 
-Golden squares accumulate across bonus spins and persist until the rainbow feature resolves them.
+Golden squares accumulate across bonus spins and persist until the rainbow feature triggers.
+
+**Luck of the Bandit Mode:**
+- Golden squares persist between spins
+- They accumulate until a rainbow symbol appears
+- When rainbow triggers, all golden squares are resolved (coins/clovers/pots placed)
+- After rainbow resolves, golden squares are cleared
+- If no rainbow in a spin, golden squares carry over to next spin
+
+**Glitters/Treasure Mode:**
+- Golden squares persist for entire bonus duration
+- Multiple rainbow triggers can occur, each using available golden squares
 
 ```javascript
 function renderGoldenSquares(squares) {
