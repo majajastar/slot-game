@@ -315,7 +315,7 @@ function symbolGridToGrid(symbolGrid) {
 }
 
 async function handleSpinResult(data) {
-    console.log('[handleSpinResult] Raw data:', data);
+    // console.log(`[handleSpinResult] Raw data: ${JSON.stringify(data)}}`);
 
     // Step 1: Extract and validate result
     const { betInfo, result, isValid } = extractAndValidateResult(data);
@@ -355,7 +355,7 @@ async function handleSpinResult(data) {
 // ==========================================
 function extractAndValidateResult(data) {
     const betInfo = data.betInfo?.[0];
-    console.log('[handleSpinResult] betInfo:', betInfo);
+    //console.log(`[handleSpinResult] betInfo: ${JSON.stringify(betInfo)}`);
 
     if (!betInfo) {
         console.error('No betInfo in SetBet response', data);
