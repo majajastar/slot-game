@@ -364,7 +364,7 @@ async function connect() {
 
     try {
         // Create shared WebSocket client
-        wsClient = new SlotGameWebSocketClient('theluxe', CONFIG);
+        wsClient = new SlotGameWebSocketClient(CONFIG.gameTypeId, CONFIG);
 
         // Set up event handlers
         wsClient.on('login', (data) => {

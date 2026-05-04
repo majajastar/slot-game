@@ -24,7 +24,7 @@ const CONFIG = {
     // Use global ping interval
     get pingInterval() { return GLOBAL_CONFIG.gameSettings.pingInterval; },
 
-    gameTypeId: 'lebandit',
+    gameTypeId: 'thegang',
 
     // Symbol emojis for display
     // Symbol IDs: WILD=1, SCATTER=2, High=201-205, Low=101-105 (10, J, Q, K, A)

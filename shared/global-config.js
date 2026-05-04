@@ -14,8 +14,8 @@ const GLOBAL_CONFIG = {
     // FAKE SERVER (Local Testing)
     // ==========================================
     fakeServers: {
-        lebandit: 'ws://35.78.181.205:3003',
-        theluxe: 'ws://localhost:3002'  // Update with actual fake server URL
+        lebandit: 'ws://35.78.80.187:3003',
+        theluxe: 'ws://35.78.80.187:3002'  // Update with actual fake server URL
     },
 
     // ==========================================
