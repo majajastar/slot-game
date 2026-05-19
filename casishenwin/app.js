@@ -169,9 +169,14 @@ async function handleSpinResult(data) {
     currentBalance = gameResult.finalBalance || currentBalance;
     updateBalanceDisplay();
 
-    // Render the grid
-    if (info.grid) {
-        renderGrid(info.grid);
+    // Show cascade animation if there are steps
+    if (info.steps && info.steps.length > 0) {
+        await renderCascade(info.steps, info.grid);
+    } else {
+        // No cascade - just render final grid
+        if (info.grid) {
+            renderGrid(info.grid);
+        }
     }
 
     // Show win amount
@@ -260,6 +265,131 @@ function renderGrid(grid) {
             }
         }
     }
+}
+
+// Cascade Animation
+async function renderCascade(steps, finalGrid) {
+    const cascadeInfo = document.getElementById('cascadeInfo');
+    const cascadeStepEl = document.getElementById('cascadeStep');
+    const cascadeHistory = document.getElementById('cascadeHistory');
+    const cascadeStepsList = document.getElementById('cascadeStepsList');
+
+    // Show cascade UI
+    cascadeInfo.classList.remove('hidden');
+    cascadeHistory.classList.remove('hidden');
+    cascadeStepsList.innerHTML = '';
+
+    console.log(`[renderCascade] Starting cascade with ${steps.length} steps`);
+
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        cascadeStepEl.textContent = `${i + 1}/${steps.length}`;
+
+        // Step 1: Show grid before win and highlight winning symbols
+        if (step.gridBefore) {
+            renderGrid(step.gridBefore);
+            highlightWinningSymbols(step.winningPositions);
+            await sleep(800);
+        }
+
+        // Step 2: Animate removal of winning symbols
+        if (step.removedPositions) {
+            animateRemoval(step.removedPositions);
+            await sleep(600);
+        }
+
+        // Step 3: Show grid after removal
+        if (step.gridAfterRemoval) {
+            renderGrid(step.gridAfterRemoval);
+            await sleep(400);
+        }
+
+        // Step 4: Animate dropping symbols
+        if (step.movements && step.movements.length > 0) {
+            await animateMovements(step.movements);
+        }
+
+        // Step 5: Show final grid for this step
+        if (step.gridAfterDropAndFill) {
+            renderGrid(step.gridAfterDropAndFill);
+        }
+
+        // Add to cascade history
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'cascade-step-item';
+        const stepWin = step.win || 0;
+
+        let winDetails = '';
+        if (step.winningPositions && step.winningPositions.length > 0) {
+            winDetails = `<div class="step-wins">${step.winningPositions.length} symbols matched - $${stepWin.toFixed(2)}</div>`;
+        }
+
+        stepDiv.innerHTML = `
+            <div class="step-header">
+                <span class="step-number">Step ${i + 1}</span>
+                <span class="step-win">+$${stepWin.toFixed(2)}</span>
+            </div>
+            ${winDetails}
+        `;
+        cascadeStepsList.appendChild(stepDiv);
+
+        await sleep(300);
+    }
+
+    // Hide cascade info, show final grid
+    cascadeInfo.classList.add('hidden');
+    if (finalGrid) {
+        renderGrid(finalGrid);
+    }
+}
+
+function highlightWinningSymbols(positions) {
+    if (!positions || positions.length === 0) return;
+
+    const mainGrid = document.getElementById('mainGrid');
+    positions.forEach(pos => {
+        const index = pos.row * CONFIG.cols + pos.col;
+        if (index < mainGrid.children.length) {
+            mainGrid.children[index].classList.add('winning');
+        }
+    });
+}
+
+function animateRemoval(positions) {
+    if (!positions || positions.length === 0) return;
+
+    const mainGrid = document.getElementById('mainGrid');
+    positions.forEach(pos => {
+        const index = pos.row * CONFIG.cols + pos.col;
+        if (index < mainGrid.children.length) {
+            const cell = mainGrid.children[index];
+            cell.classList.remove('winning');
+            cell.classList.add('removing');
+        }
+    });
+}
+
+async function animateMovements(movements) {
+    const mainGrid = document.getElementById('mainGrid');
+
+    movements.forEach(movement => {
+        const index = movement.to.row * CONFIG.cols + movement.to.col;
+        if (index < mainGrid.children.length) {
+            const cell = mainGrid.children[index];
+            cell.classList.add('falling');
+        }
+    });
+
+    await sleep(500);
+
+    // Remove falling animation
+    for (let cell of mainGrid.children) {
+        cell.classList.remove('falling');
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function renderPaytable() {

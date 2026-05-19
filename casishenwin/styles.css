@@ -440,6 +440,116 @@ body {
     color: #aaa;
 }
 
+/* Cascade Info */
+.cascade-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 20px;
+    margin-top: 10px;
+}
+
+.cascade-label {
+    font-size: 0.9rem;
+    color: #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.cascade-step {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+/* Cascade History */
+.cascade-history {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.cascade-history-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #4ecdc4;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.cascade-steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cascade-step-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    border-left: 3px solid #4ecdc4;
+}
+
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.step-number {
+    font-weight: bold;
+    color: #fff;
+}
+
+.step-win {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.step-wins {
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+/* Removing animation */
+.grid-cell.removing {
+    animation: removeSymbol 0.5s ease-out forwards;
+}
+
+@keyframes removeSymbol {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+/* Falling animation */
+.grid-cell.falling {
+    animation: fallIn 0.5s ease-in;
+}
+
+@keyframes fallIn {
+    0% { transform: translateY(-50px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Winning highlight */
+.grid-cell.winning {
+    animation: winPulse 0.5s ease-in-out infinite alternate;
+    z-index: 10;
+}
+
+@keyframes winPulse {
+    from { transform: scale(1); box-shadow: 0 0 20px rgba(46, 204, 113, 0.5); }
+    to { transform: scale(1.1); box-shadow: 0 0 40px rgba(46, 204, 113, 0.8); }
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .main-layout {
