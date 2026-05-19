@@ -15,7 +15,8 @@ const GLOBAL_CONFIG = {
     // ==========================================
     fakeServers: {
         lebandit: 'ws://35.78.80.187:3003',
-        theluxe: 'ws://35.78.80.187:3002'  // Update with actual fake server URL
+        theluxe: 'ws://35.78.80.187:3002',
+        casishenwin: 'ws://35.78.80.187:3004'  // Casishenwin fake server
     },
 
     // ==========================================

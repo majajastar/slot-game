@@ -3,809 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casishenwin Slot Game</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #fff;
-            overflow-x: hidden;
-        }
-
-        .game-container {
-            width: 100%;
-            max-width: 800px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .game-title {
-            font-size: 2.5rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            background: linear-gradient(45deg, #f39c12, #e74c3c);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(243, 156, 18, 0.3);
-        }
-
-        .info-panel {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .info-box {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px 25px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            min-width: 120px;
-        }
-
-        .info-label {
-            font-size: 0.8rem;
-            color: #aaa;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .info-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #f39c12;
-            margin-top: 5px;
-        }
-
-        /* Grid Container */
-        .grid-wrapper {
-            position: relative;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            border: 2px solid rgba(243, 156, 18, 0.3);
-        }
-
-        .top-row-label {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #f39c12;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        /* Top Row */
-        .top-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-bottom: 15px;
-            padding-left: calc(16.67% + 4px); /* Offset for col 0 */
-            padding-right: calc(16.67% + 4px); /* Offset for col 5 */
-        }
-
-        .top-cell {
-            aspect-ratio: 1;
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            border: 2px solid rgba(243, 156, 18, 0.5);
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .top-cell.rolling {
-            animation: rollLeft 0.5s ease-in-out;
-        }
-
-        @keyframes rollLeft {
-            0% { transform: translateX(0); opacity: 1; }
-            50% { transform: translateX(-100%); opacity: 0; }
-            50.1% { transform: translateX(100%); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Main Grid */
-        .main-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 8px;
-        }
-
-        .grid-cell {
-            aspect-ratio: 1;
-            background: linear-gradient(135deg, #1a1a2e, #2d2d44);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            transition: all 0.3s ease;
-            min-width: 60px;
-            min-height: 60px;
-        }
-
-        .grid-cell:hover {
-            border-color: rgba(243, 156, 18, 0.5);
-            transform: scale(1.05);
-        }
-
-        /* Multi-row symbols */
-        .grid-cell.multi-row-2 {
-            grid-row: span 2;
-            aspect-ratio: auto;
-        }
-
-        .grid-cell.multi-row-3 {
-            grid-row: span 3;
-            aspect-ratio: auto;
-        }
-
-        .grid-cell.multi-row-4 {
-            grid-row: span 4;
-            aspect-ratio: auto;
-        }
-
-        /* Frames */
-        .grid-cell.silver-frame {
-            border: 3px solid #c0c0c0;
-            box-shadow: 0 0 15px rgba(192, 192, 192, 0.5),
-                        inset 0 0 15px rgba(192, 192, 192, 0.2);
-        }
-
-        .grid-cell.golden-frame {
-            border: 3px solid #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6),
-                        inset 0 0 20px rgba(255, 215, 0, 0.3);
-            animation: goldenPulse 2s infinite;
-        }
-
-        @keyframes goldenPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), inset 0 0 30px rgba(255, 215, 0, 0.5); }
-        }
-
-        /* Winning animation */
-        .grid-cell.winning {
-            animation: winPulse 0.5s ease-in-out infinite alternate;
-            z-index: 10;
-        }
-
-        @keyframes winPulse {
-            from { transform: scale(1); box-shadow: 0 0 20px rgba(46, 204, 113, 0.5); }
-            to { transform: scale(1.1); box-shadow: 0 0 40px rgba(46, 204, 113, 0.8); }
-        }
-
-        /* Cascade animation */
-        .grid-cell.removing {
-            animation: removeSymbol 0.5s ease-out forwards;
-        }
-
-        @keyframes removeSymbol {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
-        }
-
-        .grid-cell.falling {
-            animation: fallIn 0.5s ease-in;
-        }
-
-        @keyframes fallIn {
-            0% { transform: translateY(-50px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .btn {
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-spin {
-            background: linear-gradient(45deg, #f39c12, #e74c3c);
-            color: white;
-            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
-        }
-
-        .btn-spin:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
-        }
-
-        .btn-spin:active {
-            transform: translateY(0);
-        }
-
-        .btn-spin:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-auto {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
-        }
-
-        .btn-auto:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
-        }
-
-        .btn-auto.active {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-        }
-
-        /* Bet controls */
-        .bet-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 20px;
-            border-radius: 10px;
-        }
-
-        .bet-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #f39c12;
-            background: transparent;
-            color: #f39c12;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .bet-btn:hover {
-            background: #f39c12;
-            color: white;
-        }
-
-        .bet-amount {
-            font-size: 1.3rem;
-            font-weight: bold;
-            min-width: 80px;
-            text-align: center;
-        }
-
-        /* Win display */
-        .win-display {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3rem;
-            font-weight: bold;
-            color: #f39c12;
-            text-shadow: 0 0 30px rgba(243, 156, 18, 0.5);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 100;
-        }
-
-        .win-display.show {
-            opacity: 1;
-            animation: winPopup 1s ease-out forwards;
-        }
-
-        @keyframes winPopup {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
-
-        /* Paytable */
-        .paytable {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            padding: 20px;
-            max-width: 600px;
-            width: 100%;
-        }
-
-        .paytable h3 {
-            text-align: center;
-            margin-bottom: 15px;
-            color: #f39c12;
-        }
-
-        .paytable-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
-        .paytable-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 5px;
-        }
-
-        .paytable-symbol {
-            font-size: 1.5rem;
-        }
-
-        .paytable-value {
-            font-size: 0.9rem;
-            color: #aaa;
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .game-title {
-                font-size: 1.8rem;
-            }
-
-            .grid-cell {
-                font-size: 1.5rem;
-                min-width: 45px;
-                min-height: 45px;
-            }
-
-            .top-cell {
-                font-size: 1.5rem;
-            }
-
-            .btn {
-                padding: 12px 30px;
-                font-size: 1rem;
-            }
-        }
-
-        /* Loading state */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(243, 156, 18, 0.3);
-            border-top-color: #f39c12;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-    </style>
+    <title>Casishenwin - Multi-Row Slot Game</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="game-container">
-        <h1 class="game-title">Casishenwin</h1>
-
-        <!-- Info Panel -->
-        <div class="info-panel">
-            <div class="info-box">
-                <div class="info-label">Balance</div>
-                <div class="info-value" id="balance">1000.00</div>
+        <!-- Header -->
+        <div class="header">
+            <a href="/lobby/" class="back-button">← Back to Lobby</a>
+            <div class="header-center">
+                <h1>🍀 Casishenwin</h1>
+                <div class="subtitle">6x5 Grid | Multi-Row | Top Row Rolling | RTP 96%</div>
             </div>
-            <div class="info-box">
-                <div class="info-label">Total Win</div>
-                <div class="info-value" id="total-win">0.00</div>
-            </div>
-            <div class="info-box">
-                <div class="info-label">Last Win</div>
-                <div class="info-value" id="last-win">0.00</div>
-            </div>
-            <div class="info-box">
-                <div class="info-label">Spins</div>
-                <div class="info-value" id="spin-count">0</div>
-            </div>
+            <div class="server-mode" id="serverMode">⚪ Connecting...</div>
         </div>
 
-        <!-- Bet Controls -->
-        <div class="bet-controls">
-            <button class="bet-btn" onclick="changeBet(-1)">-</button>
-            <div class="bet-amount" id="bet-amount">1.00</div>
-            <button class="bet-btn" onclick="changeBet(1)">+</button>
-        </div>
+        <!-- Loading State -->
+        <div id="loading" class="loading">Connecting to game server...</div>
 
-        <!-- Grid -->
-        <div class="grid-wrapper">
-            <div class="top-row-label">Top Row (Rolling)</div>
-            <div class="top-row" id="top-row">
-                <!-- Top row cells generated by JS -->
+        <!-- Game Content -->
+        <div id="gameContent" class="hidden">
+            <div class="main-layout">
+                <!-- LEFT: Rules & Info -->
+                <div class="left-panel">
+                    <div class="info-section">
+                        <div class="info-title">💡 How to Play</div>
+
+                        <div class="rule-detail">
+                            <p><strong>6x5 Grid</strong> with multi-row occupancy</p>
+                            <p>Middle columns (2-5) can have symbols occupying 2-4 rows</p>
+                        </div>
+
+                        <div class="info-subtitle">🎯 WinRoad</div>
+                        <div class="rule-detail">
+                            <p>Win = Payout × WinRoad</p>
+                            <p>WinRoad = product of symbol counts in each column</p>
+                        </div>
+
+                        <div class="info-subtitle">🌊 Cascading Reels</div>
+                        <div class="rule-detail">
+                            <p>Winning symbols removed, gravity drops, new symbols fill</p>
+                            <p>Multiple wins in a single spin!</p>
+                        </div>
+
+                        <div class="info-subtitle">🖼️ Frames</div>
+                        <div class="rule-detail">
+                            <p><strong>Silver Frame:</strong> Becomes Golden on win</p>
+                            <p><strong>Golden Frame:</strong> Becomes Wild on win</p>
+                        </div>
+
+                        <div class="info-subtitle">⬆️ Top Row</div>
+                        <div class="rule-detail">
+                            <p>4 symbols above middle columns</p>
+                            <p>Rolls right-to-left after each cascade</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CENTER: Game Grid -->
+                <div class="game-panel">
+                    <div class="grid-container">
+                        <!-- Top Row -->
+                        <div class="top-row-container">
+                            <div class="top-row-label">Top Row (Rolling)</div>
+                            <div id="topRow" class="top-row">
+                                <!-- Top row cells generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Main Grid -->
+                        <div id="mainGrid" class="main-grid">
+                            <!-- Grid cells generated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Status Bar -->
+                    <div class="status-bar">
+                        <div class="win-display">
+                            <span id="winAmount" class="win-amount">0.00</span>
+                            <span class="win-label">Win</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Controls -->
+                <div class="right-panel">
+                    <div class="controls-section">
+                        <div class="balance-display">
+                            <span class="balance-label">Balance:</span>
+                            <span id="balance" class="balance-value">$0.00</span>
+                        </div>
+
+                        <div class="bet-controls">
+                            <button id="betMinus" class="bet-button" onclick="changeBet(-1)">−</button>
+                            <div class="bet-display">
+                                <span class="bet-label">Bet</span>
+                                <span id="currentBet" class="bet-value">$1.00</span>
+                            </div>
+                            <button id="betPlus" class="bet-button" onclick="changeBet(1)">+</button>
+                        </div>
+
+                        <button id="spinButton" class="spin-button" onclick="spin()">
+                            🎰 SPIN
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="main-grid" id="main-grid">
-                <!-- Main grid cells generated by JS -->
-            </div>
-        </div>
 
-        <!-- Controls -->
-        <div class="controls">
-            <button class="btn btn-spin" id="spin-btn" onclick="spin()">Spin</button>
-            <button class="btn btn-auto" id="auto-btn" onclick="toggleAuto()">Auto Spin</button>
-        </div>
-
-        <!-- Paytable -->
-        <div class="paytable">
-            <h3>Paytable</h3>
-            <div class="paytable-grid" id="paytable">
-                <!-- Generated by JS -->
+            <!-- Paytable -->
+            <div class="paytable-section">
+                <div class="info-title">📊 WinTable</div>
+                <div id="paytable" class="paytable">
+                    <div class="loading-text">Loading...</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Win Display -->
-    <div class="win-display" id="win-display"></div>
+    <!-- Win Display Overlay -->
+    <div id="winDisplay" class="win-display-overlay"></div>
 
-    <!-- Loading -->
-    <div class="loading" id="loading" style="display: none;">
-        <div class="spinner"></div>
-    </div>
-
-    <script>
-        // Game Configuration
-        const CONFIG = {
-            rows: 5,
-            cols: 6,
-            topRowCols: 4,
-            topRowStartCol: 1,
-            betAmounts: [0.20, 0.50, 1.00, 2.00, 5.00, 10.00, 20.00, 50.00, 100.00],
-            defaultBetIndex: 2,
-            autoSpinDelay: 2000,
-            animationSpeed: 500
-        };
-
-        // Symbol Definitions
-        const SYMBOLS = {
-            WILD: { id: '1', emoji: '💎', name: 'Wild', type: 'special' },
-            SCATTER: { id: '2', emoji: '⭐', name: 'Scatter', type: 'special' },
-            CROWN: { id: '201', emoji: '👑', name: 'Crown', type: 'high' },
-            RING: { id: '202', emoji: '💍', name: 'Ring', type: 'high' },
-            TROPHY: { id: '203', emoji: '🏆', name: 'Trophy', type: 'high' },
-            CASH: { id: '204', emoji: '💵', name: 'Cash', type: 'high' },
-            CARD: { id: '205', emoji: '🎴', name: 'Card', type: 'high' },
-            SPADE: { id: '101', emoji: '♠️', name: 'Spade', type: 'low' },
-            HEART: { id: '102', emoji: '♥️', name: 'Heart', type: 'low' },
-            DIAMOND: { id: '103', emoji: '♦️', name: 'Diamond', type: 'low' },
-            CLUB: { id: '104', emoji: '♣️', name: 'Club', type: 'low' },
-            JOKER: { id: '105', emoji: '🃏', name: 'Joker', type: 'low' }
-        };
-
-        // Paytable
-        const PAYTABLE = {
-            '201': { 3: 0.5, 4: 1.5, 5: 5, 6: 15 },
-            '202': { 3: 0.5, 4: 1.5, 5: 5, 6: 15 },
-            '203': { 3: 0.5, 4: 1.5, 5: 5, 6: 15 },
-            '204': { 3: 0.5, 4: 1.5, 5: 5, 6: 15 },
-            '205': { 3: 0.5, 4: 1.5, 5: 5, 6: 15 },
-            '101': { 3: 0.2, 4: 0.5, 5: 2, 6: 8 },
-            '102': { 3: 0.2, 4: 0.5, 5: 2, 6: 8 },
-            '103': { 3: 0.2, 4: 0.5, 5: 2, 6: 8 },
-            '104': { 3: 0.2, 4: 0.5, 5: 2, 6: 8 },
-            '105': { 3: 0.2, 4: 0.5, 5: 2, 6: 8 },
-            '1': { 3: 1, 4: 3, 5: 10, 6: 25 }
-        };
-
-        // Game State
-        let state = {
-            balance: 1000,
-            betIndex: CONFIG.defaultBetIndex,
-            totalWin: 0,
-            lastWin: 0,
-            spinCount: 0,
-            isSpinning: false,
-            autoSpin: false,
-            grid: null,
-            topRow: null,
-            frames: new Map() // Map of position -> frame type
-        };
-
-        // Initialize game
-        function init() {
-            renderPaytable();
-            updateUI();
-            initGrid();
-        }
-
-        // Initialize empty grid
-        function initGrid() {
-            const mainGrid = document.getElementById('main-grid');
-            const topRow = document.getElementById('top-row');
-            
-            // Clear existing
-            mainGrid.innerHTML = '';
-            topRow.innerHTML = '';
-            
-            // Create main grid cells
-            for (let row = 0; row < CONFIG.rows; row++) {
-                for (let col = 0; col < CONFIG.cols; col++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'grid-cell';
-                    cell.dataset.row = row;
-                    cell.dataset.col = col;
-                    cell.textContent = '❓';
-                    mainGrid.appendChild(cell);
-                }
-            }
-            
-            // Create top row cells
-            for (let col = 0; col < CONFIG.topRowCols; col++) {
-                const cell = document.createElement('div');
-                cell.className = 'top-cell';
-                cell.dataset.col = col;
-                cell.textContent = '❓';
-                topRow.appendChild(cell);
-            }
-        }
-
-        // Render paytable
-        function renderPaytable() {
-            const container = document.getElementById('paytable');
-            container.innerHTML = '';
-            
-            Object.entries(SYMBOLS).forEach(([key, symbol]) => {
-                if (symbol.type === 'special' && symbol.id !== '1') return;
-                
-                const item = document.createElement('div');
-                item.className = 'paytable-item';
-                
-                const payouts = PAYTABLE[symbol.id];
-                let payoutText = '';
-                if (payouts) {
-                    payoutText = Object.entries(payouts)
-                        .map(([count, value]) => `${count}x: ${value}x`)
-                        .join(', ');
-                }
-                
-                item.innerHTML = `
-                    <span class="paytable-symbol">${symbol.emoji}</span>
-                    <span class="paytable-value">${symbol.name}<br>${payoutText}</span>
-                `;
-                
-                container.appendChild(item);
-            });
-        }
-
-        // Update UI
-        function updateUI() {
-            document.getElementById('balance').textContent = state.balance.toFixed(2);
-            document.getElementById('total-win').textContent = state.totalWin.toFixed(2);
-            document.getElementById('last-win').textContent = state.lastWin.toFixed(2);
-            document.getElementById('spin-count').textContent = state.spinCount;
-            document.getElementById('bet-amount').textContent = CONFIG.betAmounts[state.betIndex].toFixed(2);
-        }
-
-        // Change bet
-        function changeBet(direction) {
-            if (state.isSpinning) return;
-            
-            state.betIndex += direction;
-            if (state.betIndex < 0) state.betIndex = 0;
-            if (state.betIndex >= CONFIG.betAmounts.length) state.betIndex = CONFIG.betAmounts.length - 1;
-            
-            updateUI();
-        }
-
-        // Get current bet
-        function getBet() {
-            return CONFIG.betAmounts[state.betIndex];
-        }
-
-        // Toggle auto spin
-        function toggleAuto() {
-            state.autoSpin = !state.autoSpin;
-            const btn = document.getElementById('auto-btn');
-            btn.classList.toggle('active', state.autoSpin);
-            
-            if (state.autoSpin && !state.isSpinning) {
-                spin();
-            }
-        }
-
-        // Main spin function
-        async function spin() {
-            if (state.isSpinning) return;
-            if (state.balance < getBet()) {
-                alert('Insufficient balance!');
-                return;
-            }
-            
-            state.isSpinning = true;
-            state.balance -= getBet();
-            state.spinCount++;
-            updateUI();
-            
-            document.getElementById('spin-btn').disabled = true;
-            document.getElementById('loading').style.display = 'flex';
-            
-            try {
-                // Simulate API call - replace with actual WebSocket call
-                const result = await simulateSpin();
-                
-                // Animate the spin
-                await animateSpin(result);
-                
-                // Update state with result
-                state.lastWin = result.totalWin * getBet();
-                state.totalWin += state.lastWin;
-                state.balance += state.lastWin;
-                
-                // Show win if significant
-                if (state.lastWin > 0) {
-                    showWin(state.lastWin);
-                }
-                
-                updateUI();
-                
-                // Handle auto spin
-                if (state.autoSpin) {
-                    setTimeout(() => spin(), CONFIG.autoSpinDelay);
-                }
-            } catch (error) {
-                console.error('Spin error:', error);
-                alert('Error during spin!');
-            } finally {
-                state.isSpinning = false;
-                document.getElementById('spin-btn').disabled = false;
-                document.getElementById('loading').style.display = 'none';
-            }
-        }
-
-        // Simulate spin (replace with actual API call)
-        async function simulateSpin() {
-            // This is a placeholder - replace with actual WebSocket/API call
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    // Generate random grid for demo
-                    const grid = [];
-                    for (let row = 0; row < CONFIG.rows; row++) {
-                        const rowData = [];
-                        for (let col = 0; col < CONFIG.cols; col++) {
-                            const symbolIds = Object.values(SYMBOLS).map(s => s.id);
-                            rowData.push(symbolIds[Math.floor(Math.random() * symbolIds.length)]);
-                        }
-                        grid.push(rowData);
-                    }
-                    
-                    const topRow = [];
-                    for (let col = 0; col < CONFIG.topRowCols; col++) {
-                        const symbolIds = Object.values(SYMBOLS).map(s => s.id);
-                        topRow.push(symbolIds[Math.floor(Math.random() * symbolIds.length)]);
-                    }
-                    
-                    resolve({
-                        grid,
-                        topRow,
-                        totalWin: Math.random() > 0.7 ? Math.random() * 10 : 0,
-                        steps: []
-                    });
-                }, 1000);
-            });
-        }
-
-        // Animate spin result
-        async function animateSpin(result) {
-            const mainGrid = document.getElementById('main-grid');
-            const topRow = document.getElementById('top-row');
-            
-            // Animate top row rolling
-            const topCells = topRow.children;
-            for (let i = 0; i < topCells.length; i++) {
-                topCells[i].classList.add('rolling');
-                await sleep(100);
-            }
-            
-            await sleep(500);
-            
-            // Update top row
-            for (let i = 0; i < result.topRow.length; i++) {
-                const symbol = getSymbolById(result.topRow[i]);
-                topCells[i].textContent = symbol ? symbol.emoji : '❓';
-                topCells[i].classList.remove('rolling');
-            }
-            
-            // Animate main grid
-            const cells = mainGrid.children;
-            for (let i = 0; i < cells.length; i++) {
-                const row = Math.floor(i / CONFIG.cols);
-                const col = i % CONFIG.cols;
-                const symbolId = result.grid[row][col];
-                const symbol = getSymbolById(symbolId);
-                
-                cells[i].textContent = symbol ? symbol.emoji : '❓';
-                cells[i].classList.add('falling');
-                
-                // Check for frames
-                const frameKey = `${row},${col}`;
-                if (state.frames.has(frameKey)) {
-                    const frameType = state.frames.get(frameKey);
-                    cells[i].classList.add(frameType === 'silver' ? 'silver-frame' : 'golden-frame');
-                }
-                
-                await sleep(50);
-            }
-            
-            await sleep(500);
-            
-            // Remove falling animation
-            for (let cell of cells) {
-                cell.classList.remove('falling');
-            }
-        }
-
-        // Get symbol by ID
-        function getSymbolById(id) {
-            return Object.values(SYMBOLS).find(s => s.id === id);
-        }
-
-        // Show win animation
-        function showWin(amount) {
-            const display = document.getElementById('win-display');
-            display.textContent = `+${amount.toFixed(2)}`;
-            display.classList.add('show');
-            
-            setTimeout(() => {
-                display.classList.remove('show');
-            }, 1500);
-        }
-
-        // Utility: Sleep
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        // Initialize on load
-        window.addEventListener('load', init);
-    </script>
+    <script src="../shared/global-config.js"></script>
+    <script src="../shared/websocket-client.js"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

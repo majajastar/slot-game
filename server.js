@@ -33,16 +33,20 @@ const server = http.createServer((req, res) => {
   
   if (urlPath === '/' || urlPath === '') {
     // Default to lobby
-    filePath = './lobby/index.html';
+    filePath = './index.html';
   } else if (urlPath === '/theluxe' || urlPath === '/theluxe/') {
     filePath = './theluxe/index.html';
   } else if (urlPath === '/lebandit' || urlPath === '/lebandit/') {
     filePath = './lebandit/index.html';
   } else if (urlPath === '/lobby' || urlPath === '/lobby/') {
-    filePath = './lobby/index.html';
+    filePath = './index.html';
+  } else if (urlPath === '/casishenwin' || urlPath === '/casishenwin/') {
+    filePath = './casishenwin/index.html';
   } else if (urlPath.startsWith('/theluxe/')) {
     filePath = '.' + urlPath;
   } else if (urlPath.startsWith('/lebandit/')) {
+    filePath = '.' + urlPath;
+  } else if (urlPath.startsWith('/casishenwin/')) {
     filePath = '.' + urlPath;
   } else if (urlPath.startsWith('/lobby/')) {
     filePath = '.' + urlPath;
@@ -95,8 +99,9 @@ server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
   console.log('');
   console.log('Available games:');
-  console.log(`  - Lobby:     http://localhost:${PORT}/lobby/`);
-  console.log(`  - TheLuxe:   http://localhost:${PORT}/theluxe/`);
-  console.log(`  - LeBandit:  http://localhost:${PORT}/lebandit/`);
+  console.log(`  - Lobby:      http://localhost:${PORT}/lobby/`);
+  console.log(`  - TheLuxe:    http://localhost:${PORT}/theluxe/`);
+  console.log(`  - LeBandit:   http://localhost:${PORT}/lebandit/`);
+  console.log(`  - Casishenwin: http://localhost:${PORT}/casishenwin/`);
   console.log(`=================================`);
 });
