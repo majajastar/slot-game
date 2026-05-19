@@ -288,40 +288,56 @@ async function renderCascade(steps, finalGrid) {
         // Step 1: Show grid before win and highlight winning symbols
         if (step.gridBefore) {
             renderGrid(step.gridBefore);
-            highlightWinningSymbols(step.winningPositions);
+            
+            // Highlight winning positions
+            if (step.winningColumns) {
+                const positions = [];
+                step.winningColumns.forEach(win => {
+                    if (win.positions) {
+                        positions.push(...win.positions);
+                    }
+                });
+                highlightWinningSymbols(positions);
+            }
             await sleep(800);
         }
 
         // Step 2: Animate removal of winning symbols
-        if (step.removedPositions) {
-            animateRemoval(step.removedPositions);
+        if (step.winningColumns) {
+            const positions = [];
+            step.winningColumns.forEach(win => {
+                if (win.positions) {
+                    positions.push(...win.positions);
+                }
+            });
+            animateRemoval(positions);
             await sleep(600);
         }
 
-        // Step 3: Show grid after removal
-        if (step.gridAfterRemoval) {
-            renderGrid(step.gridAfterRemoval);
+        // Step 3: Show grid after removal (if available)
+        if (step.gridAfter) {
+            renderGrid(step.gridAfter);
             await sleep(400);
         }
 
-        // Step 4: Animate dropping symbols
-        if (step.movements && step.movements.length > 0) {
-            await animateMovements(step.movements);
-        }
-
-        // Step 5: Show final grid for this step
-        if (step.gridAfterDropAndFill) {
-            renderGrid(step.gridAfterDropAndFill);
+        // Step 4: Show final grid for this step
+        if (step.gridAfter) {
+            renderGrid(step.gridAfter);
         }
 
         // Add to cascade history
         const stepDiv = document.createElement('div');
         stepDiv.className = 'cascade-step-item';
-        const stepWin = step.win || 0;
+        const stepWin = step.totalWin || 0;
 
         let winDetails = '';
-        if (step.winningPositions && step.winningPositions.length > 0) {
-            winDetails = `<div class="step-wins">${step.winningPositions.length} symbols matched - $${stepWin.toFixed(2)}</div>`;
+        if (step.winningColumns && step.winningColumns.length > 0) {
+            winDetails = '<div class="step-wins">';
+            step.winningColumns.forEach(win => {
+                const symbolEmoji = CONFIG.symbols[win.symbol] || '❓';
+                winDetails += `<div>${symbolEmoji} ${win.consecutiveCols} cols × ${win.winRoad} ways = $${(win.payout * win.winRoad).toFixed(2)}</div>`;
+            });
+            winDetails += '</div>';
         }
 
         stepDiv.innerHTML = `
@@ -347,10 +363,21 @@ function highlightWinningSymbols(positions) {
     if (!positions || positions.length === 0) return;
 
     const mainGrid = document.getElementById('mainGrid');
+    const topRow = document.getElementById('topRow');
+    
     positions.forEach(pos => {
-        const index = pos.row * CONFIG.cols + pos.col;
-        if (index < mainGrid.children.length) {
-            mainGrid.children[index].classList.add('winning');
+        if (pos.row === -1) {
+            // Top row
+            const topRowIndex = pos.col - 1; // top row starts at col 1
+            if (topRowIndex >= 0 && topRowIndex < topRow.children.length) {
+                topRow.children[topRowIndex].classList.add('winning');
+            }
+        } else {
+            // Main grid
+            const index = pos.row * CONFIG.cols + pos.col;
+            if (index < mainGrid.children.length) {
+                mainGrid.children[index].classList.add('winning');
+            }
         }
     });
 }
@@ -359,12 +386,25 @@ function animateRemoval(positions) {
     if (!positions || positions.length === 0) return;
 
     const mainGrid = document.getElementById('mainGrid');
+    const topRow = document.getElementById('topRow');
+    
     positions.forEach(pos => {
-        const index = pos.row * CONFIG.cols + pos.col;
-        if (index < mainGrid.children.length) {
-            const cell = mainGrid.children[index];
-            cell.classList.remove('winning');
-            cell.classList.add('removing');
+        if (pos.row === -1) {
+            // Top row
+            const topRowIndex = pos.col - 1;
+            if (topRowIndex >= 0 && topRowIndex < topRow.children.length) {
+                const cell = topRow.children[topRowIndex];
+                cell.classList.remove('winning');
+                cell.classList.add('removing');
+            }
+        } else {
+            // Main grid
+            const index = pos.row * CONFIG.cols + pos.col;
+            if (index < mainGrid.children.length) {
+                const cell = mainGrid.children[index];
+                cell.classList.remove('winning');
+                cell.classList.add('removing');
+            }
         }
     });
 }
