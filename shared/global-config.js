@@ -6,38 +6,36 @@
 // ==========================================
 // LOCAL CONFIG FILE OVERRIDE
 // ==========================================
-// Check if local-config.js exists (for local development environment)
+// Check if use_fake_server file exists (for local development environment)
 // This file is NOT committed to git and is only on your local machine
-let LOCAL_CONFIG = {};
+let useFakeServer = false;
 
-// Try to load local config file (synchronous check)
-function loadLocalConfig() {
+// Try to check if use_fake_server file exists (synchronous check)
+function checkLocalConfig() {
     try {
-        // Check if local-config.js exists by trying to load it
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', '/shared/local-config.js', false); // synchronous
+        xhr.open('GET', '/use_fake_server', false); // synchronous
         xhr.send();
         
         if (xhr.status === 200) {
-            // File exists - execute it to get the config
-            eval(xhr.responseText);
-            console.log('[GLOBAL_CONFIG] Local config loaded from file');
+            useFakeServer = true;
+            console.log('[GLOBAL_CONFIG] use_fake_server file found, using fake mode');
         }
     } catch (e) {
         // File doesn't exist - use default
-        console.log('[GLOBAL_CONFIG] No local config file found, using default');
+        console.log('[GLOBAL_CONFIG] No use_fake_server file found, using real mode');
     }
 }
 
-// Load local config if available
-loadLocalConfig();
+// Check local config on load
+checkLocalConfig();
 
 const GLOBAL_CONFIG = {
     // ==========================================
     // SERVER MODE
     // ==========================================
     // Use local config if available, otherwise default to 'real'
-    serverMode: LOCAL_CONFIG.serverMode || 'real', // 'fake' | 'real'
+    serverMode: (useFakeServer) ? 'fake' :  'real', 
 
     // ==========================================
     // FAKE SERVER (Local Testing)

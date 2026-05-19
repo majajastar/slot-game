@@ -16,5 +16,4 @@ build/
 # OS-specific
 .DS_Store
 Thumbs.db
-local-config.js
-shared/local-config.js
+use_fake_server
