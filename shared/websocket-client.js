@@ -118,6 +118,13 @@ class SlotGameWebSocketClient {
         const redirectUrl = launchData.vals?.data?.redirectUrl;
         console.log(`launchData = ${JSON.stringify(launchData)}`)
         console.log(`redirectUrl = ${redirectUrl}`)
+        
+        // Check if redirectUrl is valid before constructing URL
+        if (!redirectUrl || typeof redirectUrl !== 'string') {
+            console.error('Invalid redirectUrl received from launch API:', redirectUrl);
+            throw new Error(`Invalid redirectUrl: ${redirectUrl}`);
+        }
+        
         const url = new URL(redirectUrl);
         const token = url.searchParams.get('token');
         const lang = url.searchParams.get('lang') || 'en';
