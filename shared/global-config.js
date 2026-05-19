@@ -3,12 +3,41 @@
  * Shared settings for all slot games (LeBandit, TheLuxe, etc.)
  */
 
+// ==========================================
+// LOCAL CONFIG FILE OVERRIDE
+// ==========================================
+// Check if local-config.js exists (for local development environment)
+// This file is NOT committed to git and is only on your local machine
+let LOCAL_CONFIG = {};
+
+// Try to load local config file (synchronous check)
+function loadLocalConfig() {
+    try {
+        // Check if local-config.js exists by trying to load it
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', '/shared/local-config.js', false); // synchronous
+        xhr.send();
+        
+        if (xhr.status === 200) {
+            // File exists - execute it to get the config
+            eval(xhr.responseText);
+            console.log('[GLOBAL_CONFIG] Local config loaded from file');
+        }
+    } catch (e) {
+        // File doesn't exist - use default
+        console.log('[GLOBAL_CONFIG] No local config file found, using default');
+    }
+}
+
+// Load local config if available
+loadLocalConfig();
+
 const GLOBAL_CONFIG = {
     // ==========================================
     // SERVER MODE
     // ==========================================
-    // Set to 'fake' for local testing, 'real' for production
-    serverMode: 'real', // 'fake' | 'real'
+    // Use local config if available, otherwise default to 'real'
+    serverMode: LOCAL_CONFIG.serverMode || 'real', // 'fake' | 'real'
 
     // ==========================================
     // FAKE SERVER (Local Testing)
