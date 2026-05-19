@@ -56,7 +56,8 @@ async function connect() {
         // Event: Login success
         wsClient.on('login', (data) => {
             console.log('[Casishenwin] Login success:', data);
-            currentBalance = data.balance || 0;
+            const loginData = data.vals?.data || data;
+            currentBalance = loginData.balance || 0;
             updateBalanceDisplay();
             statusEl.textContent = '🟢 Connected';
             document.getElementById('loading').classList.add('hidden');

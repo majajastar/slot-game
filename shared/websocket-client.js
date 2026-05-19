@@ -179,6 +179,7 @@ class SlotGameWebSocketClient {
             // Handle specific message types
             switch (type) {
                 case 1: // Login response
+                    this.emit('login', data);
                     this.sendLobbyRequest()
                     break;
                 case 3: // Lobby response
