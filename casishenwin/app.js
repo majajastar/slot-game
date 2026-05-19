@@ -37,7 +37,7 @@ async function connect() {
     statusEl.textContent = '🟡 Connecting...';
 
     try {
-        wsClient = new SlotGameWebSocketClient({
+        wsClient = new SlotGameWebSocketClient(CONFIG.gameTypeId, {
             serverMode: CONFIG.serverMode,
             fakeWsUrl: CONFIG.fakeWsUrl,
             sidUrl: CONFIG.sidUrl,
