@@ -21,6 +21,20 @@ let currentBalance = 0;
 let currentGrid = null;
 let currentTopRow = null;
 
+// Debug mode
+let debugSpinId = null;
+
+// Available debug spins (populated from server)
+const DEBUG_SPINS = [
+    { id: 'silver-frame-win', name: 'Silver Frame Win' },
+    { id: 'golden-frame-win', name: 'Golden Frame Win' },
+    { id: 'normal-win', name: 'Normal Win' },
+    { id: 'no-win', name: 'No Win' },
+    { id: 'scatter-win', name: 'Scatter Win (Bonus)' },
+    { id: 'cascade-win', name: 'Cascade Win' },
+    { id: 'silver-to-golden-to-scatter', name: 'Silver→Golden→Scatter' }
+];
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
     initGrid();
@@ -141,6 +155,35 @@ function handleJoinRoom(data) {
     // Update UI
     renderPaytable();
     updateBetDisplay();
+    initDebugPanel();
+}
+
+function initDebugPanel() {
+    const select = document.getElementById('debugSpinSelect');
+    if (select) {
+        select.value = debugSpinId || '';
+    }
+    updateDebugStatus();
+}
+
+function selectDebugSpin(spinId) {
+    debugSpinId = spinId || null;
+    updateDebugStatus();
+    console.log(`[Debug] Selected spin: ${debugSpinId || 'Random'}`);
+}
+
+function updateDebugStatus() {
+    const statusEl = document.getElementById('debugStatus');
+    if (statusEl) {
+        if (debugSpinId) {
+            const spin = DEBUG_SPINS.find(s => s.id === debugSpinId);
+            statusEl.textContent = `Active: ${spin ? spin.name : debugSpinId}`;
+            statusEl.classList.add('active');
+        } else {
+            statusEl.textContent = 'Random spins';
+            statusEl.classList.remove('active');
+        }
+    }
 }
 
 function handleSyncRoom(data) {
@@ -1069,7 +1112,15 @@ function spin() {
     }, 10000);
 
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
-    wsClient.setBet({ bet });
+    
+    // Include debug spin ID if selected
+    const spinParams = { bet };
+    if (debugSpinId) {
+        spinParams.debug = debugSpinId;
+        console.log(`[Casishenwin] Sending debug spin: ${debugSpinId}`);
+    }
+    
+    wsClient.setBet(spinParams);
 }
 
 function changeBet(direction) {

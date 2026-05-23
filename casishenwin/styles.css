@@ -528,6 +528,55 @@ body {
     color: #888;
 }
 
+/* Debug Panel */
+.debug-panel {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid #666;
+}
+
+.debug-title {
+    font-size: 0.9rem;
+    color: #f39c12;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.debug-select {
+    width: 100%;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #666;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.debug-select option {
+    background: #1a1a2e;
+    color: #fff;
+}
+
+.debug-select:focus {
+    outline: none;
+    border-color: #ffd700;
+}
+
+.debug-status {
+    margin-top: 5px;
+    font-size: 0.75rem;
+    color: #888;
+    text-align: center;
+    min-height: 16px;
+}
+
+.debug-status.active {
+    color: #f39c12;
+}
+
 /* Cascade History */
 .cascade-history {
     background: rgba(255, 255, 255, 0.05);
