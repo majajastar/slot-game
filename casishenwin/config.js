@@ -35,11 +35,12 @@ const CONFIG = {
         '203': '🏆',    // TROPHY
         '204': '💵',    // CASH
         '205': '🎴',    // CARD
-        '101': '♠️',    // SPADE
-        '102': '♥️',    // HEART
-        '103': '♦️',    // DIAMOND
-        '104': '♣️',    // CLUB
-        '105': '🃏',    // JOKER
+        '206': '🌟',    // STAR
+        '101': '🅰️',    // ACE
+        '102': '🇰',    // KING
+        '103': '🇶',    // QUEEN
+        '104': '🇯',    // JACK
+        '105': '🔟',    // TEN
     },
 
     // Symbol names for paytable
@@ -49,11 +50,12 @@ const CONFIG = {
         '203': 'Trophy',
         '204': 'Cash',
         '205': 'Card',
-        '101': 'Spade',
-        '102': 'Heart',
-        '103': 'Diamond',
-        '104': 'Club',
-        '105': 'Joker'
+        '206': 'Star',
+        '101': 'Ace',
+        '102': 'King',
+        '103': 'Queen',
+        '104': 'Jack',
+        '105': 'Ten'
     },
 
     // Grid dimensions

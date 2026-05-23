@@ -101,55 +101,36 @@ body {
     gap: 15px;
 }
 
-/* Info Section */
-.info-section {
+/* Game Info */
+.game-info {
+    text-align: center;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
-    padding: 15px;
+    width: 100%;
 }
 
-.info-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #ffd700;
-    margin-bottom: 10px;
-}
-
-.info-subtitle {
-    font-size: 0.95rem;
-    color: #4ecdc4;
-    margin: 10px 0 5px;
-}
-
-.rule-detail {
-    font-size: 0.85rem;
-    color: #aaa;
-    line-height: 1.5;
-}
-
-.rule-detail p {
+.game-title {
+    font-size: 1.2rem;
+    color: #f39c12;
     margin-bottom: 5px;
 }
 
-/* Grid Container */
-.grid-container {
-    position: relative;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 15px;
-    padding: 20px;
-    border: 2px solid rgba(243, 156, 18, 0.3);
+.game-subtitle {
+    font-size: 0.8rem;
+    color: #888;
 }
 
 /* Top Row */
 .top-row-container {
-    margin-bottom: 15px;
+    width: 100%;
+    margin-bottom: 5px;
 }
 
 .top-row-label {
-    text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #f39c12;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     text-transform: uppercase;
     letter-spacing: 2px;
 }
@@ -182,6 +163,7 @@ body {
     grid-template-columns: repeat(6, 1fr);
     grid-auto-rows: minmax(60px, auto);
     gap: 8px;
+    position: relative;
 }
 
 .grid-cell {
@@ -202,7 +184,7 @@ body {
 /* Multi-row symbol master cell - spans multiple rows as rectangle */
 .grid-cell.multi-row-master {
     border: 2px solid rgba(255, 215, 0, 0.5);
-    z-index: 2;
+    z-index: 10;
     display: flex !important;
     align-items: center;
     justify-content: center;
@@ -211,6 +193,10 @@ body {
     /* Make the cell span the full height of multiple rows */
     min-height: 100%;
     height: 100%;
+    /* Ensure it stays within its grid area */
+    overflow: hidden;
+    /* Add a subtle shadow to distinguish from single-row symbols */
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 /* Multi-row symbol continuation cells (hidden) */
@@ -220,6 +206,9 @@ body {
     pointer-events: none;
     opacity: 0;
     display: none !important;
+    /* Remove from grid flow */
+    grid-row: auto !important;
+    grid-column: auto !important;
 }
 
 .grid-cell:hover {
@@ -321,6 +310,9 @@ body {
     0%, 100% { opacity: 0.6; }
     50% { opacity: 0.3; }
 }
+
+/* Win Display */
+.win-section {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -402,42 +394,37 @@ body {
     color: #1a1a2e;
 }
 
-.bet-display {
-    text-align: center;
-    min-width: 80px;
+.bet-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
-.bet-label {
-    display: block;
-    font-size: 0.8rem;
-    color: #888;
-}
-
-.bet-value {
+.bet-amount {
     font-size: 1.2rem;
     font-weight: bold;
-    color: #fff;
+    min-width: 80px;
+    text-align: center;
 }
 
 /* Spin Button */
 .spin-button {
-    padding: 15px 40px;
+    width: 100%;
+    padding: 15px;
     font-size: 1.2rem;
     font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    border: none;
+    border: 2px solid #ffd700;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b);
+    color: #1a1a2e;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s;
-    background: linear-gradient(45deg, #f39c12, #e74c3c);
-    color: white;
-    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .spin-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
 }
 
 .spin-button:disabled {
@@ -446,193 +433,110 @@ body {
     transform: none;
 }
 
-/* Win Display Overlay */
-.win-display-overlay {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 3rem;
-    font-weight: bold;
-    color: #f39c12;
-    text-shadow: 0 0 30px rgba(243, 156, 18, 0.5);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 100;
-}
-
-.win-display-overlay.show {
-    opacity: 1;
-    animation: winPopup 1s ease-out forwards;
-}
-
-@keyframes winPopup {
-    0% { 
-        transform: translate(-50%, -50%) scale(0.5); 
-        opacity: 0; 
-    }
-    50% { 
-        transform: translate(-50%, -50%) scale(1.2); 
-        opacity: 1; 
-    }
-    100% { 
-        transform: translate(-50%, -50%) scale(1); 
-        opacity: 0; 
-    }
-}
-
-/* Paytable Section */
-.paytable-section {
+/* Paytable */
+.paytable-container {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
-    padding: 20px;
-    margin-top: 20px;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-.paytable {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
+.paytable-title {
+    font-size: 1rem;
+    color: #f39c12;
+    margin-bottom: 10px;
+    text-align: center;
+    text-transform: uppercase;
 }
 
 .paytable-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .paytable-symbol {
     font-size: 1.5rem;
+    min-width: 30px;
+    text-align: center;
 }
 
 .paytable-value {
-    font-size: 0.9rem;
-    color: #aaa;
+    font-size: 0.8rem;
+    color: #888;
 }
 
 /* Cascade Info */
 .cascade-info {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px 20px;
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    border-radius: 20px;
-    margin-top: 10px;
-}
-
-.cascade-label {
-    font-size: 0.9rem;
-    color: #ffd700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #ffd700;
+    z-index: 100;
 }
 
 .cascade-step {
-    font-size: 1.2rem;
-    font-weight: bold;
+    font-size: 1rem;
     color: #ffd700;
+    font-weight: bold;
+}
+
+.cascade-total {
+    font-size: 0.8rem;
+    color: #888;
 }
 
 /* Cascade History */
 .cascade-history {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     padding: 15px;
-    margin-top: 15px;
     max-height: 300px;
     overflow-y: auto;
 }
 
 .cascade-history-title {
     font-size: 1rem;
-    font-weight: bold;
-    color: #4ecdc4;
+    color: #f39c12;
     margin-bottom: 10px;
     text-align: center;
 }
 
-.cascade-steps-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
 .cascade-step-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 10px;
-    border-left: 3px solid #4ecdc4;
+    padding: 8px;
+    margin-bottom: 5px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    border-left: 3px solid #ffd700;
 }
 
 .step-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
 }
 
 .step-number {
-    font-weight: bold;
-    color: #fff;
+    font-size: 0.8rem;
+    color: #888;
 }
 
 .step-win {
+    font-size: 0.9rem;
     color: #ffd700;
     font-weight: bold;
 }
 
 .step-wins {
-    font-size: 0.85rem;
+    margin-top: 5px;
+    font-size: 0.75rem;
     color: #aaa;
-}
-
-/* Removing animation */
-.grid-cell.removing {
-    animation: removeSymbol 0.5s ease-out forwards;
-}
-
-@keyframes removeSymbol {
-    0% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(0); opacity: 0; }
-}
-
-/* Falling animation for new symbols */
-.grid-cell.falling {
-    animation: fallIn 0.5s ease-in;
-}
-
-@keyframes fallIn {
-    0% { transform: translateY(-50px); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-}
-
-/* Shifting left animation for top row symbols */
-.top-cell.shifting-left {
-    animation: shiftLeft 0.5s ease-in-out;
-}
-
-@keyframes shiftLeft {
-    0% { transform: translateX(20px); opacity: 0.5; }
-    100% { transform: translateX(0); opacity: 1; }
-}
-
-/* Winning highlight */
-.grid-cell.winning {
-    animation: winPulse 0.5s ease-in-out infinite alternate;
-    z-index: 10;
-}
-
-@keyframes winPulse {
-    from { transform: scale(1); box-shadow: 0 0 20px rgba(46, 204, 113, 0.5); }
-    to { transform: scale(1.1); box-shadow: 0 0 40px rgba(46, 204, 113, 0.8); }
 }
 
 /* Responsive */
@@ -642,27 +546,22 @@ body {
     }
     
     .left-panel, .right-panel {
-        order: 2;
-    }
-    
-    .game-panel {
-        order: 1;
+        display: none;
     }
 }
 
 @media (max-width: 600px) {
+    .game-container {
+        padding: 10px;
+    }
+    
     .header-center h1 {
-        font-size: 1.4rem;
+        font-size: 1.2rem;
     }
     
     .grid-cell, .top-cell {
         font-size: 1.5rem;
-        min-width: 45px;
-        min-height: 45px;
-    }
-    
-    .spin-button {
-        padding: 12px 30px;
-        font-size: 1rem;
+        min-width: 40px;
+        min-height: 40px;
     }
 }

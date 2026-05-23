@@ -8,7 +8,6 @@
 // Data from server (populated after SyncRoomInfo)
 let SYMBOLS = {};
 let WIN_TABLE = {};
-let WIN_TABLE_DISPLAY = [];
 let GAME_CONFIG = {};
 let BET_SIZE_LIST = [0.20, 0.50, 1.00, 2.00, 5.00, 10.00, 20.00, 50.00, 100.00];
 let CURRENT_BET_INDEX = 2;
@@ -131,7 +130,7 @@ function handleJoinRoom(data) {
     }
 
     if (betInfo.winTableDisplay) {
-        WIN_TABLE_DISPLAY = betInfo.winTableDisplay;
+        // winTableDisplay is unused - we calculate display from winTable
     }
 
     // Store bet sizes
@@ -153,7 +152,12 @@ function handleSyncRoom(data) {
     // Restore grid if available
     const lastResumeInfo = data.roomInfo?.lastResumeInfo;
     if (lastResumeInfo?.grid) {
-        renderGrid(lastResumeInfo.grid);
+        // Always use renderSymbolGrid for proper multi-row rendering
+        if (lastResumeInfo.grid.mainGrid && lastResumeInfo.grid.mainGrid[0] && typeof lastResumeInfo.grid.mainGrid[0][0] === 'object') {
+            renderSymbolGrid(lastResumeInfo.grid, document.getElementById('mainGrid'), document.getElementById('topRow'));
+        } else {
+            console.warn('[handleSyncRoom] Grid is not SymbolGrid, skipping render');
+        }
     }
 }
 
@@ -184,7 +188,7 @@ async function handleSpinResult(data) {
 
     // Show cascade animation if there are steps
     if (info.steps && info.steps.length > 0) {
-        await renderCascade(info.steps, info.grid);
+        await renderCascade(info.steps, info.symbolGrid || info.grid);
     } else {
         // No cascade - just render final grid
         if (info.symbolGrid) {
@@ -195,12 +199,8 @@ async function handleSpinResult(data) {
             console.log('%c[No Cascade - Final Grid]', 'color: #4ecdc4; font-weight: bold;');
             prettyPrintGrid(info.symbolGrid, null, null);
         } else if (info.grid) {
-            // Fallback to simple grid
-            renderGrid(info.grid);
-            
-            // Debug: pretty print the grid even when no cascade
-            console.log('%c[No Cascade - Final Grid]', 'color: #4ecdc4; font-weight: bold;');
-            prettyPrintGrid(info.grid, null, null);
+            // Fallback - but we need SymbolGrid for proper multi-row rendering
+            console.warn('[handleSpinResult] No symbolGrid available, multi-row symbols may not render correctly');
         }
     }
 
@@ -248,30 +248,6 @@ function initGrid() {
 }
 
 /**
- * Render grid from backend data
- * Handles both SymbolGrid (SymbolInstance[][]) and simple Grid (string[][])
- */
-function renderGrid(grid) {
-    if (!grid) return;
-
-    const mainGrid = document.getElementById('mainGrid');
-    const topRow = document.getElementById('topRow');
-
-    // Handle SymbolGrid (array of SymbolInstance arrays)
-    if (grid.symbolGridBefore || grid.symbolGridAfterRemoval || grid.symbolGridAfterFill) {
-        // This is a step object, render the appropriate grid
-        const symbolGrid = grid.symbolGridAfterFill || grid.symbolGridAfterRemoval || grid.symbolGridBefore;
-        if (symbolGrid) {
-            renderSymbolGrid(symbolGrid, mainGrid, topRow);
-        }
-        return;
-    }
-
-    // Handle simple ExtendedGrid
-    renderSimpleGrid(grid, mainGrid, topRow);
-}
-
-/**
  * Render SymbolGrid (SymbolInstance[][])
  * Multi-row symbols show 1 icon in a rectangle that spans multiple rows
  * Symbol is centered vertically in the middle of the rectangle
@@ -289,8 +265,17 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
         delete cell.dataset.symbolId;
         delete cell.dataset.multiRow;
         delete cell.dataset.masterCell;
-        cell.style = ''; // Clear all inline styles
+        delete cell.dataset.rowSpan;
+        delete cell.dataset.minRow;
+        delete cell.dataset.maxRow;
+        
+        // Explicitly remove all inline styles
+        cell.removeAttribute('style');
+        
+        // Re-apply base styles
         cell.style.display = 'flex';
+        cell.style.alignItems = 'center';
+        cell.style.justifyContent = 'center';
     }
     
     // Reset top row cells
@@ -320,6 +305,30 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
         }
     }
     
+    // Debug: log ALL symbols with their IDs
+    console.log('[renderSymbolGrid] All symbols in grid:');
+    for (let col = 0; col < symbolGrid.mainGrid[0].length; col++) {
+        const colSymbols = [];
+        for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
+            const si = symbolGrid.mainGrid[row][col];
+            if (si) {
+                colSymbols.push(`${si.symbol}(${si.id})`);
+            } else {
+                colSymbols.push('null');
+            }
+        }
+        console.log(`  Col ${col}: ${colSymbols.join(', ')}`);
+    }
+    
+    // Debug: log multi-row symbols
+    console.log('[renderSymbolGrid] Multi-row detection:');
+    multiRowInfo.forEach((positions, id) => {
+        if (positions.length > 1) {
+            const symbol = symbolGrid.mainGrid[positions[0].row][positions[0].col].symbol;
+            console.log(`  ID ${id} (symbol ${symbol}): ${positions.length} cells - rows ${positions.map(p => p.row).join(',')} col ${positions[0].col}`);
+        }
+    });
+    
     // Second pass: render cells
     for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
         for (let col = 0; col < symbolGrid.mainGrid[row].length; col++) {
@@ -330,12 +339,25 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             const symbolInstance = symbolGrid.mainGrid[row][col];
             
             if (!symbolInstance || !symbolInstance.id) {
+                // Clear cell content for removed/null symbols
+                cell.textContent = '';
+                cell.className = 'grid-cell';
+                delete cell.dataset.symbolId;
+                delete cell.dataset.multiRow;
+                delete cell.dataset.masterCell;
+                cell.style = '';
+                cell.style.display = 'flex';
                 continue;
             }
             
             const emoji = getSymbolEmoji(symbolInstance);
             const positions = multiRowInfo.get(symbolInstance.id);
             const isMultiRow = positions && positions.length > 1;
+            
+            // Debug log for multi-row detection
+            if (isMultiRow && row === Math.min(...positions.map(p => p.row))) {
+                console.log(`[renderSymbolGrid] Multi-row at col ${col}: ID ${symbolInstance.id}, symbol ${symbolInstance.symbol}, span ${positions.length} rows`);
+            }
             
             if (isMultiRow) {
                 // Calculate vertical span
@@ -344,7 +366,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                 const rowSpan = maxRow - minRow + 1;
                 
                 if (row === minRow) {
-                    // This is the top cell - make it span rows and show symbol
+                    // This is the top cell - render as master with CSS Grid spanning
                     cell.textContent = emoji;
                     cell.className = 'grid-cell multi-row-master';
                     cell.dataset.symbolId = symbolInstance.id;
@@ -352,9 +374,15 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                     delete cell.dataset.multiRow;
                     
                     // Use CSS grid to span multiple rows
+                    // grid-row: start-line / span count
                     cell.style.gridRow = `${minRow + 1} / span ${rowSpan}`;
                     cell.style.gridColumn = `${col + 1}`;
                     cell.style.display = 'flex';
+                    
+                    // Store span info for debugging
+                    cell.dataset.rowSpan = String(rowSpan);
+                    cell.dataset.minRow = String(minRow);
+                    cell.dataset.maxRow = String(maxRow);
                 } else {
                     // This is a continuation cell - hide it completely
                     cell.className = 'grid-cell multi-row-continuation';
@@ -362,6 +390,9 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                     cell.dataset.multiRow = 'true';
                     delete cell.dataset.masterCell;
                     cell.style.display = 'none';
+                    // Reset grid placement
+                    cell.style.gridRow = 'auto';
+                    cell.style.gridColumn = 'auto';
                 }
             } else {
                 // Single row symbol - normal rendering
@@ -370,6 +401,10 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                 cell.dataset.symbolId = symbolInstance.id;
                 cell.dataset.masterCell = 'true';
                 delete cell.dataset.multiRow;
+                
+                // Set explicit grid position for single-row symbols too
+                cell.style.gridRow = `${row + 1}`;
+                cell.style.gridColumn = `${col + 1}`;
             }
         }
     }
@@ -390,122 +425,6 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                 } else {
                     delete cell.dataset.symbolId;
                 }
-            }
-        }
-    }
-}
-
-/**
- * Render simple ExtendedGrid (string[][])
- * Also handles multi-row symbols by detecting repeated IDs in the same column
- */
-function renderSimpleGrid(grid, mainGridEl, topRowEl) {
-    // Reset all cells first
-    const cells = mainGridEl.children;
-    for (let i = 0; i < cells.length; i++) {
-        const cell = cells[i];
-        cell.textContent = '';
-        cell.className = 'grid-cell';
-        cell.style = '';
-        cell.style.display = 'flex';
-        delete cell.dataset.symbolId;
-        delete cell.dataset.multiRow;
-        delete cell.dataset.masterCell;
-    }
-    
-    // Render main grid
-    if (grid.mainGrid) {
-        // First pass: identify multi-row symbols (same symbol in consecutive rows, same column)
-        const multiRowInfo = new Map();
-        for (let row = 0; row < grid.mainGrid.length; row++) {
-            for (let col = 0; col < grid.mainGrid[row].length; col++) {
-                const symbol = grid.mainGrid[row][col];
-                if (symbol !== '') {
-                    const key = col + '-' + symbol;
-                    if (!multiRowInfo.has(key)) {
-                        multiRowInfo.set(key, []);
-                    }
-                    multiRowInfo.get(key).push(row);
-                }
-            }
-        }
-        
-        // Filter to only actual multi-row (consecutive rows)
-        const multiRowKeys = new Set();
-        multiRowInfo.forEach((rows, key) => {
-            if (rows.length > 1) {
-                // Check if rows are consecutive
-                let consecutive = true;
-                for (let i = 1; i < rows.length; i++) {
-                    if (rows[i] !== rows[i-1] + 1) {
-                        consecutive = false;
-                        break;
-                    }
-                }
-                if (consecutive) {
-                    multiRowKeys.add(key);
-                }
-            }
-        });
-        
-        // Track which cells are part of multi-row
-        const processedCells = new Set();
-        
-        // Second pass: render cells
-        for (let row = 0; row < grid.mainGrid.length; row++) {
-            for (let col = 0; col < grid.mainGrid[row].length; col++) {
-                const index = row * CONFIG.cols + col;
-                if (index >= cells.length) continue;
-                
-                const cell = cells[index];
-                const symbol = grid.mainGrid[row][col];
-                
-                if (symbol === '') {
-                    continue;
-                }
-                
-                const key = col + '-' + symbol;
-                const isMultiRow = multiRowKeys.has(key);
-                
-                if (isMultiRow) {
-                    const rows = multiRowInfo.get(key);
-                    const minRow = rows[0];
-                    const maxRow = rows[rows.length - 1];
-                    const rowSpan = maxRow - minRow + 1;
-                    
-                    if (row === minRow) {
-                        // Top cell - span rows
-                        const emoji = CONFIG.symbols[symbol] || '❓';
-                        cell.textContent = emoji;
-                        cell.className = 'grid-cell multi-row-master';
-                        cell.style.gridRow = `${minRow + 1} / span ${rowSpan}`;
-                        cell.style.gridColumn = `${col + 1}`;
-                        cell.style.display = 'flex';
-                        processedCells.add(key);
-                    } else {
-                        // Continuation cell - hide
-                        cell.className = 'grid-cell multi-row-continuation';
-                        cell.style.display = 'none';
-                    }
-                } else {
-                    // Single row
-                    const emoji = CONFIG.symbols[symbol] || '❓';
-                    cell.textContent = emoji;
-                    cell.className = 'grid-cell';
-                }
-            }
-        }
-    }
-
-    // Render top row
-    if (grid.topRow && topRowEl) {
-        const topCells = topRowEl.children;
-        for (let col = 0; col < grid.topRow.length; col++) {
-            if (col < topCells.length) {
-                const cell = topCells[col];
-                const symbol = grid.topRow[col];
-                const emoji = symbol === '' ? '' : (CONFIG.symbols[symbol] || '❓');
-                cell.textContent = emoji;
             }
         }
     }
@@ -573,18 +492,44 @@ async function renderCascade(steps, finalGrid) {
         // We keep the grid showing removed symbols as empty spaces
         // The movements will animate symbols into their final positions
         if (step.symbolGridAfterRemoval) {
+            console.log('[renderCascade] Rendering symbolGridAfterRemoval');
+            // Log raw data for debugging
+            console.log('[renderCascade] AFTER REMOVAL raw data:');
+            for (let col = 0; col < step.symbolGridAfterRemoval.mainGrid[0].length; col++) {
+                const colData = [];
+                for (let row = 0; row < step.symbolGridAfterRemoval.mainGrid.length; row++) {
+                    const si = step.symbolGridAfterRemoval.mainGrid[row][col];
+                    colData.push(si ? `${si.symbol}(${si.id})` : 'null');
+                }
+                console.log(`  Col ${col}: ${colData.join(', ')}`);
+            }
+            renderSymbolGrid(step.symbolGridAfterRemoval, document.getElementById('mainGrid'), document.getElementById('topRow'));
             console.log('%c[Cascade Step ' + (i + 1) + ' - AFTER REMOVAL]', 'color: #ff6b6b; font-weight: bold;');
             prettyPrintGrid(step.symbolGridAfterRemoval, null, null);
             await sleep(200);
         }
- 
+        
         // Step 4: Animate movements (backend calculated)
         // Render symbols at their FINAL positions but offset to their STARTING positions
         // Then animate them falling into place
         if (step.movements && step.movements.length > 0) {
             // First, render the AFTER FILL grid (symbols at final positions)
             if (step.symbolGridAfterFill) {
+                console.log('[renderCascade] Rendering symbolGridAfterFill with', step.movements.length, 'movements');
                 renderSymbolGrid(step.symbolGridAfterFill, document.getElementById('mainGrid'), document.getElementById('topRow'));
+                
+                // Verify the grid was rendered correctly
+                console.log('[renderCascade] AFTER FILL grid rendered, verifying...');
+                const mainGrid = document.getElementById('mainGrid');
+                for (let row = 0; row < 5; row++) {
+                    for (let col = 0; col < 6; col++) {
+                        const index = row * 6 + col;
+                        const cell = mainGrid.children[index];
+                        const symbolId = cell.dataset.symbolId;
+                        const text = cell.textContent;
+                        console.log(`  Cell [${row},${col}]: text="${text}", symbolId=${symbolId}, class=${cell.className}`);
+                    }
+                }
             }
             
             // Apply movement animations - offsets symbols to their starting positions
@@ -632,8 +577,15 @@ async function renderCascade(steps, finalGrid) {
 
     // Hide cascade info, show final grid
     cascadeInfo.classList.add('hidden');
+
     if (finalGrid) {
-        renderGrid(finalGrid);
+        if (finalGrid.mainGrid && finalGrid.mainGrid[0] && typeof finalGrid.mainGrid[0][0] === 'object') {
+            // This is a SymbolGrid
+            renderSymbolGrid(finalGrid, document.getElementById('mainGrid'), document.getElementById('topRow'));
+        } else {
+            // Simple grid fallback - not supported anymore
+            console.warn('[renderCascade] finalGrid is not SymbolGrid, multi-row symbols may not render correctly');
+        }
     }
 }
 
@@ -998,10 +950,11 @@ function clearAnimations() {
     const mainGrid = document.getElementById('mainGrid');
     const topRow = document.getElementById('topRow');
     
-    // Clear all animation classes and custom properties
+    // Clear animation classes but preserve grid positioning
     for (let cell of mainGrid.children) {
         cell.classList.remove('winning', 'removing', 'falling', 'shifting');
         cell.style.removeProperty('--fall-offset');
+        // Don't remove gridRow/gridColumn - they were set by renderSymbolGrid
     }
     
     for (let cell of topRow.children) {
@@ -1027,8 +980,9 @@ function renderPaytable() {
         item.className = 'paytable-item';
 
         const emoji = CONFIG.symbols[id] || '❓';
-        const payoutText = Object.entries(payouts)
-            .map(([count, value]) => `${count}x: ${value}x`)
+        // payouts format: [3x, 4x, 5x, 6x]
+        const payoutText = payouts
+            .map((value, index) => `${index + 3}x: ${value}x`)
             .join(', ');
 
         item.innerHTML = `
