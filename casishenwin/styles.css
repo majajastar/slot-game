@@ -180,6 +180,7 @@ body {
 .main-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: minmax(60px, auto);
     gap: 8px;
 }
 
@@ -195,6 +196,30 @@ body {
     transition: all 0.3s ease;
     min-width: 60px;
     min-height: 60px;
+    position: relative;
+}
+
+/* Multi-row symbol master cell - spans multiple rows as rectangle */
+.grid-cell.multi-row-master {
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    z-index: 2;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    /* Remove aspect ratio to allow rectangle shape */
+    aspect-ratio: auto;
+    /* Make the cell span the full height of multiple rows */
+    min-height: 100%;
+    height: 100%;
+}
+
+/* Multi-row symbol continuation cells (hidden) */
+.grid-cell.multi-row-continuation {
+    background: transparent;
+    border: none;
+    pointer-events: none;
+    opacity: 0;
+    display: none !important;
 }
 
 .grid-cell:hover {
@@ -244,8 +269,57 @@ body {
     }
 }
 
-/* Status Bar */
-.status-bar {
+/* Slide in from right for top row new symbols */
+.top-cell.slide-in-right {
+    animation: slideInRight 0.5s ease-in;
+}
+
+@keyframes slideInRight {
+    0% { transform: translateX(50px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Shift left for top row existing symbols */
+.top-cell.shift-left {
+    animation: shiftLeft 0.5s ease-in-out;
+}
+
+@keyframes shiftLeft {
+    0% { transform: translateX(20px); opacity: 0.5; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Falling animation for new symbols (main grid from top) */
+.grid-cell.falling {
+    animation: fallIn 0.5s ease-in;
+}
+
+@keyframes fallIn {
+    0% { transform: translateY(-50px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Removing animation */
+.grid-cell.removing {
+    animation: removeSymbol 0.5s ease-out forwards;
+}
+
+@keyframes removeSymbol {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+/* Spin button spinning state */
+.spin-button.spinning {
+    opacity: 0.6;
+    cursor: not-allowed;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+}
     display: flex;
     justify-content: center;
     align-items: center;
@@ -529,7 +603,7 @@ body {
     100% { transform: scale(0); opacity: 0; }
 }
 
-/* Falling animation */
+/* Falling animation for new symbols */
 .grid-cell.falling {
     animation: fallIn 0.5s ease-in;
 }
@@ -537,6 +611,16 @@ body {
 @keyframes fallIn {
     0% { transform: translateY(-50px); opacity: 0; }
     100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Shifting left animation for top row symbols */
+.top-cell.shifting-left {
+    animation: shiftLeft 0.5s ease-in-out;
+}
+
+@keyframes shiftLeft {
+    0% { transform: translateX(20px); opacity: 0.5; }
+    100% { transform: translateX(0); opacity: 1; }
 }
 
 /* Winning highlight */
