@@ -281,7 +281,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
 
     const cells = mainGridEl.children;
     
-    // Reset all cells first - clear any previous multi-row styling
+    // Reset main grid cells first - clear any previous multi-row styling
     for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
         cell.textContent = '';
@@ -291,6 +291,19 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
         delete cell.dataset.masterCell;
         cell.style = ''; // Clear all inline styles
         cell.style.display = 'flex';
+    }
+    
+    // Reset top row cells
+    if (topRowEl) {
+        const topCells = topRowEl.children;
+        for (let i = 0; i < topCells.length; i++) {
+            const cell = topCells[i];
+            cell.textContent = '';
+            cell.className = 'top-cell';
+            delete cell.dataset.symbolId;
+            cell.style = '';
+            cell.style.display = 'flex';
+        }
     }
     
     // First pass: identify multi-row symbols and their positions
@@ -549,12 +562,12 @@ async function renderCascade(steps, finalGrid) {
                 });
                 highlightWinningSymbols(positions);
             }
-            await sleep(800);
+            await sleep(300);
         }
         // Step 2: Animate removal of winning symbols
         if (step.removedSymbols && step.removedSymbols.length > 0) {
             animateRemovals(step.removedSymbols);
-            await sleep(600);
+            await sleep(300);
         }
         // Step 3: Show grid after removal (empty spaces visible)
         if (step.symbolGridAfterRemoval) {
@@ -563,7 +576,7 @@ async function renderCascade(steps, finalGrid) {
             prettyPrintGrid(step.symbolGridAfterRemoval, null, null);
             await sleep(400);
         }
-
+        
         // Step 4: Animate movements (backend calculated)
         if (step.movements && step.movements.length > 0) {
             // Apply ALL animation classes at once (synchronous)
@@ -929,7 +942,12 @@ function animateRemovals(removedSymbols) {
 
     const mainGrid = document.getElementById('mainGrid');
     const topRow = document.getElementById('topRow');
-    
+
+    console.log('[animateRemovals] Processing', removedSymbols.length, 'removed symbols:');
+    removedSymbols.forEach((rs, i) => {
+        console.log(`  [${i}] row=${rs.row}, col=${rs.col}, symbol=${rs.symbol}, id=${rs.symbolId}`);
+    });
+
     removedSymbols.forEach(rs => {
         if (rs.row === -1) {
             // Top row

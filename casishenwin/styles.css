@@ -300,7 +300,8 @@ body {
 }
 
 /* Removing animation */
-.grid-cell.removing {
+.grid-cell.removing,
+.top-cell.removing {
     animation: removeSymbol 0.5s ease-out forwards;
 }
 
