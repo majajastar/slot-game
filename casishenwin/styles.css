@@ -195,8 +195,6 @@ body {
     height: 100%;
     /* Ensure it stays within its grid area */
     overflow: hidden;
-    /* Add a subtle shadow to distinguish from single-row symbols */
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 /* Multi-row symbol continuation cells (hidden) */
@@ -209,6 +207,44 @@ body {
     /* Remove from grid flow */
     grid-row: auto !important;
     grid-column: auto !important;
+}
+
+/* Silver frame - surrounds multi-row symbol */
+.grid-cell.silver-frame {
+    border: 3px solid #c0c0c0 !important;
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.5),
+                inset 0 0 15px rgba(192, 192, 192, 0.2);
+    animation: silverPulse 2s infinite;
+}
+
+@keyframes silverPulse {
+    0%, 100% { 
+        box-shadow: 0 0 15px rgba(192, 192, 192, 0.5), 
+                    inset 0 0 15px rgba(192, 192, 192, 0.2); 
+    }
+    50% { 
+        box-shadow: 0 0 25px rgba(192, 192, 192, 0.8), 
+                    inset 0 0 25px rgba(192, 192, 192, 0.5); 
+    }
+}
+
+/* Golden frame - surrounds transformed symbol */
+.grid-cell.golden-frame {
+    border: 3px solid #ffd700 !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6),
+                inset 0 0 20px rgba(255, 215, 0, 0.3);
+    animation: goldenPulse 2s infinite;
+}
+
+@keyframes goldenPulse {
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 
+                    inset 0 0 20px rgba(255, 215, 0, 0.3); 
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 
+                    inset 0 0 30px rgba(255, 215, 0, 0.5); 
+    }
 }
 
 .grid-cell:hover {

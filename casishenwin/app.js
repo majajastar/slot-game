@@ -368,7 +368,11 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                 if (row === minRow) {
                     // This is the top cell - render as master with CSS Grid spanning
                     cell.textContent = emoji;
-                    cell.className = 'grid-cell multi-row-master';
+                    
+                    // Apply frame styling
+                    const frameClass = symbolInstance.frame ? `${symbolInstance.frame}-frame` : '';
+                    cell.className = `grid-cell multi-row-master ${frameClass}`;
+                    
                     cell.dataset.symbolId = symbolInstance.id;
                     cell.dataset.masterCell = 'true';
                     delete cell.dataset.multiRow;
@@ -397,7 +401,11 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             } else {
                 // Single row symbol - normal rendering
                 cell.textContent = emoji;
-                cell.className = 'grid-cell';
+                
+                // Apply frame styling
+                const frameClass = symbolInstance.frame ? `${symbolInstance.frame}-frame` : '';
+                cell.className = `grid-cell ${frameClass}`;
+                
                 cell.dataset.symbolId = symbolInstance.id;
                 cell.dataset.masterCell = 'true';
                 delete cell.dataset.multiRow;
@@ -797,7 +805,8 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             const spanTag = span ? 'x' + span : '';
             const groupLetter = winningGroups.get(row + ',' + col) || '';
             const isRemoved = removedPositions.has(row + ',' + col);
-            let displayStr = symbolId + spanTag;
+            const frameTag = (cell && typeof cell === 'object' && cell.frame) ? cell.frame[0].toUpperCase() : '';
+            let displayStr = symbolId + spanTag + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
             }
@@ -821,6 +830,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             let symbolId = '';
             let groupLetter = '';
             let isRemoved = false;
+            let frameTag = '';
             
             if (col >= 1 && col <= 4) {
                 const topRowIndex = col - 1;
@@ -828,6 +838,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
                     const cell = gridData.topRow[topRowIndex];
                     if (cell && typeof cell === 'object') {
                         symbolId = cell.symbol || '';
+                        frameTag = cell.frame ? cell.frame[0].toUpperCase() : '';
                     } else if (typeof cell === 'string') {
                         symbolId = cell;
                     }
@@ -836,7 +847,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
                 }
             }
             
-            let displayStr = symbolId;
+            let displayStr = symbolId + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
             }
@@ -861,8 +872,9 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             const spanTag = span ? 'x' + span : '';
             const groupLetter = winningGroups.get(row + ',' + col) || '';
             const isRemoved = removedPositions.has(row + ',' + col);
+            const frameTag = (cell && typeof cell === 'object' && cell.frame) ? cell.frame[0].toUpperCase() : '';
             
-            let displayStr = symbolId + spanTag;
+            let displayStr = symbolId + spanTag + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
             }
