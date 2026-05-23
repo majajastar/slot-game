@@ -570,28 +570,35 @@ async function renderCascade(steps, finalGrid) {
             await sleep(300);
         }
         // Step 3: Show grid after removal (empty spaces visible)
+        // We keep the grid showing removed symbols as empty spaces
+        // The movements will animate symbols into their final positions
         if (step.symbolGridAfterRemoval) {
-            renderSymbolGrid(step.symbolGridAfterRemoval, document.getElementById('mainGrid'), document.getElementById('topRow'));
             console.log('%c[Cascade Step ' + (i + 1) + ' - AFTER REMOVAL]', 'color: #ff6b6b; font-weight: bold;');
             prettyPrintGrid(step.symbolGridAfterRemoval, null, null);
-            await sleep(400);
+            await sleep(200);
         }
-        
+ 
         // Step 4: Animate movements (backend calculated)
+        // Render symbols at their FINAL positions but offset to their STARTING positions
+        // Then animate them falling into place
         if (step.movements && step.movements.length > 0) {
-            // Apply ALL animation classes at once (synchronous)
-            applyMovementAnimations(step.movements);
-            
-            // Single wait for all animations to complete
-            await sleep(500);
-            
-            // Clear all animations at once
-            clearAnimations();
-            
-            // Show final grid after fill
+            // First, render the AFTER FILL grid (symbols at final positions)
             if (step.symbolGridAfterFill) {
                 renderSymbolGrid(step.symbolGridAfterFill, document.getElementById('mainGrid'), document.getElementById('topRow'));
-                console.log('%c[Cascade Step ' + (i + 1) + ' - AFTER FILL]', 'color: #4ecdc4; font-weight: bold;');
+            }
+            
+            // Apply movement animations - offsets symbols to their starting positions
+            // then animates them falling to final positions
+            applyMovementAnimations(step.movements);
+            
+            // Wait for animations
+            await sleep(500);
+            
+            // Clear animations
+            clearAnimations();
+            
+            console.log('%c[Cascade Step ' + (i + 1) + ' - AFTER FILL]', 'color: #4ecdc4; font-weight: bold;');
+            if (step.symbolGridAfterFill) {
                 prettyPrintGrid(step.symbolGridAfterFill, null, null);
             }
         }
@@ -649,8 +656,10 @@ function applyMovementAnimations(movements) {
                 const cell = topRow.children[topRowIndex];
                 
                 if (movement.isNew) {
+                    // New symbols slide in from right
                     cell.classList.add('slide-in-right');
                 } else if (movement.from) {
+                    // Existing symbols shift left
                     cell.classList.add('shift-left');
                 }
                 
@@ -666,9 +675,25 @@ function applyMovementAnimations(movements) {
                 const cell = mainGrid.children[index];
                 
                 if (movement.isNew) {
+                    // New symbols: offset UP so they appear above the grid
+                    // Then fall down to their final position
+                    const cellHeight = cell.offsetHeight || 70;
+                    const gap = 6;
+                    const rowsAbove = movement.to.row + 1; // +1 because -1 is above row 0
+                    const offsetY = -(rowsAbove * (cellHeight + gap));
+                    
+                    cell.style.setProperty('--fall-offset', `${offsetY}px`);
                     cell.classList.add('falling');
                 } else if (movement.from) {
-                    cell.classList.add('shifting');
+                    // Existing symbols: offset UP to their original position
+                    // Then fall down to their final position
+                    const rowDelta = movement.from.row - movement.to.row;
+                    const cellHeight = cell.offsetHeight || 70;
+                    const gap = 6;
+                    const offsetY = rowDelta * (cellHeight + gap);
+                    
+                    cell.style.setProperty('--fall-offset', `${offsetY}px`);
+                    cell.classList.add('falling');
                 }
                 
                 // Update symbol ID
@@ -973,9 +998,10 @@ function clearAnimations() {
     const mainGrid = document.getElementById('mainGrid');
     const topRow = document.getElementById('topRow');
     
-    // Clear all animation classes
+    // Clear all animation classes and custom properties
     for (let cell of mainGrid.children) {
         cell.classList.remove('winning', 'removing', 'falling', 'shifting');
+        cell.style.removeProperty('--fall-offset');
     }
     
     for (let cell of topRow.children) {
