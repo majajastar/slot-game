@@ -20,7 +20,8 @@ let currentBalance = 0;
 // Debug options (can be set via console for testing)
 let debugOptions = {
     forceTopAllWild: false,
-    forceSilverFrame: false
+    forceSilverFrame: false,
+    forceScatterCount: null  // null = random, 0-3 = force specific count
 };
 
 // Grid state
@@ -169,9 +170,23 @@ function updateDebugStatus() {
 
 function toggleDebugOption(option, checked) {
     debugOptions[option] = checked;
+    updateDebugStatus();
+    console.log('[Debug] Options:', debugOptions);
+}
+
+function setScatterCount(value) {
+    debugOptions.forceScatterCount = value === '' ? null : parseInt(value);
+    updateDebugStatus();
+    console.log('[Debug] Scatter count:', debugOptions.forceScatterCount);
+}
+
+function updateDebugStatus() {
     const statusEl = document.getElementById('debugStatus');
     if (statusEl) {
-        const active = Object.entries(debugOptions).filter(([k, v]) => v).map(([k]) => k.replace('force', ''));
+        const active = [];
+        if (debugOptions.forceTopAllWild) active.push('TopAllWild');
+        if (debugOptions.forceSilverFrame) active.push('SilverFrame');
+        if (debugOptions.forceScatterCount != null) active.push('Scatter:' + debugOptions.forceScatterCount);
         if (active.length > 0) {
             statusEl.textContent = 'Active: ' + active.join(', ');
             statusEl.classList.add('active');
@@ -180,7 +195,6 @@ function toggleDebugOption(option, checked) {
             statusEl.classList.remove('active');
         }
     }
-    console.log('[Debug] Options:', debugOptions);
 }
 
 function handleSyncRoom(data) {
@@ -1131,8 +1145,11 @@ function spin() {
     
     // Include debug options if any are enabled
     const spinPayload = { bet };
-    if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame) {
-        spinPayload.debugOptions = { ...debugOptions };
+    if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame || debugOptions.forceScatterCount != null) {
+        spinPayload.debugOptions = {};
+        if (debugOptions.forceTopAllWild) spinPayload.debugOptions.forceTopAllWild = true;
+        if (debugOptions.forceSilverFrame) spinPayload.debugOptions.forceSilverFrame = true;
+        if (debugOptions.forceScatterCount != null) spinPayload.debugOptions.forceScatterCount = debugOptions.forceScatterCount;
     }
     
     wsClient.setBet(spinPayload);

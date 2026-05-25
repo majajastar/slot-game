@@ -595,6 +595,30 @@ body {
     cursor: pointer;
 }
 
+.debug-option.scatter-control {
+    cursor: default;
+    gap: 8px;
+}
+
+.debug-option.scatter-control span {
+    color: #ccc;
+}
+
+.debug-option.scatter-control select {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #666;
+    border-radius: 4px;
+    color: #fff;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.debug-option.scatter-control select:focus {
+    outline: none;
+    border-color: #ffd700;
+}
+
 .debug-option input[type="checkbox"] {
     width: 16px;
     height: 16px;
