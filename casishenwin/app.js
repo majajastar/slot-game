@@ -945,7 +945,6 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
     }
     console.log(indexStr);
 }
-}
 
 function highlightWinningSymbols(positions) {
     if (!positions || positions.length === 0) return;
