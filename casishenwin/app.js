@@ -752,14 +752,41 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
     multiRowInfo.forEach((positions, key) => {
         if (isSymbolGrid) {
             // SymbolGrid: positions are {row, col} objects
-            if (positions.length > 1) {
-                const minRow = Math.min(...positions.map(p => p.row));
-                const maxRow = Math.max(...positions.map(p => p.row));
-                const span = maxRow - minRow + 1;
-                positions.forEach(pos => {
-                    spanInfo.set(pos.row + ',' + pos.col, span);
+            // Group by column first
+            const colGroups = new Map();
+            positions.forEach(pos => {
+                if (!colGroups.has(pos.col)) {
+                    colGroups.set(pos.col, []);
+                }
+                colGroups.get(pos.col).push(pos.row);
+            });
+            
+            // For each column, find consecutive row spans
+            colGroups.forEach((rows, col) => {
+                // Sort rows
+                rows.sort((a, b) => a - b);
+                
+                // Find consecutive groups
+                let currentGroup = [rows[0]];
+                for (let i = 1; i < rows.length; i++) {
+                    if (rows[i] === rows[i - 1] + 1) {
+                        currentGroup.push(rows[i]);
+                    } else {
+                        // Process current group
+                        const span = currentGroup.length;
+                        currentGroup.forEach(row => {
+                            spanInfo.set(row + ',' + col, span);
+                        });
+                        // Start new group
+                        currentGroup = [rows[i]];
+                    }
+                }
+                // Process last group
+                const span = currentGroup.length;
+                currentGroup.forEach(row => {
+                    spanInfo.set(row + ',' + col, span);
                 });
-            }
+            });
         } else {
             // Simple grid: positions are row numbers
             if (positions.length > 1) {
