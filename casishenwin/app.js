@@ -937,6 +937,80 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
         indexStr += ' ' + paddedIndex + ' |';
     }
     console.log(indexStr);
+    
+    // Print ID grid (for debugging multi-row symbols)
+    if (isSymbolGrid) {
+        console.log('\n  ID Grid (for debugging):');
+        
+        // Calculate ID column widths
+        const idColWidths = [8, 8, 8, 8, 8, 8];
+        for (let row = 0; row < gridData.mainGrid.length; row++) {
+            for (let col = 0; col < gridData.mainGrid[row].length; col++) {
+                const cell = gridData.mainGrid[row][col];
+                const idStr = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
+                idColWidths[col] = Math.max(idColWidths[col], idStr.length);
+            }
+        }
+        // Check top row IDs
+        if (gridData.topRow) {
+            for (let col = 1; col <= 4; col++) {
+                const topRowIndex = col - 1;
+                if (topRowIndex < gridData.topRow.length) {
+                    const cell = gridData.topRow[topRowIndex];
+                    const idStr = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
+                    idColWidths[col] = Math.max(idColWidths[col], idStr.length);
+                }
+            }
+        }
+        
+        const idSeparator = '  +' + idColWidths.map(w => '-'.repeat(w + 2)).join('+') + '+';
+        console.log(idSeparator);
+        
+        // Print top row IDs
+        if (gridData.topRow) {
+            let idTopRowStr = ' -1 |';
+            for (let col = 0; col < 6; col++) {
+                let idStr = '';
+                if (col >= 1 && col <= 4) {
+                    const topRowIndex = col - 1;
+                    if (topRowIndex < gridData.topRow.length) {
+                        const cell = gridData.topRow[topRowIndex];
+                        if (cell && typeof cell === 'object' && cell.id) {
+                            idStr = cell.id;
+                        }
+                    }
+                }
+                const paddedId = idStr.padStart(idColWidths[col], ' ').padEnd(idColWidths[col], ' ');
+                idTopRowStr += ' ' + paddedId + ' |';
+            }
+            console.log(idTopRowStr);
+            console.log(idSeparator);
+        }
+        
+        // Print main grid IDs
+        for (let row = 0; row < gridData.mainGrid.length; row++) {
+            let idRowStr = '  ' + row + ' |';
+            for (let col = 0; col < gridData.mainGrid[row].length; col++) {
+                const cell = gridData.mainGrid[row][col];
+                const idStr = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
+                const paddedId = idStr.padStart(idColWidths[col], ' ').padEnd(idColWidths[col], ' ');
+                idRowStr += ' ' + paddedId + ' |';
+            }
+            console.log(idRowStr);
+            if (row < gridData.mainGrid.length - 1) {
+                console.log(idSeparator);
+            }
+        }
+        console.log(idSeparator);
+        
+        // Print column indices for ID grid
+        let idIndexStr = '     |';
+        for (let col = 0; col < 6; col++) {
+            const paddedIndex = String(col).padStart(idColWidths[col], ' ').padEnd(idColWidths[col], ' ');
+            idIndexStr += ' ' + paddedIndex + ' |';
+        }
+        console.log(idIndexStr);
+    }
 }
 
 function highlightWinningSymbols(positions) {
