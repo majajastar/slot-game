@@ -17,6 +17,12 @@ let wsClient = null;
 let isSpinning = false;
 let currentBalance = 0;
 
+// Debug options (can be set via console for testing)
+let debugOptions = {
+    forceTopAllWild: false,
+    forceSilverFrame: false
+};
+
 // Grid state
 let currentGrid = null;
 let currentTopRow = null;
@@ -161,6 +167,22 @@ function updateDebugStatus() {
     }
 }
 
+function toggleDebugOption(option, checked) {
+    debugOptions[option] = checked;
+    const statusEl = document.getElementById('debugStatus');
+    if (statusEl) {
+        const active = Object.entries(debugOptions).filter(([k, v]) => v).map(([k]) => k.replace('force', ''));
+        if (active.length > 0) {
+            statusEl.textContent = 'Active: ' + active.join(', ');
+            statusEl.classList.add('active');
+        } else {
+            statusEl.textContent = 'Random spins';
+            statusEl.classList.remove('active');
+        }
+    }
+    console.log('[Debug] Options:', debugOptions);
+}
+
 function handleSyncRoom(data) {
     if (data.balance != null) {
         currentBalance = data.balance;
@@ -203,6 +225,11 @@ async function handleSpinResult(data) {
     // Update balance
     currentBalance = gameResult.finalBalance || currentBalance;
     updateBalanceDisplay();
+
+    // Show TOP ALL WILD!!! message FIRST (before any animation)
+    if (info.topAllWild) {
+        await showTopAllWild();
+    }
 
     // Show cascade animation if there are steps
     if (info.steps && info.steps.length > 0) {
@@ -1018,6 +1045,22 @@ function showWin(amount) {
     }
 }
 
+function showTopAllWild() {
+    return new Promise((resolve) => {
+        const display = document.getElementById('winDisplay');
+        if (display) {
+            display.textContent = 'TOP ALL WILD!!!';
+            display.classList.add('show', 'top-all-wild');
+            setTimeout(() => {
+                display.classList.remove('show', 'top-all-wild');
+                resolve();
+            }, 2000);
+        } else {
+            resolve();
+        }
+    });
+}
+
 // ==========================================
 // CONTROLS
 // ==========================================
@@ -1052,7 +1095,13 @@ function spin() {
 
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     
-    wsClient.setBet({ bet });
+    // Include debug options if any are enabled
+    const spinPayload = { bet };
+    if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame) {
+        spinPayload.debugOptions = { ...debugOptions };
+    }
+    
+    wsClient.setBet(spinPayload);
 }
 
 function changeBet(direction) {

@@ -376,6 +376,42 @@ body {
     text-transform: uppercase;
 }
 
+/* Win Display Overlay */
+.win-display-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 3rem;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.5);
+    z-index: 1000;
+    pointer-events: none;
+    transition: transform 0.3s ease-out;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.win-display-overlay.show {
+    transform: translate(-50%, -50%) scale(1);
+    animation: winPopup 2s ease-out forwards;
+}
+
+.win-display-overlay.top-all-wild {
+    color: #ff4444;
+    text-shadow: 0 0 20px rgba(255, 68, 68, 0.8), 0 0 40px rgba(255, 68, 68, 0.5);
+    font-size: 3.5rem;
+}
+
+@keyframes winPopup {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    40% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+}
+
 /* Controls Section */
 .controls-section {
     background: rgba(255, 255, 255, 0.05);
@@ -544,25 +580,30 @@ body {
     text-align: center;
 }
 
-.debug-select {
-    width: 100%;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid #666;
-    border-radius: 5px;
-    color: #fff;
+.debug-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.debug-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 0.85rem;
+    color: #ccc;
     cursor: pointer;
 }
 
-.debug-select option {
-    background: #1a1a2e;
-    color: #fff;
+.debug-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }
 
-.debug-select:focus {
-    outline: none;
-    border-color: #ffd700;
+.debug-option input[type="checkbox"]:checked + span {
+    color: #ffd700;
+    font-weight: bold;
 }
 
 .debug-status {

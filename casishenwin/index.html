@@ -114,11 +114,18 @@
                         </button>
 
                         <!-- Debug Panel -->
-                        <div class="debug-panel hidden">
-                            <div class="debug-title">🧪 Debug Spins</div>
-                            <select id="debugSpinSelect" class="debug-select" onchange="selectDebugSpin(this.value)">
-                                <option value="">-- Random Spin --</option>
-                            </select>
+                        <div class="debug-panel">
+                            <div class="debug-title">🧪 Debug Options</div>
+                            <div class="debug-options">
+                                <label class="debug-option">
+                                    <input type="checkbox" id="debugTopAllWild" onchange="toggleDebugOption('forceTopAllWild', this.checked)">
+                                    <span>Force TOP ALL WILD</span>
+                                </label>
+                                <label class="debug-option">
+                                    <input type="checkbox" id="debugSilverFrame" onchange="toggleDebugOption('forceSilverFrame', this.checked)">
+                                    <span>Force Silver Frames</span>
+                                </label>
+                            </div>
                             <div id="debugStatus" class="debug-status"></div>
                         </div>
                     </div>
