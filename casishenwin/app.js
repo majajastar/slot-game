@@ -21,20 +21,6 @@ let currentBalance = 0;
 let currentGrid = null;
 let currentTopRow = null;
 
-// Debug mode
-let debugSpinId = null;
-
-// Available debug spins (populated from server)
-const DEBUG_SPINS = [
-    { id: 'silver-frame-win', name: 'Silver Frame Win' },
-    { id: 'golden-frame-win', name: 'Golden Frame Win' },
-    { id: 'normal-win', name: 'Normal Win' },
-    { id: 'no-win', name: 'No Win' },
-    { id: 'scatter-win', name: 'Scatter Win (Bonus)' },
-    { id: 'cascade-win', name: 'Cascade Win' },
-    { id: 'silver-to-golden-to-scatter', name: 'Silver→Golden→Scatter' }
-];
-
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
     initGrid();
@@ -159,30 +145,19 @@ function handleJoinRoom(data) {
 }
 
 function initDebugPanel() {
-    const select = document.getElementById('debugSpinSelect');
-    if (select) {
-        select.value = debugSpinId || '';
-    }
-    updateDebugStatus();
+    // Debug spins removed - no longer supported
 }
 
 function selectDebugSpin(spinId) {
-    debugSpinId = spinId || null;
-    updateDebugStatus();
-    console.log(`[Debug] Selected spin: ${debugSpinId || 'Random'}`);
+    // Debug spins removed - no longer supported
+    console.log('[Debug] Debug spins no longer supported');
 }
 
 function updateDebugStatus() {
     const statusEl = document.getElementById('debugStatus');
     if (statusEl) {
-        if (debugSpinId) {
-            const spin = DEBUG_SPINS.find(s => s.id === debugSpinId);
-            statusEl.textContent = `Active: ${spin ? spin.name : debugSpinId}`;
-            statusEl.classList.add('active');
-        } else {
-            statusEl.textContent = 'Random spins';
-            statusEl.classList.remove('active');
-        }
+        statusEl.textContent = 'Random spins';
+        statusEl.classList.remove('active');
     }
 }
 
@@ -349,28 +324,32 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
     }
     
     // Debug: log ALL symbols with their IDs
-    console.log('[renderSymbolGrid] All symbols in grid:');
-    for (let col = 0; col < symbolGrid.mainGrid[0].length; col++) {
-        const colSymbols = [];
-        for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
-            const si = symbolGrid.mainGrid[row][col];
-            if (si) {
-                colSymbols.push(`${si.symbol}(${si.id})`);
-            } else {
-                colSymbols.push('null');
+    if (CONFIG.debug) {
+        console.log('[renderSymbolGrid] All symbols in grid:');
+        for (let col = 0; col < symbolGrid.mainGrid[0].length; col++) {
+            const colSymbols = [];
+            for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
+                const si = symbolGrid.mainGrid[row][col];
+                if (si) {
+                    colSymbols.push(`${si.symbol}(${si.id})`);
+                } else {
+                    colSymbols.push('null');
+                }
             }
+            console.log(`  Col ${col}: ${colSymbols.join(', ')}`);
         }
-        console.log(`  Col ${col}: ${colSymbols.join(', ')}`);
     }
     
     // Debug: log multi-row symbols
-    console.log('[renderSymbolGrid] Multi-row detection:');
-    multiRowInfo.forEach((positions, id) => {
-        if (positions.length > 1) {
-            const symbol = symbolGrid.mainGrid[positions[0].row][positions[0].col].symbol;
-            console.log(`  ID ${id} (symbol ${symbol}): ${positions.length} cells - rows ${positions.map(p => p.row).join(',')} col ${positions[0].col}`);
-        }
-    });
+    if (CONFIG.debug) {
+        console.log('[renderSymbolGrid] Multi-row detection:');
+        multiRowInfo.forEach((positions, id) => {
+            if (positions.length > 1) {
+                const symbol = symbolGrid.mainGrid[positions[0].row][positions[0].col].symbol;
+                console.log(`  ID ${id} (symbol ${symbol}): ${positions.length} cells - rows ${positions.map(p => p.row).join(',')} col ${positions[0].col}`);
+            }
+        });
+    }
     
     // Second pass: render cells
     for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
@@ -398,7 +377,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             const isMultiRow = positions && positions.length > 1;
             
             // Debug log for multi-row detection
-            if (isMultiRow && row === Math.min(...positions.map(p => p.row))) {
+            if (CONFIG.debug && isMultiRow && row === Math.min(...positions.map(p => p.row))) {
                 console.log(`[renderSymbolGrid] Multi-row at col ${col}: ID ${symbolInstance.id}, symbol ${symbolInstance.symbol}, span ${positions.length} rows`);
             }
             
@@ -508,7 +487,7 @@ async function renderCascade(steps, finalGrid) {
     cascadeHistory.classList.remove('hidden');
     cascadeStepsList.innerHTML = '';
 
-    console.log(`[renderCascade] Starting cascade with ${steps.length} steps`);
+    console.log(`[renderCascade] ${steps.length} steps`);
 
     for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
@@ -519,7 +498,7 @@ async function renderCascade(steps, finalGrid) {
             renderSymbolGrid(step.symbolGridBefore, document.getElementById('mainGrid'), document.getElementById('topRow'));
             
             // Pretty print grid with winning symbols highlighted
-            console.log('%c[Cascade Step ' + (i + 1) + ' - BEFORE]', 'color: #ffd700; font-weight: bold;');
+            console.log('%c[Step ' + (i + 1) + ' BEFORE]', 'color: #ffd700; font-weight: bold;');
             prettyPrintGrid(step.symbolGridBefore, step.winningColumns, step.removedSymbols);
             
             // Highlight winning positions
@@ -540,60 +519,23 @@ async function renderCascade(steps, finalGrid) {
             await sleep(300);
         }
         // Step 3: Show grid after removal (empty spaces visible)
-        // We keep the grid showing removed symbols as empty spaces
-        // The movements will animate symbols into their final positions
         if (step.symbolGridAfterRemoval) {
-            console.log('[renderCascade] Rendering symbolGridAfterRemoval');
-            // Log raw data for debugging
-            console.log('[renderCascade] AFTER REMOVAL raw data:');
-            for (let col = 0; col < step.symbolGridAfterRemoval.mainGrid[0].length; col++) {
-                const colData = [];
-                for (let row = 0; row < step.symbolGridAfterRemoval.mainGrid.length; row++) {
-                    const si = step.symbolGridAfterRemoval.mainGrid[row][col];
-                    colData.push(si ? `${si.symbol}(${si.id})` : 'null');
-                }
-                console.log(`  Col ${col}: ${colData.join(', ')}`);
-            }
             renderSymbolGrid(step.symbolGridAfterRemoval, document.getElementById('mainGrid'), document.getElementById('topRow'));
-            console.log('%c[Cascade Step ' + (i + 1) + ' - AFTER REMOVAL]', 'color: #ff6b6b; font-weight: bold;');
+            console.log('%c[Step ' + (i + 1) + ' AFTER REMOVAL]', 'color: #ff6b6b; font-weight: bold;');
             prettyPrintGrid(step.symbolGridAfterRemoval, null, null);
             await sleep(200);
         }
         
         // Step 4: Animate movements (backend calculated)
-        // Render symbols at their FINAL positions but offset to their STARTING positions
-        // Then animate them falling into place
         if (step.movements && step.movements.length > 0) {
-            // First, render the AFTER FILL grid (symbols at final positions)
             if (step.symbolGridAfterFill) {
-                console.log('[renderCascade] Rendering symbolGridAfterFill with', step.movements.length, 'movements');
                 renderSymbolGrid(step.symbolGridAfterFill, document.getElementById('mainGrid'), document.getElementById('topRow'));
-                
-                // Verify the grid was rendered correctly
-                console.log('[renderCascade] AFTER FILL grid rendered, verifying...');
-                const mainGrid = document.getElementById('mainGrid');
-                for (let row = 0; row < 5; row++) {
-                    for (let col = 0; col < 6; col++) {
-                        const index = row * 6 + col;
-                        const cell = mainGrid.children[index];
-                        const symbolId = cell.dataset.symbolId;
-                        const text = cell.textContent;
-                        console.log(`  Cell [${row},${col}]: text="${text}", symbolId=${symbolId}, class=${cell.className}`);
-                    }
-                }
+                applyMovementAnimations(step.movements);
+                await sleep(500);
+                clearAnimations();
             }
             
-            // Apply movement animations - offsets symbols to their starting positions
-            // then animates them falling to final positions
-            applyMovementAnimations(step.movements);
-            
-            // Wait for animations
-            await sleep(500);
-            
-            // Clear animations
-            clearAnimations();
-            
-            console.log('%c[Cascade Step ' + (i + 1) + ' - AFTER FILL]', 'color: #4ecdc4; font-weight: bold;');
+            console.log('%c[Step ' + (i + 1) + ' AFTER FILL]', 'color: #4ecdc4; font-weight: bold;');
             if (step.symbolGridAfterFill) {
                 prettyPrintGrid(step.symbolGridAfterFill, null, null);
             }
@@ -975,10 +917,7 @@ function animateRemovals(removedSymbols) {
     const mainGrid = document.getElementById('mainGrid');
     const topRow = document.getElementById('topRow');
 
-    console.log('[animateRemovals] Processing', removedSymbols.length, 'removed symbols:');
-    removedSymbols.forEach((rs, i) => {
-        console.log(`  [${i}] row=${rs.row}, col=${rs.col}, symbol=${rs.symbol}, id=${rs.symbolId}`);
-    });
+    console.log('[animateRemovals]', removedSymbols.length, 'symbols');
 
     removedSymbols.forEach(rs => {
         if (rs.row === -1) {
@@ -1113,14 +1052,7 @@ function spin() {
 
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
     
-    // Include debug spin ID if selected
-    const spinParams = { bet };
-    if (debugSpinId) {
-        spinParams.debug = debugSpinId;
-        console.log(`[Casishenwin] Sending debug spin: ${debugSpinId}`);
-    }
-    
-    wsClient.setBet(spinParams);
+    wsClient.setBet({ bet });
 }
 
 function changeBet(direction) {

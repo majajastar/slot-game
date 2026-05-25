@@ -52,11 +52,6 @@
                             <p><strong>Golden Frame:</strong> Becomes Wild on win</p>
                         </div>
 
-                        <div class="info-subtitle">🧪 Debug Spins</div>
-                        <div class="rule-detail">
-                            <p>Use debug panel to test predefined scenarios</p>
-                        </div>
-
                         <div class="info-subtitle">⬆️ Top Row</div>
                         <div class="rule-detail">
                             <p>4 symbols above middle columns</p>
@@ -119,17 +114,10 @@
                         </button>
 
                         <!-- Debug Panel -->
-                        <div class="debug-panel">
+                        <div class="debug-panel hidden">
                             <div class="debug-title">🧪 Debug Spins</div>
                             <select id="debugSpinSelect" class="debug-select" onchange="selectDebugSpin(this.value)">
                                 <option value="">-- Random Spin --</option>
-                                <option value="silver-frame-win">Silver Frame Win</option>
-                                <option value="golden-frame-win">Golden Frame Win</option>
-                                <option value="normal-win">Normal Win</option>
-                                <option value="no-win">No Win</option>
-                                <option value="scatter-win">Scatter Win (Bonus)</option>
-                                <option value="cascade-win">Cascade Win</option>
-                                <option value="silver-to-golden-to-scatter">Silver→Golden→Scatter</option>
                             </select>
                             <div id="debugStatus" class="debug-status"></div>
                         </div>
