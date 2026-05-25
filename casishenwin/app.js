@@ -811,8 +811,8 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
         }
     });
     
-    // Calculate column widths
-    const colWidths = [3, 3, 3, 3, 3, 3]; // Minimum width for symbol IDs
+    // Calculate column widths (now includes ID)
+    const colWidths = [10, 10, 10, 10, 10, 10]; // Minimum width for symbol+id
     
     // Check top row for max width
     if (gridData.topRow) {
@@ -820,10 +820,12 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             const topRowIndex = col - 1;
             if (topRowIndex < gridData.topRow.length) {
                 const cell = gridData.topRow[topRowIndex];
-                const symbolId = (cell && typeof cell === 'object') ? (cell.symbol || '') : (cell || '');
+                const symbol = (cell && typeof cell === 'object') ? (cell.symbol || '') : (cell || '');
+                const id = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
+                const shortId = id ? id.slice(-4) : ''; // Last 4 chars of ID
                 const groupLetter = winningGroups.get('-1,' + col) || '';
                 const isRemoved = removedPositions.has('-1,' + col);
-                let displayStr = symbolId;
+                let displayStr = symbol + (shortId ? ':' + shortId : '');
                 if (groupLetter) {
                     displayStr += groupLetter;
                 }
@@ -839,13 +841,15 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
     for (let row = 0; row < gridData.mainGrid.length; row++) {
         for (let col = 0; col < gridData.mainGrid[row].length; col++) {
             const cell = gridData.mainGrid[row][col];
-            const symbolId = (cell && typeof cell === 'object') ? (cell.symbol || '') : (cell || '');
+            const symbol = (cell && typeof cell === 'object') ? (cell.symbol || '') : (cell || '');
+            const id = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
+            const shortId = id ? id.slice(-4) : '';
             const span = spanInfo.get(row + ',' + col);
             const spanTag = span ? 'x' + span : '';
             const groupLetter = winningGroups.get(row + ',' + col) || '';
             const isRemoved = removedPositions.has(row + ',' + col);
             const frameTag = (cell && typeof cell === 'object' && cell.frame) ? cell.frame[0].toUpperCase() : '';
-            let displayStr = symbolId + spanTag + frameTag;
+            let displayStr = symbol + (shortId ? ':' + shortId : '') + spanTag + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
             }
@@ -866,7 +870,8 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
     if (gridData.topRow) {
         let topRowStr = ' -1 |';
         for (let col = 0; col < 6; col++) {
-            let symbolId = '';
+            let symbol = '';
+            let shortId = '';
             let groupLetter = '';
             let isRemoved = false;
             let frameTag = '';
@@ -876,17 +881,18 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
                 if (topRowIndex < gridData.topRow.length) {
                     const cell = gridData.topRow[topRowIndex];
                     if (cell && typeof cell === 'object') {
-                        symbolId = cell.symbol || '';
+                        symbol = cell.symbol || '';
+                        shortId = cell.id ? cell.id.slice(-4) : '';
                         frameTag = cell.frame ? cell.frame[0].toUpperCase() : '';
                     } else if (typeof cell === 'string') {
-                        symbolId = cell;
+                        symbol = cell;
                     }
                     groupLetter = winningGroups.get('-1,' + col) || '';
                     isRemoved = removedPositions.has('-1,' + col);
                 }
             }
             
-            let displayStr = symbolId + frameTag;
+            let displayStr = symbol + (shortId ? ':' + shortId : '') + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
             }
@@ -905,7 +911,8 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
         let rowStr = '  ' + row + ' |';
         for (let col = 0; col < gridData.mainGrid[row].length; col++) {
             const cell = gridData.mainGrid[row][col];
-            const symbolId = (cell && typeof cell === 'object') ? (cell.symbol || '') : (cell || '');
+            const symbol = (cell && typeof cell === 'object') ? (cell.symbol || '') : (cell || '');
+            const shortId = (cell && typeof cell === 'object' && cell.id) ? cell.id.slice(-4) : '';
             
             const span = spanInfo.get(row + ',' + col);
             const spanTag = span ? 'x' + span : '';
@@ -913,7 +920,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             const isRemoved = removedPositions.has(row + ',' + col);
             const frameTag = (cell && typeof cell === 'object' && cell.frame) ? cell.frame[0].toUpperCase() : '';
             
-            let displayStr = symbolId + spanTag + frameTag;
+            let displayStr = symbol + (shortId ? ':' + shortId : '') + spanTag + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
             }
@@ -937,80 +944,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
         indexStr += ' ' + paddedIndex + ' |';
     }
     console.log(indexStr);
-    
-    // Print ID grid (for debugging multi-row symbols)
-    if (isSymbolGrid) {
-        console.log('\n  ID Grid (for debugging):');
-        
-        // Calculate ID column widths
-        const idColWidths = [8, 8, 8, 8, 8, 8];
-        for (let row = 0; row < gridData.mainGrid.length; row++) {
-            for (let col = 0; col < gridData.mainGrid[row].length; col++) {
-                const cell = gridData.mainGrid[row][col];
-                const idStr = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
-                idColWidths[col] = Math.max(idColWidths[col], idStr.length);
-            }
-        }
-        // Check top row IDs
-        if (gridData.topRow) {
-            for (let col = 1; col <= 4; col++) {
-                const topRowIndex = col - 1;
-                if (topRowIndex < gridData.topRow.length) {
-                    const cell = gridData.topRow[topRowIndex];
-                    const idStr = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
-                    idColWidths[col] = Math.max(idColWidths[col], idStr.length);
-                }
-            }
-        }
-        
-        const idSeparator = '  +' + idColWidths.map(w => '-'.repeat(w + 2)).join('+') + '+';
-        console.log(idSeparator);
-        
-        // Print top row IDs
-        if (gridData.topRow) {
-            let idTopRowStr = ' -1 |';
-            for (let col = 0; col < 6; col++) {
-                let idStr = '';
-                if (col >= 1 && col <= 4) {
-                    const topRowIndex = col - 1;
-                    if (topRowIndex < gridData.topRow.length) {
-                        const cell = gridData.topRow[topRowIndex];
-                        if (cell && typeof cell === 'object' && cell.id) {
-                            idStr = cell.id;
-                        }
-                    }
-                }
-                const paddedId = idStr.padStart(idColWidths[col], ' ').padEnd(idColWidths[col], ' ');
-                idTopRowStr += ' ' + paddedId + ' |';
-            }
-            console.log(idTopRowStr);
-            console.log(idSeparator);
-        }
-        
-        // Print main grid IDs
-        for (let row = 0; row < gridData.mainGrid.length; row++) {
-            let idRowStr = '  ' + row + ' |';
-            for (let col = 0; col < gridData.mainGrid[row].length; col++) {
-                const cell = gridData.mainGrid[row][col];
-                const idStr = (cell && typeof cell === 'object' && cell.id) ? cell.id : '';
-                const paddedId = idStr.padStart(idColWidths[col], ' ').padEnd(idColWidths[col], ' ');
-                idRowStr += ' ' + paddedId + ' |';
-            }
-            console.log(idRowStr);
-            if (row < gridData.mainGrid.length - 1) {
-                console.log(idSeparator);
-            }
-        }
-        console.log(idSeparator);
-        
-        // Print column indices for ID grid
-        let idIndexStr = '     |';
-        for (let col = 0; col < 6; col++) {
-            const paddedIndex = String(col).padStart(idColWidths[col], ' ').padEnd(idColWidths[col], ' ');
-            idIndexStr += ' ' + paddedIndex + ' |';
-        }
-        console.log(idIndexStr);
-    }
+}
 }
 
 function highlightWinningSymbols(positions) {
