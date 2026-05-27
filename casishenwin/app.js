@@ -21,8 +21,15 @@ let currentBalance = 0;
 let debugOptions = {
     forceTopAllWild: false,
     forceSilverFrame: false,
-    forceScatterCount: null  // null = random, 0-3 = force specific count
+    forceScatterCount: null,  // null = random, 1-6 = force specific scatter count
+    forceBonusRetrigger: false // true = force scatter count to 4, 5, or 6 for bonus retrigger testing
 };
+
+// Bonus gambling state
+let bonusGamblingState = null;  // Set when 4+ scatters appear
+let isInBonusGambling = false;
+let isInBonus = false;
+let bonusState = null;  // { freeSpinsRemaining, multiplier, totalWin }
 
 // Grid state
 let currentGrid = null;
@@ -82,6 +89,12 @@ async function connect() {
         wsClient.on('setBet', (data) => {
             console.log('[Casishenwin] Spin result:', data);
             handleSpinResult(data);
+        });
+
+        // Event: EnterBonus result (bonus gambling completed, entering bonus round)
+        wsClient.on('enterBonus', (data) => {
+            console.log('[Casishenwin] EnterBonus result:', data);
+            handleEnterBonusResult(data);
         });
 
         // Event: Sync room info (reconnect)
@@ -176,6 +189,11 @@ function toggleDebugOption(option, checked) {
 
 function setScatterCount(value) {
     debugOptions.forceScatterCount = value === '' ? null : parseInt(value);
+    // Clamp to valid range: 1-6 (1-3 for base game, 4-6 for bonus retrigger)
+    if (debugOptions.forceScatterCount != null) {
+        if (debugOptions.forceScatterCount < 1) debugOptions.forceScatterCount = 1;
+        if (debugOptions.forceScatterCount > 6) debugOptions.forceScatterCount = 6;
+    }
     updateDebugStatus();
     console.log('[Debug] Scatter count:', debugOptions.forceScatterCount);
 }
@@ -187,6 +205,7 @@ function updateDebugStatus() {
         if (debugOptions.forceTopAllWild) active.push('TopAllWild');
         if (debugOptions.forceSilverFrame) active.push('SilverFrame');
         if (debugOptions.forceScatterCount != null) active.push('Scatter:' + debugOptions.forceScatterCount);
+        if (debugOptions.forceBonusRetrigger) active.push('BonusRetrigger');
         if (active.length > 0) {
             statusEl.textContent = 'Active: ' + active.join(', ');
             statusEl.classList.add('active');
@@ -271,6 +290,52 @@ async function handleSpinResult(data) {
 
     // Update win display
     document.getElementById('winAmount').textContent = winAmount.toFixed(2);
+
+    // --- BONUS SPIN RESULT: Server sends bonusGameState to separate bonus spins from normal spins ---
+    // When bonusGameState is present, this is a bonus spin result (not a normal spin).
+    // The server handles all bonus logic (retriggers, extra spins, etc.).
+    // Frontend only renders the updated bonus state.
+    if (gameResult.bonusGameState) {
+        const bonus = gameResult.bonusGameState;
+        console.log('[handleSpinResult] Bonus spin result:', bonus);
+        
+        // Enter bonus mode if not already
+        if (!isInBonus) {
+            isInBonus = true;
+            bonusState = bonus;
+            showBonusUI(bonus);
+        } else {
+            // Already in bonus — update state (server may have added retrigger spins)
+            bonusState = bonus;
+            updateBonusUI(bonusState);
+        }
+        
+        // Show retrigger notification if server awarded extra spins this spin
+        if (bonus.retriggerSpinsAwarded && bonus.retriggerSpinsAwarded > 0) {
+            const winDisplay = document.getElementById('winDisplay');
+            if (winDisplay) {
+                winDisplay.textContent = `+${bonus.retriggerSpinsAwarded} FREE SPINS!`;
+                winDisplay.classList.add('show', 'bonus-retrigger');
+                setTimeout(() => winDisplay.classList.remove('show', 'bonus-retrigger'), 2000);
+            }
+        }
+        
+        // Bonus ended?
+        if (bonus.freeSpinsRemaining <= 0) {
+            console.log('[handleSpinResult] Bonus ended');
+            isInBonus = false;
+            bonusState = null;
+            hideBonusUI();
+        }
+    }
+
+    // Check for bonus gambling trigger (4+ scatters) — only outside bonus
+    if (!isInBonus && gameResult.bonusGambling) {
+        console.log('[handleSpinResult] Bonus gambling triggered!', gameResult.bonusGambling);
+        bonusGamblingState = gameResult.bonusGambling;
+        isInBonusGambling = true;
+        showBonusGamblingUI(bonusGamblingState);
+    }
 }
 
 // ==========================================
@@ -1110,6 +1175,211 @@ function showTopAllWild() {
 }
 
 // ==========================================
+// BONUS GAMBLING UI
+// ==========================================
+
+function showBonusGamblingUI(state) {
+    // Hide normal controls
+    const controls = document.querySelector('.controls');
+    if (controls) controls.classList.add('hidden');
+
+    // Create or show bonus gambling panel
+    let panel = document.getElementById('bonusGamblingPanel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'bonusGamblingPanel';
+        panel.className = 'bonus-gambling-panel';
+        document.body.appendChild(panel);
+    }
+    panel.classList.remove('hidden');
+
+    updateBonusGamblingUI(state);
+}
+
+function updateBonusGamblingUI(state) {
+    const panel = document.getElementById('bonusGamblingPanel');
+    if (!panel) return;
+
+    const freeSpinsValues = state.freeSpinValues || [8, 10, 12, 14, 16];
+    const multiplierValues = state.multiplierValues || [18, 20, 22, 24];
+    const currentFreeSpinIndex = state.freeSpinIndex || 0;
+    const currentMultiplierIndex = state.multiplierIndex || 0;
+
+    // Build free spins display
+    const freeSpinsHtml = freeSpinsValues.map((val, idx) => {
+        const isCurrent = idx === currentFreeSpinIndex;
+        const isPast = idx < currentFreeSpinIndex;
+        const isFuture = idx > currentFreeSpinIndex;
+        let className = 'gamble-value';
+        if (isCurrent) className += ' current';
+        if (isPast) className += ' past';
+        if (isFuture) className += ' future';
+        return `<span class="${className}">${val}</span>`;
+    }).join(' → ');
+
+    // Build multiplier display
+    const multiplierHtml = multiplierValues.map((val, idx) => {
+        const isCurrent = idx === currentMultiplierIndex;
+        const isPast = idx < currentMultiplierIndex;
+        const isFuture = idx > currentMultiplierIndex;
+        let className = 'gamble-value';
+        if (isCurrent) className += ' current';
+        if (isPast) className += ' past';
+        if (isFuture) className += ' future';
+        return `<span class="${className}">${val}x</span>`;
+    }).join(' → ');
+
+    panel.innerHTML = `
+        <div class="bonus-gambling-title">🎰 BONUS GAMBLE</div>
+        <div class="bonus-gambling-subtitle">4+ Scatters! Gamble for bigger bonus!</div>
+        
+        <div class="gamble-track">
+            <div class="gamble-label">Free Spins:</div>
+            <div class="gamble-values">${freeSpinsHtml}</div>
+            ${state.canGambleFreeSpin ? `<button class="gamble-btn" onclick="gambleFor('freeSpin')">🎲 Gamble for More Spins</button>` : '<div class="max-reached">MAX REACHED</div>'}
+        </div>
+        
+        <div class="gamble-track">
+            <div class="gamble-label">Multiplier:</div>
+            <div class="gamble-values">${multiplierHtml}</div>
+            ${state.canGambleMultiplier ? `<button class="gamble-btn" onclick="gambleFor('multiplier')">🎲 Gamble for Higher Multiplier</button>` : '<div class="max-reached">MAX REACHED</div>'}
+        </div>
+        
+        <div class="current-values">
+            Current: <span class="highlight">${state.currentFreeSpins || 8} Free Spins</span> @ <span class="highlight">${state.currentMultiplier || 18}x Multiplier</span>
+        </div>
+        
+        <button class="enter-bonus-btn" onclick="handleBonusGambling()">✅ ENTER BONUS</button>
+        
+        <div id="gambleResult" class="gamble-result"></div>
+    `;
+}
+
+function hideBonusGamblingUI() {
+    const panel = document.getElementById('bonusGamblingPanel');
+    if (panel) panel.classList.add('hidden');
+    
+    const controls = document.querySelector('.controls');
+    if (controls) controls.classList.remove('hidden');
+}
+
+async function gambleFor(action) {
+    if (!wsClient || !bonusGamblingState) return;
+    
+    console.log('[gambleFor] Gambling for:', action);
+    
+    const message = {
+        opCode: 'GambleForBonus',
+        action: action,
+        currentState: bonusGamblingState
+    };
+    
+    wsClient.send(message);
+}
+
+async function handleBonusGambling() {
+    if (!wsClient || !bonusGamblingState) return;
+    
+    console.log('[handleBonusGambling] Entering bonus with:', bonusGamblingState.currentFreeSpins, 'spins @', bonusGamblingState.currentMultiplier + 'x');
+    
+    // Send EnterBonus opCode via wsClient
+    wsClient.enterBonus({
+        currentState: bonusGamblingState,
+        bet: BET_SIZE_LIST[CURRENT_BET_INDEX]
+    });
+}
+
+function handleGambleResult(data) {
+    const result = data.gambleResult;
+    if (!result) return;
+    
+    console.log('[handleGambleResult]', result);
+    
+    const resultEl = document.getElementById('gambleResult');
+    if (resultEl) {
+        if (result.lost) {
+            resultEl.innerHTML = `<div class="gamble-lost">❌ ${result.message}</div>`;
+            setTimeout(() => {
+                hideBonusGamblingUI();
+                isInBonusGambling = false;
+                bonusGamblingState = null;
+            }, 2000);
+        } else if (result.success) {
+            resultEl.innerHTML = `<div class="gamble-won">✅ ${result.message}</div>`;
+            // Update state
+            bonusGamblingState = {
+                ...bonusGamblingState,
+                freeSpinIndex: result.freeSpins === 10 ? 1 : result.freeSpins === 12 ? 2 : result.freeSpins === 14 ? 3 : result.freeSpins === 16 ? 4 : bonusGamblingState.freeSpinIndex,
+                multiplierIndex: result.multiplier === 20 ? 1 : result.multiplier === 22 ? 2 : result.multiplier === 24 ? 3 : bonusGamblingState.multiplierIndex,
+                currentFreeSpins: result.freeSpins,
+                currentMultiplier: result.multiplier,
+                canGambleFreeSpin: result.canGambleFreeSpin,
+                canGambleMultiplier: result.canGambleMultiplier
+            };
+            updateBonusGamblingUI(bonusGamblingState);
+        }
+    }
+}
+
+function handleEnterBonusResult(data) {
+    const bonus = data.bonusState;
+    if (!bonus) return;
+    
+    console.log('[handleEnterBonusResult] Entered bonus:', bonus);
+    
+    hideBonusGamblingUI();
+    isInBonusGambling = false;
+    isInBonus = true;
+    bonusState = bonus;
+    
+    // Show bonus UI
+    showBonusUI(bonus);
+}
+
+function showBonusUI(state) {
+    let panel = document.getElementById('bonusPanel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'bonusPanel';
+        panel.className = 'bonus-panel';
+        document.body.appendChild(panel);
+    }
+    panel.classList.remove('hidden');
+    
+    panel.innerHTML = `
+        <div class="bonus-title">🎰 FREE SPINS</div>
+        <div class="bonus-info">
+            <div>${state.freeSpinsRemaining} Spins Remaining</div>
+            <div>${state.multiplier}x Multiplier</div>
+        </div>
+        <div class="bonus-total">Total Win: $${state.totalWin.toFixed(2)}</div>
+    `;
+}
+
+function hideBonusUI() {
+    const panel = document.getElementById('bonusPanel');
+    if (panel) panel.classList.add('hidden');
+}
+
+function updateBonusUI(state) {
+    const panel = document.getElementById('bonusPanel');
+    if (!panel) return;
+    
+    const infoEl = panel.querySelector('.bonus-info');
+    if (infoEl) {
+        infoEl.innerHTML = `
+            <div>${state.freeSpinsRemaining} Spins Remaining</div>
+            <div>${state.multiplier}x Multiplier</div>
+        `;
+    }
+    
+    const totalEl = panel.querySelector('.bonus-total');
+    if (totalEl) {
+        totalEl.textContent = `Total Win: $${state.totalWin.toFixed(2)}`;
+    }
+}
+
+// ==========================================
 // CONTROLS
 // ==========================================
 
@@ -1145,11 +1415,21 @@ function spin() {
     
     // Include debug options if any are enabled
     const spinPayload = { bet };
-    if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame || debugOptions.forceScatterCount != null) {
+    if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame || debugOptions.forceScatterCount != null || debugOptions.forceBonusRetrigger) {
         spinPayload.debugOptions = {};
         if (debugOptions.forceTopAllWild) spinPayload.debugOptions.forceTopAllWild = true;
         if (debugOptions.forceSilverFrame) spinPayload.debugOptions.forceSilverFrame = true;
         if (debugOptions.forceScatterCount != null) spinPayload.debugOptions.forceScatterCount = debugOptions.forceScatterCount;
+        if (debugOptions.forceBonusRetrigger) spinPayload.debugOptions.forceBonusRetrigger = true;
+    }
+    
+    // During bonus, send current bonus state to server so it knows to process as bonus spin
+    if (isInBonus && bonusState) {
+        spinPayload.bonusGameState = {
+            freeSpinsRemaining: bonusState.freeSpinsRemaining,
+            multiplier: bonusState.multiplier,
+            totalWin: bonusState.totalWin
+        };
     }
     
     wsClient.setBet(spinPayload);

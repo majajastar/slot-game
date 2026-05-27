@@ -195,6 +195,9 @@ class SlotGameWebSocketClient {
                             this.emit('syncRoom', data.vals.data.subData[0]);
                         } else if (opCode === 'SetBet') {
                             this.emit('setBet', data.vals.data.subData[0]);
+                        } else if (opCode === 'EnterBonus') {
+                            // EnterBonus response is handled as a bonus gambling result
+                            this.emit('enterBonus', data.vals.data.subData[0]);
                         }
                     }
                     break;
@@ -291,6 +294,25 @@ class SlotGameWebSocketClient {
                     subType: 100070,
                     subData: [{
                         opCode: 'SetBet',
+                        message: message
+                    }]
+                }]
+            });
+        });
+    }
+
+    async enterBonus(message) {
+        return new Promise((resolve) => {
+            this.once('setBet', (data) => {
+                resolve(data);
+            });
+            
+            this.send({
+                type: '100000',
+                data: [{
+                    subType: 100070,
+                    subData: [{
+                        opCode: 'EnterBonus',
                         message: message
                     }]
                 }]
