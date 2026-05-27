@@ -229,7 +229,7 @@ function handleSyncRoom(data) {
         console.log(`[handleSyncRoom] Server resume info: spinType=${spinType}`);
         
         if (spinType === 'base' || spinType === 'bonus') {
-            // Resume from SpinResult - restore grid
+            // Resume from SpinResult - restore the grid
             if (lastResumeInfo.grid) {
                 const grid = lastResumeInfo.grid;
                 if (grid.mainGrid && grid.mainGrid[0] && typeof grid.mainGrid[0][0] === 'object') {
