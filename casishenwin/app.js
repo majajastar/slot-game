@@ -91,14 +91,14 @@ async function connect() {
             handleSpinResult(data);
         });
 
-        // Event: EnterBonus result (bonus gambling completed, entering bonus round)
-        wsClient.on('enterBonus', (data) => {
-            console.log('[Casishenwin] EnterBonus result:', data);
-            handleEnterBonusResult(data);
+        // Event: GambleForBonus result (gambling action result)
+        wsClient.on('gambleForBonus', (data) => {
+            console.log('[Casishenwin] GambleForBonus result:', data);
+            handleGambleResult(data);
         });
 
         // Event: Sync room info (reconnect)
-        wsClient.on('syncRoomInfo', (data) => {
+        wsClient.on('syncRoom', (data) => {
             console.log('[Casishenwin] Sync room:', data);
             handleSyncRoom(data);
         });
@@ -222,15 +222,40 @@ function handleSyncRoom(data) {
         updateBalanceDisplay();
     }
 
-    // Restore grid if available
+    // Restore grid/state from server's lastResumeInfo
     const lastResumeInfo = data.roomInfo?.lastResumeInfo;
-    if (lastResumeInfo?.grid) {
-        // Always use renderSymbolGrid for proper multi-row rendering
-        if (lastResumeInfo.grid.mainGrid && lastResumeInfo.grid.mainGrid[0] && typeof lastResumeInfo.grid.mainGrid[0][0] === 'object') {
-            renderSymbolGrid(lastResumeInfo.grid, document.getElementById('mainGrid'), document.getElementById('topRow'));
-        } else {
-            console.warn('[handleSyncRoom] Grid is not SymbolGrid, skipping render');
+    if (lastResumeInfo) {
+        const spinType = lastResumeInfo.spinType;
+        console.log(`[handleSyncRoom] Server resume info: spinType=${spinType}`);
+        
+        if (spinType === 'base' || spinType === 'bonus') {
+            // Resume from SpinResult - restore grid
+            if (lastResumeInfo.grid) {
+                const grid = lastResumeInfo.grid;
+                if (grid.mainGrid && grid.mainGrid[0] && typeof grid.mainGrid[0][0] === 'object') {
+                    renderSymbolGrid(grid, document.getElementById('mainGrid'), document.getElementById('topRow'));
+                    console.log('[handleSyncRoom] Grid restored from server');
+                }
+            }
+            
+            // Restore bonus game state if present
+            if (lastResumeInfo.bonusGameState) {
+                isInBonus = true;
+                bonusState = lastResumeInfo.bonusGameState;
+                showBonusUI(bonusState);
+                console.log('[handleSyncRoom] Bonus state restored from server');
+            }
+        } else if (spinType === 'bonusGambling') {
+            // Resume from GambleResult - restore gambling state
+            if (lastResumeInfo.bonusGambling) {
+                isInBonusGambling = true;
+                bonusGamblingState = lastResumeInfo.bonusGambling;
+                showBonusGamblingUI(bonusGamblingState);
+                console.log('[handleSyncRoom] Bonus gambling state restored from server');
+            }
         }
+    } else {
+        console.log('[handleSyncRoom] No lastResumeInfo from server');
     }
 }
 
@@ -282,18 +307,29 @@ async function handleSpinResult(data) {
         }
     }
 
-    // Show win amount
+    // Show win amount and ways to win info
     const winAmount = gameResult.winAmount || 0;
     if (winAmount > 0) {
         showWin(winAmount);
     }
 
-    // Update win display
-    document.getElementById('winAmount').textContent = winAmount.toFixed(2);
+    // Calculate total ways to win from all steps
+    let totalWaysToWin = 0;
+    if (info.steps && info.steps.length > 0) {
+        info.steps.forEach(step => {
+            if (step.waysToWin && step.waysToWin > totalWaysToWin) {
+                totalWaysToWin = step.waysToWin;
+            }
+        });
+    }
+
+    // Update win display with ways to win
+    const waysDisplay = totalWaysToWin > 0 ? ` (${totalWaysToWin} ways)` : '';
+    document.getElementById('winAmount').textContent = winAmount.toFixed(2) + waysDisplay;
 
     // --- BONUS SPIN RESULT: Server sends bonusGameState to separate bonus spins from normal spins ---
     // When bonusGameState is present, this is a bonus spin result (not a normal spin).
-    // The server handles all bonus logic (retriggers, extra spins, etc.).
+    // The server handles all bonus logic (retriggers, extra spins, multiplier application).
     // Frontend only renders the updated bonus state.
     if (gameResult.bonusGameState) {
         const bonus = gameResult.bonusGameState;
@@ -652,12 +688,17 @@ async function renderCascade(steps, finalGrid) {
         stepDiv.className = 'cascade-step-item';
         const stepWin = step.totalWin || 0;
 
+        // Get ways to win for this step (from all symbols in grid)
+        const waysToWin = step.waysToWin || 0;
+        const waysDisplay = waysToWin > 0 ? ` <span class="ways-to-win">${waysToWin} ways</span>` : '';
+
         let winDetails = '';
         if (step.winningColumns && step.winningColumns.length > 0) {
             winDetails = '<div class="step-wins">';
             step.winningColumns.forEach(win => {
                 const symbolEmoji = CONFIG.symbols[win.symbol] || '❓';
-                winDetails += `<div>${symbolEmoji} ${win.consecutiveCols} cols × ${win.winRoad} ways = $${(win.payout * win.winRoad).toFixed(2)}</div>`;
+                const waysInfo = win.winRoad ? `<span class="ways">${win.winRoad} ways</span>` : '<span class="ways">0 ways</span>';
+                winDetails += `<div class="win-line">${symbolEmoji} ${win.consecutiveCols} cols ${waysInfo} = $${(win.payout * win.winRoad).toFixed(2)}</div>`;
             });
             winDetails += '</div>';
         }
@@ -665,7 +706,7 @@ async function renderCascade(steps, finalGrid) {
         stepDiv.innerHTML = `
             <div class="step-header">
                 <span class="step-number">Step ${i + 1}</span>
-                <span class="step-win">+$${stepWin.toFixed(2)}</span>
+                <span class="step-win">+$${stepWin.toFixed(2)}${waysDisplay}</span>
             </div>
             ${winDetails}
         `;
@@ -780,6 +821,8 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
     if (winningColumns) {
         winningColumns.forEach((win, index) => {
             const letter = groupLetters[index % groupLetters.length];
+            const waysText = win.winRoad ? ` (${win.winRoad} ways)` : ' (0 ways)';
+            console.log(`  ${letter.toUpperCase()}. ${win.symbol}: ${win.consecutiveCols} cols${waysText} × ${win.winRoad || 0} ways = payout ${win.payout}`);
             if (win.positions) {
                 win.positions.forEach(pos => {
                     winningGroups.set(pos.row + ',' + pos.col, letter);
@@ -1268,13 +1311,8 @@ async function gambleFor(action) {
     
     console.log('[gambleFor] Gambling for:', action);
     
-    const message = {
-        opCode: 'GambleForBonus',
-        action: action,
-        currentState: bonusGamblingState
-    };
-    
-    wsClient.send(message);
+    // Send action only — backend uses its stored state
+    wsClient.gambleFor(action);
 }
 
 async function handleBonusGambling() {
@@ -1282,11 +1320,8 @@ async function handleBonusGambling() {
     
     console.log('[handleBonusGambling] Entering bonus with:', bonusGamblingState.currentFreeSpins, 'spins @', bonusGamblingState.currentMultiplier + 'x');
     
-    // Send EnterBonus opCode via wsClient
-    wsClient.enterBonus({
-        currentState: bonusGamblingState,
-        bet: BET_SIZE_LIST[CURRENT_BET_INDEX]
-    });
+    // Send GambleForBonus with 'enter' action — backend uses its stored state, no currentState needed
+    wsClient.gambleFor('enter');
 }
 
 function handleGambleResult(data) {
@@ -1294,6 +1329,20 @@ function handleGambleResult(data) {
     if (!result) return;
     
     console.log('[handleGambleResult]', result);
+    
+    // Handle entering bonus (action='enter')
+    if (result.bonusState === 'bonus' && result.success) {
+        hideBonusGamblingUI();
+        isInBonusGambling = false;
+        isInBonus = true;
+        bonusState = {
+            freeSpinsRemaining: result.freeSpins,
+            multiplier: result.multiplier,
+            totalWin: 0
+        };
+        showBonusUI(bonusState);
+        return;
+    }
     
     const resultEl = document.getElementById('gambleResult');
     if (resultEl) {
@@ -1306,11 +1355,11 @@ function handleGambleResult(data) {
             }, 2000);
         } else if (result.success) {
             resultEl.innerHTML = `<div class="gamble-won">✅ ${result.message}</div>`;
-            // Update state
+            // Update state - server sends freeSpinIndex and multiplierIndex directly
             bonusGamblingState = {
                 ...bonusGamblingState,
-                freeSpinIndex: result.freeSpins === 10 ? 1 : result.freeSpins === 12 ? 2 : result.freeSpins === 14 ? 3 : result.freeSpins === 16 ? 4 : bonusGamblingState.freeSpinIndex,
-                multiplierIndex: result.multiplier === 20 ? 1 : result.multiplier === 22 ? 2 : result.multiplier === 24 ? 3 : bonusGamblingState.multiplierIndex,
+                freeSpinIndex: result.freeSpinIndex != null ? result.freeSpinIndex : bonusGamblingState.freeSpinIndex,
+                multiplierIndex: result.multiplierIndex != null ? result.multiplierIndex : bonusGamblingState.multiplierIndex,
                 currentFreeSpins: result.freeSpins,
                 currentMultiplier: result.multiplier,
                 canGambleFreeSpin: result.canGambleFreeSpin,
@@ -1322,18 +1371,8 @@ function handleGambleResult(data) {
 }
 
 function handleEnterBonusResult(data) {
-    const bonus = data.bonusState;
-    if (!bonus) return;
-    
-    console.log('[handleEnterBonusResult] Entered bonus:', bonus);
-    
-    hideBonusGamblingUI();
-    isInBonusGambling = false;
-    isInBonus = true;
-    bonusState = bonus;
-    
-    // Show bonus UI
-    showBonusUI(bonus);
+    // DEPRECATED: Bonus entry now flows through GambleForBonus with action='enter'.
+    console.warn('[handleEnterBonusResult] DEPRECATED — no longer used');
 }
 
 function showBonusUI(state) {
@@ -1421,15 +1460,6 @@ function spin() {
         if (debugOptions.forceSilverFrame) spinPayload.debugOptions.forceSilverFrame = true;
         if (debugOptions.forceScatterCount != null) spinPayload.debugOptions.forceScatterCount = debugOptions.forceScatterCount;
         if (debugOptions.forceBonusRetrigger) spinPayload.debugOptions.forceBonusRetrigger = true;
-    }
-    
-    // During bonus, send current bonus state to server so it knows to process as bonus spin
-    if (isInBonus && bonusState) {
-        spinPayload.bonusGameState = {
-            freeSpinsRemaining: bonusState.freeSpinsRemaining,
-            multiplier: bonusState.multiplier,
-            totalWin: bonusState.totalWin
-        };
     }
     
     wsClient.setBet(spinPayload);
