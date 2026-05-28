@@ -85,17 +85,14 @@ async function connect() {
             handleJoinRoom(data);
         });
 
-        // Event: Spin result
+        // Event: Spin result (now also handles gambling results)
         wsClient.on('setBet', (data) => {
-            console.log('[Casishenwin] Spin result:', data);
-            handleSpinResult(data);
+            console.log('[Casishenwin] SetBet result:', data);
+            handleSetBetResult(data);
         });
 
-        // Event: GambleForBonus result (gambling action result)
-        wsClient.on('gambleForBonus', (data) => {
-            console.log('[Casishenwin] GambleForBonus result:', data);
-            handleGambleResult(data);
-        });
+        // DEPRECATED: GambleForBonus is now handled through SetBet with action field
+        // wsClient.on('gambleForBonus', ...) removed
 
         // Event: Sync room info (reconnect)
         wsClient.on('syncRoom', (data) => {
@@ -1311,8 +1308,8 @@ async function gambleFor(action) {
     
     console.log('[gambleFor] Gambling for:', action);
     
-    // Send action only — backend uses its stored state
-    wsClient.gambleFor(action);
+    // Send through SetBet with action field — backend handles gambling
+    wsClient.setBet({ bet: 0, action: action });
 }
 
 async function handleBonusGambling() {
@@ -1320,54 +1317,78 @@ async function handleBonusGambling() {
     
     console.log('[handleBonusGambling] Entering bonus with:', bonusGamblingState.currentFreeSpins, 'spins @', bonusGamblingState.currentMultiplier + 'x');
     
-    // Send GambleForBonus with 'enter' action — backend uses its stored state, no currentState needed
-    wsClient.gambleFor('enter');
+    // Send SetBet with action='enter' — backend handles bonus entry
+    wsClient.setBet({ bet: 0, action: 'enter' });
 }
 
-function handleGambleResult(data) {
-    const result = data.gambleResult;
-    if (!result) return;
-    
-    console.log('[handleGambleResult]', result);
-    
-    // Handle entering bonus (action='enter')
-    if (result.bonusState === 'bonus' && result.success) {
+async function handleSetBetResult(data) {
+    const gameResult = data.gameResult;
+    if (!gameResult) return;
+
+    const info = gameResult.info;
+    // A gambling ACTION response has gambleAction field (freeSpin, multiplier, enter)
+    // A base spin that triggered gambling has gameState='gambling' but NO gambleAction
+    const isGamblingAction = info && info.gambleAction != null;
+
+    if (isGamblingAction) {
+        // Handle gambling action result (freeSpin, multiplier, enter)
+        handleGamblingResult(gameResult);
+        return;
+    }
+
+    // Regular spin result — handleSpinResult will detect bonusGambling trigger
+    await handleSpinResult(data);
+}
+
+async function handleGamblingResult(gameResult) {
+    const info = gameResult.info;
+    const action = info.gambleAction;
+    // bonusGambling is in info (the SpinResult), not gameResult.bonusGambling
+    const bonusGambling = info.bonusGambling;
+
+    console.log('[handleGamblingResult] action=' + action, 'bonusGambling=', bonusGambling);
+
+    // Handle entering bonus (action='enter' or gameState='bonus')
+    if (action === 'enter' || info.gameState === 'bonus') {
         hideBonusGamblingUI();
         isInBonusGambling = false;
         isInBonus = true;
-        bonusState = {
-            freeSpinsRemaining: result.freeSpins,
-            multiplier: result.multiplier,
+        bonusGamblingState = null;
+        bonusState = gameResult.bonusGameState || {
+            freeSpinsRemaining: info.currentFreeSpins || 8,
+            multiplier: info.currentMultiplier || 18,
             totalWin: 0
         };
         showBonusUI(bonusState);
         return;
     }
-    
+
+    // Handle gamble lost (no bonusGambling and gameState is normal)
+    if (bonusGambling == null && info.gameState === 'normal') {
+        const resultEl = document.getElementById('gambleResult');
+        if (resultEl) {
+            resultEl.innerHTML = `<div class="gamble-lost">❌ Gamble lost! Bonus forfeited.</div>`;
+        }
+        hideBonusGamblingUI();
+        isInBonusGambling = false;
+        bonusGamblingState = null;
+        return;
+    }
+
+    // Gamble won — update state immediately
     const resultEl = document.getElementById('gambleResult');
     if (resultEl) {
-        if (result.lost) {
-            resultEl.innerHTML = `<div class="gamble-lost">❌ ${result.message}</div>`;
-            setTimeout(() => {
-                hideBonusGamblingUI();
-                isInBonusGambling = false;
-                bonusGamblingState = null;
-            }, 2000);
-        } else if (result.success) {
-            resultEl.innerHTML = `<div class="gamble-won">✅ ${result.message}</div>`;
-            // Update state - server sends freeSpinIndex and multiplierIndex directly
-            bonusGamblingState = {
-                ...bonusGamblingState,
-                freeSpinIndex: result.freeSpinIndex != null ? result.freeSpinIndex : bonusGamblingState.freeSpinIndex,
-                multiplierIndex: result.multiplierIndex != null ? result.multiplierIndex : bonusGamblingState.multiplierIndex,
-                currentFreeSpins: result.freeSpins,
-                currentMultiplier: result.multiplier,
-                canGambleFreeSpin: result.canGambleFreeSpin,
-                canGambleMultiplier: result.canGambleMultiplier
-            };
-            updateBonusGamblingUI(bonusGamblingState);
-        }
+        resultEl.innerHTML = `<div class="gamble-won">✅ Gamble successful!</div>`;
     }
+
+    // Update gambling state from info (SpinResult)
+    bonusGamblingState = bonusGambling;
+    updateBonusGamblingUI(bonusGamblingState);
+}
+
+// DEPRECATED: handleGambleResult removed — now handled by handleGamblingResult via SetBet
+function handleGambleResult(data) {
+    console.warn('[handleGambleResult] DEPRECATED — use handleGamblingResult instead');
 }
 
 function handleEnterBonusResult(data) {
@@ -1388,10 +1409,10 @@ function showBonusUI(state) {
     panel.innerHTML = `
         <div class="bonus-title">🎰 FREE SPINS</div>
         <div class="bonus-info">
-            <div>${state.freeSpinsRemaining} Spins Remaining</div>
-            <div>${state.multiplier}x Multiplier</div>
+            <div><span class="bonus-value">${state.freeSpinsRemaining}</span> Spins Remaining</div>
+            <div><span class="bonus-value">${state.multiplier}x</span> Multiplier</div>
         </div>
-        <div class="bonus-total">Total Win: $${state.totalWin.toFixed(2)}</div>
+        <div class="bonus-total">Total Win: <span class="bonus-win">$${state.totalWin.toFixed(2)}</span></div>
     `;
 }
 
@@ -1407,14 +1428,14 @@ function updateBonusUI(state) {
     const infoEl = panel.querySelector('.bonus-info');
     if (infoEl) {
         infoEl.innerHTML = `
-            <div>${state.freeSpinsRemaining} Spins Remaining</div>
-            <div>${state.multiplier}x Multiplier</div>
+            <div><span class="bonus-value">${state.freeSpinsRemaining}</span> Spins Remaining</div>
+            <div><span class="bonus-value">${state.multiplier}x</span> Multiplier</div>
         `;
     }
     
     const totalEl = panel.querySelector('.bonus-total');
     if (totalEl) {
-        totalEl.textContent = `Total Win: $${state.totalWin.toFixed(2)}`;
+        totalEl.innerHTML = `Total Win: <span class="bonus-win">$${state.totalWin.toFixed(2)}</span>`;
     }
 }
 

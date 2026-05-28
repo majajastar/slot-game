@@ -195,9 +195,8 @@ class SlotGameWebSocketClient {
                             this.emit('syncRoom', data.vals.data.subData[0]);
                         } else if (opCode === 'SetBet') {
                             this.emit('setBet', data.vals.data.subData[0]);
-                        } else if (opCode === 'GambleForBonus') {
-                            this.emit('gambleForBonus', data.vals.data.subData[0]);
                         }
+                        // GambleForBonus is DEPRECATED — now handled through SetBet with action field
                     }
                     break;
             }
@@ -300,24 +299,8 @@ class SlotGameWebSocketClient {
         });
     }
 
-    async gambleFor(action) {
-        return new Promise((resolve) => {
-            this.once('gambleForBonus', (data) => {
-                resolve(data);
-            });
-            
-            this.send({
-                type: '100000',
-                data: [{
-                    subType: 100070,
-                    subData: [{
-                        opCode: 'GambleForBonus',
-                        action: action
-                    }]
-                }]
-            });
-        });
-    }
+    // DEPRECATED: gambleFor is removed — use setBet with action field instead
+    // Example: wsClient.setBet({ bet: 0, action: 'freeSpin' })
 
     // ==========================================
     // LOW LEVEL
