@@ -33,6 +33,7 @@ class SlotGameWebSocketClient {
         this.messageHandlers = new Map();
         this.pendingRequests = new Map();
         this.requestId = 0;
+        this.messageBuffer = ''; // Buffer for fragmented WebSocket messages
     }
 
     // ==========================================
@@ -49,6 +50,7 @@ class SlotGameWebSocketClient {
             this.socket.onopen = () => {
                 console.log(`[${this.gameType}] WebSocket connected`);
                 this.isConnected = true;
+                this.messageBuffer = ''; // Clear buffer on reconnect
                 this.sendLogin();
             };
 
@@ -59,6 +61,7 @@ class SlotGameWebSocketClient {
             this.socket.onclose = () => {
                 console.log(`[${this.gameType}] WebSocket closed`);
                 this.isConnected = false;
+                this.messageBuffer = ''; // Clear buffer on close
                 this.stopPing();
             };
 
@@ -141,6 +144,7 @@ class SlotGameWebSocketClient {
         }
         this.stopPing();
         this.isConnected = false;
+        this.messageBuffer = ''; // Clear buffer on disconnect
     }
 
     // ==========================================
@@ -173,35 +177,112 @@ class SlotGameWebSocketClient {
 
     handleMessage(event) {
         try{
-            const data = JSON.parse(event.data);
-            const type = data.vals?.type || data.type;
-            // console.log(`type = ${type}, data = ${JSON.stringify(data)}`)
-            // Handle specific message types
-            switch (type) {
-                case 1: // Login response
-                    this.emit('login', data);
-                    this.sendLobbyRequest()
-                    break;
-                case 3: // Lobby response
-                    this.handleLobbyResponse()
-                    break;
-                case 100000:
-                    const subType = data.vals?.data?.subType;
-                    if (subType === 100005) {
-                        this.emit('joinRoom', data.vals.data.subData[0]);
-                    } else if (subType === 100071) {
-                        const opCode = data.vals?.data?.subData?.[0]?.opCode;
-                        if (opCode === 'SyncRoomInfo') {
-                            this.emit('syncRoom', data.vals.data.subData[0]);
-                        } else if (opCode === 'SetBet') {
-                            this.emit('setBet', data.vals.data.subData[0]);
-                        }
-                        // GambleForBonus is DEPRECATED — now handled through SetBet with action field
+            // Append to buffer and try to parse complete JSON objects
+            this.messageBuffer += event.data;
+            
+            // Try to extract complete JSON objects from buffer
+            let startIdx = 0;
+            let endIdx = 0;
+            
+            while (startIdx < this.messageBuffer.length) {
+                // Find the first '{' or '['
+                const braceIdx = this.messageBuffer.indexOf('{', startIdx);
+                const bracketIdx = this.messageBuffer.indexOf('[', startIdx);
+                
+                if (braceIdx === -1 && bracketIdx === -1) break;
+                
+                const jsonStart = braceIdx === -1 ? bracketIdx : 
+                                  bracketIdx === -1 ? braceIdx : 
+                                  Math.min(braceIdx, bracketIdx);
+                
+                // Try to find matching end
+                let depth = 0;
+                let inString = false;
+                let escapeNext = false;
+                const openChar = this.messageBuffer[jsonStart];
+                const closeChar = openChar === '{' ? '}' : ']';
+                
+                for (endIdx = jsonStart; endIdx < this.messageBuffer.length; endIdx++) {
+                    const char = this.messageBuffer[endIdx];
+                    
+                    if (escapeNext) {
+                        escapeNext = false;
+                        continue;
                     }
+                    
+                    if (char === '\\') {
+                        escapeNext = true;
+                        continue;
+                    }
+                    
+                    if (char === '"') {
+                        inString = !inString;
+                        continue;
+                    }
+                    
+                    if (!inString) {
+                        if (char === openChar) depth++;
+                        else if (char === closeChar) {
+                            depth--;
+                            if (depth === 0) {
+                                endIdx++; // Include the closing char
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // If we found a complete JSON object
+                if (depth === 0 && endIdx <= this.messageBuffer.length) {
+                    const jsonStr = this.messageBuffer.substring(jsonStart, endIdx);
+                    try {
+                        const data = JSON.parse(jsonStr);
+                        this.processParsedMessage(data);
+                        startIdx = endIdx;
+                    } catch (parseErr) {
+                        // Invalid JSON, skip this segment
+                        startIdx = jsonStart + 1;
+                    }
+                } else {
+                    // Incomplete JSON, keep in buffer
                     break;
+                }
             }
+            
+            // Remove processed data from buffer
+            this.messageBuffer = this.messageBuffer.substring(startIdx);
+            
         } catch (err) {
-            console.warn(`[${this.gameType}] Error parsing message:`, err);
+            console.warn(`[${JSON.stringify(this.gameType)}] Error parsing message:`, err);
+        }
+    }
+
+    processParsedMessage(data) {
+        const type = data.vals?.type || data.type;
+        // console.log(`type = ${type}, data = ${JSON.stringify(data)}`)
+        // Handle specific message types
+        switch (type) {
+            case 1: // Login response
+                this.emit('login', data);
+                this.sendLobbyRequest()
+                break;
+            case 3: // Lobby response
+                this.handleLobbyResponse()
+                break;
+            case 100000:
+                const subType = data.vals?.data?.subType;
+                if (subType === 100005) {
+                    this.emit('joinRoom', data.vals.data.subData[0]);
+                } else if (subType === 100071) {
+                    const opCode = data.vals?.data?.subData?.[0]?.opCode;
+                    if (opCode === 'SyncRoomInfo') {
+                        this.emit('syncRoom', data.vals.data.subData[0]);
+                    } else if (opCode === 'SetBet') {
+                        this.emit('setBet', data.vals.data.subData[0]);
+                    }
+                    // GambleForBonus is DEPRECATED — now handled through SetBet with action field
+                }
+                break;
         }
     }
 

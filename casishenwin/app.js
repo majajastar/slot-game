@@ -132,8 +132,12 @@ async function connect() {
 
 function handleJoinRoom(data) {
     const betInfo = data.betInfo?.[0];
-    if (!betInfo) return;
-
+    if (!betInfo) {
+        console.log(`[handleJoinRoom] No betInfo available, betInfo=${JSON.stringify(betInfo)}`)
+        return;
+    }
+ 
+    // console.log(`betInfo: ${JSON.stringify(betInfo)}`)
     // Store symbols
     if (betInfo.symbols) {
         betInfo.symbols.forEach(sym => {
@@ -143,7 +147,7 @@ function handleJoinRoom(data) {
 
     // Store win table
     if (betInfo.winTable) {
-        WIN_TABLE = betInfo.winTable;
+        WIN_TABLE = betInfo.winTable
     }
 
     if (betInfo.winTableDisplay) {
@@ -256,29 +260,27 @@ function handleSyncRoom(data) {
     }
 }
 
-async function handleSpinResult(data) {
+async function handleSpinResult(betInfo) {
     isSpinning = false;
-    
     // Clear timeout if it exists
     if (spinTimeout) {
         clearTimeout(spinTimeout);
         spinTimeout = null;
     }
-    
+    const gameResult = betInfo.gameResult
     const spinButton = document.getElementById('spinButton');
     if (spinButton) {
         spinButton.disabled = false;
         spinButton.classList.remove('spinning');
     }
 
-    const gameResult = data.gameResult;
     if (!gameResult) return;
 
     const info = gameResult.info;
     if (!info) return;
 
     // Update balance
-    currentBalance = gameResult.finalBalance || currentBalance;
+    currentBalance = betInfo.finalBalance || currentBalance;
     updateBalanceDisplay();
 
     // Show TOP ALL WILD!!! message FIRST (before any animation)
@@ -1322,22 +1324,25 @@ async function handleBonusGambling() {
 }
 
 async function handleSetBetResult(data) {
-    const gameResult = data.gameResult;
-    if (!gameResult) return;
+    const betInfo = data.betInfo[0];
+    if (!betInfo) {
+        console.log(`[handleSetBetResult] No gameResult in data:`)
+        return;
+    }
 
-    const info = gameResult.info;
+    const info = betInfo.gameResult.info;
     // A gambling ACTION response has gambleAction field (freeSpin, multiplier, enter)
     // A base spin that triggered gambling has gameState='gambling' but NO gambleAction
     const isGamblingAction = info && info.gambleAction != null;
 
     if (isGamblingAction) {
         // Handle gambling action result (freeSpin, multiplier, enter)
-        handleGamblingResult(gameResult);
+        handleGamblingResult(betInfo.gameResult);
         return;
     }
 
     // Regular spin result — handleSpinResult will detect bonusGambling trigger
-    await handleSpinResult(data);
+    await handleSpinResult(betInfo);
 }
 
 async function handleGamblingResult(gameResult) {
@@ -1386,15 +1391,6 @@ async function handleGamblingResult(gameResult) {
     updateBonusGamblingUI(bonusGamblingState);
 }
 
-// DEPRECATED: handleGambleResult removed — now handled by handleGamblingResult via SetBet
-function handleGambleResult(data) {
-    console.warn('[handleGambleResult] DEPRECATED — use handleGamblingResult instead');
-}
-
-function handleEnterBonusResult(data) {
-    // DEPRECATED: Bonus entry now flows through GambleForBonus with action='enter'.
-    console.warn('[handleEnterBonusResult] DEPRECATED — no longer used');
-}
 
 function showBonusUI(state) {
     let panel = document.getElementById('bonusPanel');
@@ -1476,13 +1472,12 @@ function spin() {
     // Include debug options if any are enabled
     const spinPayload = { bet };
     if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame || debugOptions.forceScatterCount != null || debugOptions.forceBonusRetrigger) {
-        spinPayload.debugOptions = {};
-        if (debugOptions.forceTopAllWild) spinPayload.debugOptions.forceTopAllWild = true;
-        if (debugOptions.forceSilverFrame) spinPayload.debugOptions.forceSilverFrame = true;
-        if (debugOptions.forceScatterCount != null) spinPayload.debugOptions.forceScatterCount = debugOptions.forceScatterCount;
-        if (debugOptions.forceBonusRetrigger) spinPayload.debugOptions.forceBonusRetrigger = true;
+        if (debugOptions.forceTopAllWild) spinPayload.forceTopAllWild = true;
+        if (debugOptions.forceSilverFrame) spinPayload.forceSilverFrame = true;
+        if (debugOptions.forceScatterCount != null) spinPayload.forceScatterCount = debugOptions.forceScatterCount;
+        if (debugOptions.forceBonusRetrigger) spinPayload.forceBonusRetrigger = true;
     }
-    
+    console.log(`spinPayload = ${JSON.stringify(spinPayload)}`)
     wsClient.setBet(spinPayload);
 }
 

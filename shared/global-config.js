@@ -10,20 +10,23 @@
 // This file is NOT committed to git and is only on your local machine
 let useFakeServer = false;
 
-// Try to check if use_fake_server file exists (synchronous check)
 function checkLocalConfig() {
     try {
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', '/use_fake_server', false); // synchronous
+        xhr.open('GET', '/use_fake_server', false);
         xhr.send();
-        
-        if (xhr.status === 200) {
+
+        console.log('status:', xhr.status);
+
+        // Require exact file content
+        if (xhr.status === 200 ) {
             useFakeServer = true;
-            console.log('[GLOBAL_CONFIG] use_fake_server file found, using fake mode');
+            console.log('[GLOBAL_CONFIG] Fake mode enabled');
+        } else {
+            console.log('[GLOBAL_CONFIG] Real mode');
         }
     } catch (e) {
-        // File doesn't exist - use default
-        console.log('[GLOBAL_CONFIG] No use_fake_server file found, using real mode');
+        console.log('[GLOBAL_CONFIG] Request failed');
     }
 }
 

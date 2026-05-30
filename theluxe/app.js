@@ -382,6 +382,7 @@ async function connect() {
         });
 
         wsClient.on('setBet', (data) => {
+            console.log(`On setBet!`)
             handleSpinResult(data);
         });
 
