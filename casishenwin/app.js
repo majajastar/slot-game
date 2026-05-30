@@ -224,6 +224,7 @@ function handleSyncRoom(data) {
     }
 
     // Restore grid/state from server's lastResumeInfo
+    // lastResumeInfo interface: { grid, spinType, bonusGameState?, bonusGambling? }
     const lastResumeInfo = data.roomInfo?.lastResumeInfo;
     if (lastResumeInfo) {
         const spinType = lastResumeInfo.spinType;
@@ -231,11 +232,15 @@ function handleSyncRoom(data) {
         
         if (spinType === 'base' || spinType === 'bonus') {
             // Resume from SpinResult - restore the grid
-            if (lastResumeInfo.grid) {
-                const grid = lastResumeInfo.grid;
-                if (grid.mainGrid && grid.mainGrid[0] && typeof grid.mainGrid[0][0] === 'object') {
-                    renderSymbolGrid(grid, document.getElementById('mainGrid'), document.getElementById('topRow'));
+            if (lastResumeInfo.symbolGrid) {
+                console.log('[handleSyncRoom] Grid restored from server');
+                const symbolGrid = lastResumeInfo.symbolGrid;
+                if (symbolGrid.mainGrid && symbolGrid.mainGrid[0]) {
+                    console.log('[handleSyncRoom] Rendor stored grid');
+                    renderSymbolGrid(symbolGrid, document.getElementById('mainGrid'), document.getElementById('topRow'));
                     console.log('[handleSyncRoom] Grid restored from server');
+                } else {
+                    console.log(`[handleSyncRoom] No grid info`)
                 }
             }
             
@@ -495,12 +500,12 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
     // Second pass: render cells
     for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
         for (let col = 0; col < symbolGrid.mainGrid[row].length; col++) {
+            //console.log(`Rendor ${row},${col}`)
             const index = row * CONFIG.cols + col;
             if (index >= cells.length) continue;
             
             const cell = cells[index];
             const symbolInstance = symbolGrid.mainGrid[row][col];
-            
             if (!symbolInstance || !symbolInstance.id) {
                 // Clear cell content for removed/null symbols
                 cell.textContent = '';
