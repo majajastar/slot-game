@@ -335,8 +335,8 @@ async function handleSpinResult(betInfo) {
     // When bonusGameState is present, this is a bonus spin result (not a normal spin).
     // The server handles all bonus logic (retriggers, extra spins, multiplier application).
     // Frontend only renders the updated bonus state.
-    if (gameResult.bonusGameState) {
-        const bonus = gameResult.bonusGameState;
+    if (info.bonusGameState) {
+        const bonus = info.bonusGameState;
         console.log('[handleSpinResult] Bonus spin result:', bonus);
         
         // Enter bonus mode if not already
@@ -368,11 +368,11 @@ async function handleSpinResult(betInfo) {
             hideBonusUI();
         }
     }
-
+    console.log(`isBonus: ${isInBonus}, bonusGambling: ${JSON.stringify(info.bonusGambling)}`)
     // Check for bonus gambling trigger (4+ scatters) — only outside bonus
-    if (!isInBonus && gameResult.bonusGambling) {
-        console.log('[handleSpinResult] Bonus gambling triggered!', gameResult.bonusGambling);
-        bonusGamblingState = gameResult.bonusGambling;
+    if (!isInBonus && info.bonusGambling) {
+        console.log('[handleSpinResult] Bonus gambling triggered!', info.bonusGambling);
+        bonusGamblingState = info.bonusGambling;
         isInBonusGambling = true;
         showBonusGamblingUI(bonusGamblingState);
     }
