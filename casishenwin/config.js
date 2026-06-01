@@ -24,7 +24,7 @@ const CONFIG = {
     // Use global ping interval
     get pingInterval() { return GLOBAL_CONFIG.gameSettings.pingInterval; },
 
-    gameTypeId: 'casishenwin',
+    gameTypeId: 'moneygod',
 
     // Symbol emojis for display
     symbols: {
