@@ -245,7 +245,7 @@ function handleSyncRoom(data) {
             }
             
             // Restore bonus game state if present
-            if (lastResumeInfo.bonusGameState) {
+            if (lastResumeInfo.bonusGameState && lastResumeInfo.bonusGameState.freeSpinsRemaining > 0) {
                 isInBonus = true;
                 bonusState = lastResumeInfo.bonusGameState;
                 showBonusUI(bonusState);
@@ -286,6 +286,7 @@ async function handleSpinResult(betInfo) {
 
     // Update balance
     currentBalance = betInfo.finalBalance || currentBalance;
+    console.log(`[handleSpinResult] New balance: ${currentBalance}`);
     updateBalanceDisplay();
 
     // Show TOP ALL WILD!!! message FIRST (before any animation)
