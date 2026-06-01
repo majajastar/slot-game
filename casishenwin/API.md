@@ -636,38 +636,7 @@ wsClient.setBet({ bet: 0, action: 'enter' });
 
 ---
 
-### 5. Gamble For Bonus (DEPRECATED)
-
-> ⚠️ **Deprecated:** `GambleForBonus` is removed. All gambling actions are now handled through **SetBet** with the `action` field. See [Set Bet](#4-set-bet-spin) for usage.
-
-**Old endpoint (no longer exists):**
-```json
-{
-  "type": "100000",
-  "data": [
-    {
-      "subType": 100070,
-      "subData": [
-        {
-          "opCode": "GambleForBonus",
-          "action": "freeSpin"
-        }
-      ]
-    }
-  ]
-}
-```
-
-**Migration:** Replace all `GambleForBonus` calls with `SetBet`:
-- `GambleForBonus('freeSpin')` → `SetBet({ bet: 0, action: 'freeSpin' })`
-- `GambleForBonus('multiplier')` → `SetBet({ bet: 0, action: 'multiplier' })`
-- `GambleForBonus('enter')` → `SetBet({ bet: 0, action: 'enter' })`
-
-The response still uses `opCode: "SetBet"` with a `gambleResult` field containing the gambling outcome.
-
----
-
-### 6. Get Records
+### 5. Get Records
 
 Retrieve recent game records (for debugging/history).
 
