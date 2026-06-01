@@ -1,8 +1,8 @@
 # Casishenwin WebSocket API Documentation
 
-**Game:** Casishenwin Slot Game  
-**Protocol:** WebSocket (JSON messages)  
-**Fake Server:** `ws://localhost:3004`  
+**Game:** Casishenwin Slot Game
+**Protocol:** WebSocket (JSON messages)
+**Fake Server:** `ws://localhost:3004`
 **Real Server:** AWS API Gateway (see `shared/global-config.js`)
 
 ---
@@ -16,7 +16,7 @@
    - [Join Room](#2-join-room)
    - [Sync Room Info](#3-sync-room-info)
    - [Set Bet (Spin)](#4-set-bet-spin)
-   - [Gamble For Bonus](#5-gamble-for-bonus)
+   - [Gamble For Bonus (DEPRECATED)](#5-gamble-for-bonus-deprecated)
    - [Get Records](#6-get-records)
 4. [Data Types](#data-types)
 5. [State Machine](#state-machine)
@@ -387,9 +387,9 @@ wsClient.send(JSON.stringify({
 
 ### 4. Set Bet (Spin)
 
-Place a bet and spin the reels.
+Place a bet and spin the reels. This single endpoint handles **normal spins**, **bonus gambling**, and **bonus entry**.
 
-**Request:**
+**Request (Normal Spin):**
 ```json
 {
   "type": "100000",
@@ -401,12 +401,73 @@ Place a bet and spin the reels.
           "opCode": "SetBet",
           "message": {
             "bet": 1.00,
-            "debugOptions": {
-              "forceTopAllWild": false,
-              "forceSilverFrame": false,
-              "forceScatterCount": null,
-              "forceBonusRetrigger": false
-            }
+            "forceTopAllWild": false,
+            "forceSilverFrame": false,
+            "forceScatterCount": null,
+            "forceBonusRetrigger": false
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Request (Gamble for More Free Spins):**
+```json
+{
+  "type": "100000",
+  "data": [
+    {
+      "subType": 100070,
+      "subData": [
+        {
+          "opCode": "SetBet",
+          "message": {
+            "bet": 0,
+            "action": "freeSpin"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Request (Gamble for Higher Multiplier):**
+```json
+{
+  "type": "100000",
+  "data": [
+    {
+      "subType": 100070,
+      "subData": [
+        {
+          "opCode": "SetBet",
+          "message": {
+            "bet": 0,
+            "action": "multiplier"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Request (Enter Bonus — Accept Current Values):**
+```json
+{
+  "type": "100000",
+  "data": [
+    {
+      "subType": 100070,
+      "subData": [
+        {
+          "opCode": "SetBet",
+          "message": {
+            "bet": 0,
+            "action": "enter"
           }
         }
       ]
@@ -419,12 +480,14 @@ Place a bet and spin the reels.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `bet` | number | Yes | Bet amount (must be in `betSizeList`) |
-| `debugOptions` | object | No | Debug/testing options (fake server only) |
-| `debugOptions.forceTopAllWild` | boolean | No | Force top row to be all WILDs |
-| `debugOptions.forceSilverFrame` | boolean | No | Force silver frame appearance |
-| `debugOptions.forceScatterCount` | number | No | Force specific scatter count (1-6) |
-| `debugOptions.forceBonusRetrigger` | boolean | No | Force scatter count to 4-6 for retrigger |
+| `bet` | number | Yes | Bet amount (must be in `betSizeList`). Use `0` for gambling actions. |
+| `action` | string | No | Gambling action: `"freeSpin"`, `"multiplier"`, or `"enter"`. Required when gambling. |
+| `forceTopAllWild` | boolean | No | Force top row to be all WILDs (debug/fake server only) |
+| `forceSilverFrame` | boolean | No | Force silver frame appearance (debug/fake server only) |
+| `forceScatterCount` | number \| null | No | Force specific scatter count 1–6 (debug/fake server only) |
+| `forceBonusRetrigger` | boolean | No | Force scatter count to 4–6 for retrigger testing (debug/fake server only) |
+
+**Note:** Debug options are sent as **flat fields** on the message object, not nested under a `debugOptions` wrapper.
 
 **Response (Success - Base Spin):**
 ```json
@@ -558,19 +621,26 @@ wsClient.setBet({ bet: 1.00 });
 // Spin with debug options (fake server only)
 wsClient.setBet({
   bet: 1.00,
-  debugOptions: {
-    forceScatterCount: 4  // Force 4 scatters to trigger gambling
-  }
+  forceScatterCount: 4  // Force 4 scatters to trigger gambling
 });
+
+// Gamble for more free spins
+wsClient.setBet({ bet: 0, action: 'freeSpin' });
+
+// Gamble for higher multiplier
+wsClient.setBet({ bet: 0, action: 'multiplier' });
+
+// Enter bonus with current values
+wsClient.setBet({ bet: 0, action: 'enter' });
 ```
 
 ---
 
-### 5. Gamble For Bonus
+### 5. Gamble For Bonus (DEPRECATED)
 
-Gamble for higher free spins or multiplier during bonus gambling phase.
+> ⚠️ **Deprecated:** `GambleForBonus` is removed. All gambling actions are now handled through **SetBet** with the `action` field. See [Set Bet](#4-set-bet-spin) for usage.
 
-**Request:**
+**Old endpoint (no longer exists):**
 ```json
 {
   "type": "100000",
@@ -588,135 +658,12 @@ Gamble for higher free spins or multiplier during bonus gambling phase.
 }
 ```
 
-**Parameters:**
+**Migration:** Replace all `GambleForBonus` calls with `SetBet`:
+- `GambleForBonus('freeSpin')` → `SetBet({ bet: 0, action: 'freeSpin' })`
+- `GambleForBonus('multiplier')` → `SetBet({ bet: 0, action: 'multiplier' })`
+- `GambleForBonus('enter')` → `SetBet({ bet: 0, action: 'enter' })`
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `action` | string | Yes | `"freeSpin"`, `"multiplier"`, or `"enter"` |
-
-**Action Values:**
-
-| Value | Description |
-|-------|-------------|
-| `"freeSpin"` | Gamble to increase free spins (e.g., 8 → 10 → 12 → 14 → 16) |
-| `"multiplier"` | Gamble to increase multiplier (e.g., 18x → 20x → 22x → 24x) |
-| `"enter"` | Accept current values and enter bonus game |
-
-**Response (Success - Gamble Won):**
-```json
-{
-  "errCode": 0,
-  "errMsg": "success",
-  "vals": {
-    "type": 100000,
-    "id": 3,
-    "data": {
-      "subType": 100071,
-      "subData": [
-        {
-          "errCode": 0,
-          "opCode": "GambleForBonus",
-          "gambleResult": {
-            "success": true,
-            "lost": false,
-            "bonusState": "gambling",
-            "freeSpins": 10,
-            "multiplier": 18,
-            "freeSpinIndex": 1,
-            "multiplierIndex": 0,
-            "canGambleFreeSpin": true,
-            "canGambleMultiplier": true,
-            "message": "Gamble won! Free spins increased to 10!"
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
-**Response (Success - Enter Bonus):**
-```json
-{
-  "gambleResult": {
-    "success": true,
-    "lost": false,
-    "bonusState": "bonus",
-    "freeSpins": 12,
-    "multiplier": 22,
-    "freeSpinIndex": 2,
-    "multiplierIndex": 1,
-    "canGambleFreeSpin": false,
-    "canGambleMultiplier": false,
-    "message": "Entered bonus! 12 free spins @ 22x"
-  }
-}
-```
-
-**Response (Error - Gamble Lost):**
-```json
-{
-  "gambleResult": {
-    "success": false,
-    "lost": true,
-    "bonusState": "lost",
-    "freeSpins": 0,
-    "multiplier": 0,
-    "canGambleFreeSpin": false,
-    "canGambleMultiplier": false,
-    "message": "Gamble lost! Bonus forfeited."
-  }
-}
-```
-
-**Response (Error - No Active Gambling):**
-```json
-{
-  "errCode": 1,
-  "errMsg": "No active bonus gambling",
-  "vals": {
-    "type": 100000,
-    "id": 3,
-    "data": {
-      "subType": 100071,
-      "subData": [
-        {
-          "errCode": 1,
-          "opCode": "GambleForBonus",
-          "errMsg": "No active bonus gambling"
-        }
-      ]
-    }
-  }
-}
-```
-
-**Response Fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `success` | boolean | Whether the gamble succeeded |
-| `lost` | boolean | If true, bonus is forfeited |
-| `bonusState` | string | `"gambling"`, `"bonus"`, `"normal"`, or `"lost"` |
-| `freeSpins` | number | Current free spin count |
-| `multiplier` | number | Current multiplier value |
-| `freeSpinIndex` | number | Position in freeSpinValues array |
-| `multiplierIndex` | number | Position in multiplierValues array |
-| `canGambleFreeSpin` | boolean | Can still gamble for more spins |
-| `canGambleMultiplier` | boolean | Can still gamble for higher multiplier |
-| `message` | string | Human-readable result message |
-
-**Example:**
-```javascript
-// Gamble for more free spins
-wsClient.gambleFor('freeSpin');
-
-// Gamble for higher multiplier
-wsClient.gambleFor('multiplier');
-
-// Enter bonus with current values
-wsClient.gambleFor('enter');
-```
+The response still uses `opCode: "SetBet"` with a `gambleResult` field containing the gambling outcome.
 
 ---
 
@@ -843,16 +790,16 @@ interface CascadeStep {
   step: number;
   symbolGridBefore: SymbolGrid;        // Grid before wins
   symbolGridAfterRemoval: SymbolGrid;  // Grid after removing wins
-  symbolGridAfterFill: SymbolGrid;     // Grid after new symbols dropped
+  symbolGridAfterFill: SymbolGrid;    // Grid after new symbols dropped
   winningColumns: ColumnWin[];         // Winning combinations
-  removedSymbols: SymbolRemoval[];     // Which symbols were removed
+  removedSymbols: SymbolRemoval[];    // Which symbols were removed
   transformedPositions: Array<{        // Frame transformations
     row: number;
     col: number;
     oldFrame: 'silver' | 'golden';
     newSymbol: string;
   }>;
-  movements: SymbolMovement[];         // Backend-calculated animations
+  movements: SymbolMovement[];        // Backend-calculated animations
   totalWin: number;
   waysToWin?: number;
 }
@@ -880,8 +827,8 @@ State during bonus free spins.
 ```typescript
 interface BonusGameState {
   freeSpinsRemaining: number;  // Spins left
-  multiplier: number;            // Current win multiplier
-  totalWin: number;             // Accumulated bonus win
+  multiplier: number;          // Current win multiplier
+  totalWin: number;            // Accumulated bonus win
   retriggerSpinsAwarded?: number; // Extra spins awarded this spin
 }
 ```
@@ -893,13 +840,13 @@ State during bonus gambling phase.
 ```typescript
 interface BonusGambleState {
   freeSpinIndex: number;        // Current position in values array
-  multiplierIndex: number;    // Current position in values array
+  multiplierIndex: number;     // Current position in values array
   freeSpinValues: number[];     // [8, 10, 12, 14, 16]
-  multiplierValues: number[];   // [18, 20, 22, 24]
+  multiplierValues: number[];  // [18, 20, 22, 24]
   canGambleFreeSpin: boolean;   // Can still gamble for spins
   canGambleMultiplier: boolean; // Can still gamble for multiplier
   currentFreeSpins: number;     // Current value
-  currentMultiplier: number;    // Current value
+  currentMultiplier: number;     // Current value
 }
 ```
 
@@ -1050,7 +997,7 @@ wsClient.on('syncRoom', (data) => {
 // 5. Handle spin results
 wsClient.on('setBet', (data) => {
   const gameResult = data.gameResult;
-  
+
   // Check for errors
   if (data.errCode !== 0) {
     if (gameResult?.bonusGambling) {
@@ -1058,28 +1005,29 @@ wsClient.on('setBet', (data) => {
     }
     return;
   }
-  
+
   // Render the grid
   renderSymbolGrid(gameResult.info.symbolGrid, ...);
-  
+
   // Check for bonus gambling trigger
   if (gameResult.bonusGambling) {
     showBonusGamblingUI(gameResult.bonusGambling);
   }
-  
+
   // Check for bonus state
   if (gameResult.bonusGameState) {
     showBonusUI(gameResult.bonusGameState);
   }
-  
+
   // Update balance
   updateBalance(gameResult.finalBalance);
 });
 
-// 6. Handle gamble results
-wsClient.on('gambleForBonus', (data) => {
+// 6. Handle gamble results (now via SetBet)
+wsClient.on('setBet', (data) => {
   const result = data.gambleResult;
-  
+  if (!result) return; // Not a gambling response
+
   if (result.bonusState === 'bonus' && result.success) {
     // Entered bonus
     hideBonusGamblingUI();
@@ -1101,11 +1049,11 @@ wsClient.on('gambleForBonus', (data) => {
 // 7. Send a spin
 wsClient.setBet({ bet: 1.00 });
 
-// 8. Gamble for more spins
-wsClient.gambleFor('freeSpin');
+// 8. Gamble for more spins (via SetBet)
+wsClient.setBet({ bet: 0, action: 'freeSpin' });
 
-// 9. Enter bonus
-wsClient.gambleFor('enter');
+// 9. Enter bonus (via SetBet)
+wsClient.setBet({ bet: 0, action: 'enter' });
 ```
 
 ### Debug Spin Example
@@ -1114,35 +1062,27 @@ wsClient.gambleFor('enter');
 // Force 4 scatters to trigger gambling
 wsClient.setBet({
   bet: 1.00,
-  debugOptions: {
-    forceScatterCount: 4
-  }
+  forceScatterCount: 4
 });
 
 // Force top row all WILDs
 wsClient.setBet({
   bet: 1.00,
-  debugOptions: {
-    forceTopAllWild: true
-  }
+  forceTopAllWild: true
 });
 
 // Force silver frame
 wsClient.setBet({
   bet: 1.00,
-  debugOptions: {
-    forceSilverFrame: true
-  }
+  forceSilverFrame: true
 });
 
 // Combine multiple debug options
 wsClient.setBet({
   bet: 1.00,
-  debugOptions: {
-    forceTopAllWild: true,
-    forceScatterCount: 5,
-    forceBonusRetrigger: true
-  }
+  forceTopAllWild: true,
+  forceScatterCount: 5,
+  forceBonusRetrigger: true
 });
 ```
 
@@ -1210,5 +1150,6 @@ totalWin = sum of all winRoad values
 
 ---
 
-*Document generated: 2026-05-28*  
+*Document generated: 2026-05-28*
+*Updated: 2026-06-01 — Fixed SetBet interface (flat debug fields, added action field, deprecated GambleForBonus)*
 *For: Casishenwin Slot Game Frontend Integration*
