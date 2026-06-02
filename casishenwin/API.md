@@ -17,7 +17,8 @@
 5. [Spin Flow](#spin-flow)
 6. [Cascade Animation](#cascade-animation)
 7. [Bonus System](#bonus-system)
-8. [Complete Example](#complete-example)
+8. [Buy Bonus Feature](#buy-bonus-feature)
+9. [Complete Example](#complete-example)
 
 ---
 
@@ -31,6 +32,7 @@
 4. **Cascade animator** - Animate symbol removals and drops
 5. **Multi-row symbol renderer** - Handle symbols spanning 2-4 rows
 6. **Bonus UI** - Handle gambling and free spins
+7. **Buy Bonus UI** - Handle buy bonus feature
 
 ### Grid Layout
 
@@ -100,7 +102,13 @@ Store the `balance` for display. After login, request the lobby, then join the r
 ```javascript
 ws.send(JSON.stringify({
   type: '100000',
-  data: [{ subType: 100004 }]
+  data: [{
+    subType: 100070,
+    subData: [{
+      opCode: 'JoinRoom',
+      message: { gameTypeId: 'moneygod' }
+    }]
+  }]
 }));
 ```
 
@@ -109,28 +117,41 @@ ws.send(JSON.stringify({
 {
   "errCode": 0,
   "vals": {
-    "type": 100000,
+    "type": 100070,
     "data": {
-      "subType": 100005,
       "subData": [{
-        "balance": 10000000000,
-        "roomId": "casishenwin-room-001",
-        "gameTypeId": "casishenwin",
+        "subType": 100070,
         "betInfo": [{
           "symbols": [
-            { "id": "1" },    // WILD
-            { "id": "2" },    // SCATTER
-            { "id": "201" },  // CROWN (high)
-            { "id": "202" },  // RING (high)
-            { "id": "101" },  // ACE (low)
-            { "id": "102" }   // KING (low)
+            { "id": 1, "symbol": "1", "name": "WILD" },
+            { "id": 2, "symbol": "2", "name": "SCATTER" },
+            { "id": 201, "symbol": "201", "name": "CROWN" },
+            { "id": 202, "symbol": "202", "name": "RING" },
+            { "id": 203, "symbol": "203", "name": "TROPHY" },
+            { "id": 204, "symbol": "204", "name": "CASH" },
+            { "id": 205, "symbol": "205", "name": "CARD" },
+            { "id": 206, "symbol": "206", "name": "STAR" },
+            { "id": 101, "symbol": "101", "name": "ACE" },
+            { "id": 102, "symbol": "102", "name": "KING" },
+            { "id": 103, "symbol": "103", "name": "QUEEN" },
+            { "id": 104, "symbol": "104", "name": "JACK" },
+            { "id": 105, "symbol": "105", "name": "TEN" }
           ],
-          "betSizeList": [0.20, 0.50, 1.00, 2.00, 5.00, 10.00, 20.00, 50.00, 100.00],
-          "defaultBet": 0.20,
           "winTable": {
-            "201": [10, 25, 50, 100],
-            "202": [5, 10, 20, 40]
-          }
+            "201": [0.5, 1.0, 2.0, 5.0],
+            "202": [0.4, 0.8, 1.5, 3.0],
+            "203": [0.3, 0.6, 1.0, 2.0],
+            "204": [0.2, 0.4, 0.8, 1.5],
+            "205": [0.2, 0.4, 0.6, 1.0],
+            "206": [0.1, 0.3, 0.5, 0.8],
+            "101": [0.1, 0.2, 0.4, 0.6],
+            "102": [0.1, 0.2, 0.3, 0.5],
+            "103": [0.05, 0.1, 0.2, 0.4],
+            "104": [0.05, 0.1, 0.2, 0.3],
+            "105": [0.05, 0.1, 0.15, 0.2]
+          },
+          "betSizeList": [0.20, 0.50, 1.00, 2.00, 5.00, 10.00, 20.00, 50.00, 100.00],
+          "defaultBet": 1.00
         }]
       }]
     }
@@ -138,108 +159,73 @@ ws.send(JSON.stringify({
 }
 ```
 
-**Store these values:**
-- `betSizeList` - For bet selector UI
-- `symbols` - For symbol assets mapping
-- `winTable` - For paytable display
+Store `symbols`, `winTable`, and `betSizeList` for later use.
 
 ---
 
 ## Grid Rendering
 
-### Understanding the Grid Data
+### SymbolInstance
 
-The server sends grids in two formats:
-
-1. **`grid`** - Simple string grid (for quick reference)
-```json
-{
-  "mainGrid": [["201", "101", "202", ...], ...],
-  "topRow": ["1", "2", "201", "202"]
-}
-```
-
-2. **`symbolGrid`** - Full object grid (for rendering)
-```json
-{
-  "mainGrid": [
-    [{"id": "_1", "symbol": "201"}, {"id": "_2", "symbol": "101"}, ...],
-    [{"id": "_6", "symbol": "102"}, {"id": "_7", "symbol": "103"}, ...]
-  ],
-  "topRow": [{"id": "_31", "symbol": "1"}, ...]
-}
-```
-
-**Always use `symbolGrid` for rendering** - it contains the unique `id` for each symbol instance.
-
-### SymbolInstance Structure
+Each cell in the grid is a `SymbolInstance` object:
 
 ```typescript
 interface SymbolInstance {
-  id: string;           // Unique ID per symbol instance (e.g., "_1", "_42")
-  symbol: string;       // Symbol type (e.g., "201"=CROWN, "1"=WILD)
-  frame?: 'silver' | 'golden'; // Optional frame state
+  id: string;        // Unique ID (e.g., "sym_001", "sym_002")
+  symbol: string;    // Symbol type (e.g., "201", "1", "2")
+  frame?: string;    // "silver" or "golden" (optional)
 }
 ```
 
----
+**Key rule:** Symbols with the same `id` in the same column are the SAME multi-row symbol.
 
-## Single-Row Symbols
+### Single-Row Symbols
 
-Most symbols occupy exactly 1 cell. Render them normally:
+Most symbols occupy exactly 1 cell:
 
 ```javascript
-function renderSingleRowSymbol(cell, row, col) {
-  const element = document.createElement('div');
-  element.className = `symbol symbol-${cell.symbol}`;
-  element.style.width = CELL_WIDTH + 'px';
-  element.style.height = CELL_HEIGHT + 'px';
-  element.style.left = (col * CELL_WIDTH) + 'px';
-  element.style.top = (row * CELL_HEIGHT) + 'px';
-  return element;
-}
-```
-
----
-
-## Multi-Row Symbols
-
-### What Are Multi-Row Symbols?
-
-Multi-row symbols are symbols that occupy **2-4 consecutive rows in the same column**. They are represented by the **same `id` appearing in multiple consecutive cells**.
-
-**Example grid with multi-row symbol:**
-```json
+// Example: Single-row symbol at row 2, col 3
 {
-  "mainGrid": [
-    // Row 0
-    [{"id": "_1", "symbol": "201"}, {"id": "_2", "symbol": "101"}, {"id": "_5", "symbol": "201", "frame": "silver"}, {"id": "_3", "symbol": "102"}, {"id": "_4", "symbol": "103"}, {"id": "_8", "symbol": "104"}],
-    // Row 1
-    [{"id": "_6", "symbol": "105"}, {"id": "_7", "symbol": "101"}, {"id": "_5", "symbol": "201", "frame": "silver"}, {"id": "_9", "symbol": "102"}, {"id": "_10", "symbol": "103"}, {"id": "_11", "symbol": "104"}],
-    // Row 2
-    [{"id": "_12", "symbol": "105"}, {"id": "_13", "symbol": "101"}, {"id": "_14", "symbol": "202"}, {"id": "_15", "symbol": "102"}, {"id": "_16", "symbol": "103"}, {"id": "_17", "symbol": "104"}]
-  ]
+  id: "sym_007",
+  symbol: "201"  // CROWN
 }
 ```
 
-**Notice:** `id: "_5"` appears in both row 0 and row 1 of column 2. This is a **2-row symbol** with a silver frame.
+Render as a normal 1×1 cell.
 
-### How to Identify Multi-Row Symbols
+### Multi-Row Symbols
+
+Symbols in middle columns (1-4) can span 2-4 rows. Same `id` = same symbol:
 
 ```javascript
-/**
- * Find all multi-row symbols in a symbolGrid
- * @param {Object} symbolGrid - The symbolGrid from server response
- * @returns {Array} - List of multi-row symbol info
- */
+// Example: 3-row symbol in column 2
+// Row 0, col 2
+{ id: "sym_012", symbol: "202" }
+// Row 1, col 2
+{ id: "sym_012", symbol: "202" }
+// Row 2, col 2
+{ id: "sym_012", symbol: "202" }
+// Row 3, col 2
+null  // Empty cell (symbol doesn't reach here)
+```
+
+**Multi-row symbol rules:**
+- Only in middle columns (1-4)
+- Edge columns (0, 5): Always single-row
+- WILD ("1") and SCATTER ("2"): Always single-row
+- Same `id` in same column = one symbol spanning multiple rows
+- Consecutive rows only (no gaps)
+- Max 4 rows per symbol
+
+**How to render multi-row symbols:**
+
+```javascript
 function findMultiRowSymbols(symbolGrid) {
   const multiRowSymbols = [];
   
-  // Check each column (0-5)
   for (let col = 0; col < 6; col++) {
-    const idCounts = new Map(); // id -> { count, positions }
+    const idCounts = new Map();
     
-    // Count occurrences of each id in this column
     for (let row = 0; row < 5; row++) {
       const cell = symbolGrid.mainGrid[row][col];
       if (!cell) continue;
@@ -252,12 +238,10 @@ function findMultiRowSymbols(symbolGrid) {
       info.positions.push({ row, col });
     }
     
-    // Find ids that appear more than once (multi-row)
     for (const [id, info] of idCounts) {
       if (info.count > 1) {
         multiRowSymbols.push({
           id,
-          symbol: symbolGrid.mainGrid[info.positions[0].row][info.positions[0].col].symbol,
           rowSpan: info.count,
           startRow: info.positions[0].row,
           col: info.positions[0].col,
@@ -272,148 +256,87 @@ function findMultiRowSymbols(symbolGrid) {
 }
 ```
 
-### How to Render Multi-Row Symbols
-
-**Key rule:** Render the multi-row symbol **only at the top cell** (`startRow`). The cells below are visually part of the same symbol.
+**Render the grid:**
 
 ```javascript
-/**
- * Render the complete grid including multi-row symbols
- * @param {Object} symbolGrid - The symbolGrid from server response
- */
 function renderGrid(symbolGrid) {
-  // Step 1: Find all multi-row symbols
+  const mainGrid = document.getElementById('mainGrid');
+  const topRow = document.getElementById('topRow');
+  
+  // Clear cells
+  for (let cell of mainGrid.children) {
+    cell.textContent = '';
+    cell.className = 'grid-cell';
+    cell.style = '';
+  }
+  
+  // Find multi-row symbols
   const multiRowSymbols = findMultiRowSymbols(symbolGrid);
   
-  // Create a set of multi-row ids for quick lookup
-  const multiRowIds = new Set(multiRowSymbols.map(s => s.id));
-  
-  // Step 2: Render each cell
+  // Render main grid
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 6; col++) {
       const cell = symbolGrid.mainGrid[row][col];
-      if (!cell) continue; // Empty cell (null)
+      if (!cell) continue;
       
       const multiRowInfo = multiRowSymbols.find(s => s.id === cell.id);
+      const index = row * 6 + col;
+      const cellEl = mainGrid.children[index];
       
       if (multiRowInfo && multiRowInfo.startRow === row) {
-        // === RENDER MULTI-ROW SYMBOL (top cell only) ===
-        renderMultiRowSymbol(cell, multiRowInfo, row, col);
-      } else if (multiRowInfo) {
-        // === PART OF MULTI-ROW SYMBOL (not top cell) ===
-        // Skip - the multi-row symbol above covers this cell
-        continue;
-      } else {
-        // === SINGLE-ROW SYMBOL ===
-        renderSingleRowSymbol(cell, row, col);
+        // Master cell: render symbol spanning multiple rows
+        cellEl.textContent = getSymbolEmoji(cell.symbol);
+        cellEl.className = 'grid-cell multi-row-master';
+        cellEl.style.gridRow = `${row + 1} / span ${multiRowInfo.rowSpan}`;
+        cellEl.style.gridColumn = `${col + 1}`;
+        
+        if (cell.frame) {
+          cellEl.classList.add(`${cell.frame}-frame`);
+        }
+      } else if (!multiRowInfo) {
+        // Single-row symbol
+        cellEl.textContent = getSymbolEmoji(cell.symbol);
+        cellEl.className = 'grid-cell';
+        
+        if (cell.frame) {
+          cellEl.classList.add(`${cell.frame}-frame`);
+        }
       }
+      // Multi-row continuation cells: leave empty (hidden by CSS)
     }
   }
   
-  // Step 3: Render top row (always single-row)
+  // Render top row
   for (let col = 0; col < 4; col++) {
     const cell = symbolGrid.topRow[col];
-    if (!cell) continue;
-    renderTopRowSymbol(cell, col);
+    if (cell) {
+      topRow.children[col].textContent = getSymbolEmoji(cell.symbol);
+    }
   }
-}
-
-/**
- * Render a multi-row symbol that spans multiple rows
- */
-function renderMultiRowSymbol(cell, multiRowInfo, row, col) {
-  const element = document.createElement('div');
-  element.className = 'multi-row-symbol';
-  element.dataset.symbolId = cell.id;
-  
-  // Add frame class if present (silver or golden)
-  if (multiRowInfo.frame) {
-    element.classList.add(`${multiRowInfo.frame}-frame`);
-  }
-  
-  // Position at top cell
-  element.style.left = (col * CELL_WIDTH) + 'px';
-  element.style.top = (row * CELL_HEIGHT) + 'px';
-  element.style.width = CELL_WIDTH + 'px';
-  
-  // Height spans multiple rows
-  element.style.height = (multiRowInfo.rowSpan * CELL_HEIGHT) + 'px';
-  
-  // Higher z-index to appear above single-row symbols
-  element.style.zIndex = '10';
-  
-  // Add symbol image
-  const symbolImg = document.createElement('img');
-  symbolImg.src = `/assets/symbols/${cell.symbol}.png`;
-  symbolImg.style.width = '100%';
-  symbolImg.style.height = '100%';
-  symbolImg.style.objectFit = 'cover';
-  
-  element.appendChild(symbolImg);
-  gridContainer.appendChild(element);
-}
-
-/**
- * Render a single-row symbol
- */
-function renderSingleRowSymbol(cell, row, col) {
-  const element = document.createElement('div');
-  element.className = 'symbol';
-  element.dataset.symbolId = cell.id;
-  element.style.left = (col * CELL_WIDTH) + 'px';
-  element.style.top = (row * CELL_HEIGHT) + 'px';
-  element.style.width = CELL_WIDTH + 'px';
-  element.style.height = CELL_HEIGHT + 'px';
-  
-  const symbolImg = document.createElement('img');
-  symbolImg.src = `/assets/symbols/${cell.symbol}.png`;
-  symbolImg.style.width = '100%';
-  symbolImg.style.height = '100%';
-  
-  element.appendChild(symbolImg);
-  gridContainer.appendChild(element);
-}
-
-/**
- * Render top row symbol (above main grid)
- */
-function renderTopRowSymbol(cell, col) {
-  const element = document.createElement('div');
-  element.className = 'top-row-symbol';
-  element.dataset.symbolId = cell.id;
-  // Top row is above columns 1-4 (index 0-3 in topRow array = columns 1-4)
-  element.style.left = ((col + 1) * CELL_WIDTH) + 'px';
-  element.style.top = '-' + CELL_HEIGHT + 'px';
-  element.style.width = CELL_WIDTH + 'px';
-  element.style.height = CELL_HEIGHT + 'px';
-  
-  const symbolImg = document.createElement('img');
-  symbolImg.src = `/assets/symbols/${cell.symbol}.png`;
-  symbolImg.style.width = '100%';
-  symbolImg.style.height = '100%';
-  
-  element.appendChild(symbolImg);
-  topRowContainer.appendChild(element);
 }
 ```
 
-### Multi-Row Symbol Rules Summary
+**CSS for multi-row symbols:**
 
-| Rule | Description |
-|------|-------------|
-| **Where** | Only middle columns (1-4) can have multi-row symbols |
-| **WILD** | WILD symbols (`"1"`) are always single-row |
-| **Identification** | Same `id` in multiple consecutive cells = multi-row |
-| **Rendering** | Only render at `startRow` (top cell) |
-| **Height** | Height = `rowSpan × CELL_HEIGHT` |
-| **Frame** | `frame: "silver"` or `"golden"` - render border/frame |
-| **Cascade** | All cells with same `id` removed together |
+```css
+.grid-cell.multi-row-master {
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  z-index: 10;
+  aspect-ratio: auto;
+  min-height: 100%;
+  height: 100%;
+}
+
+.grid-cell.multi-row-continuation {
+  display: none !important;
+}
+```
 
 ---
 
 ## Spin Flow
 
-### Step 3: Send a Spin Request
+### Step 3: Send Spin Request
 
 ```javascript
 ws.send(JSON.stringify({
@@ -428,226 +351,257 @@ ws.send(JSON.stringify({
 }));
 ```
 
-### Step 4: Handle Spin Response
+### Step 4: Handle Spin Result
 
-```javascript
-function handleSpinResponse(data) {
-  const subData = data.vals?.data?.subData?.[0];
-  if (!subData) return;
-  
-  // Check for errors
-  if (subData.errCode !== 0) {
-    console.error('Spin error:', subData.errMsg);
-    if (subData.bonusGambling) {
-      showGamblingUI(subData.bonusGambling);
-    }
-    return;
-  }
-  
-  const gameResult = subData.gameResult;
-  
-  // 1. Render the initial grid
-  renderGrid(gameResult.info.symbolGrid);
-  
-  // 2. Check for bonus gambling trigger
-  if (gameResult.bonusGambling) {
-    showGamblingUI(gameResult.bonusGambling);
-    return; // Wait for player to gamble or enter
-  }
-  
-  // 3. Check for bonus state
-  if (gameResult.bonusGameState) {
-    showBonusUI(gameResult.bonusGameState);
-  }
-  
-  // 4. Update balance
-  updateBalance(gameResult.finalBalance);
-  
-  // 5. Animate cascades if there are wins
-  if (gameResult.info.steps.length > 0) {
-    animateCascades(gameResult.info.steps);
-  }
-}
-```
-
-**Spin Response Structure:**
 ```json
 {
-  "gameResult": {
-    "awardBase": 1.00,
-    "winAmount": 25.50,
-    "info": {
-      "symbolGrid": { /* grid with SymbolInstance objects */ },
-      "steps": [ /* cascade steps */ ],
-      "totalWin": 25.50,
-      "scatterCount": 2,
-      "bonusGambling": null,
-      "bonusGameState": null
-    },
-    "balance": 9999999999,
-    "finalBalance": 10000000023.50
+  "errCode": 0,
+  "vals": {
+    "type": 100070,
+    "data": {
+      "subData": [{
+        "subType": 100070,
+        "gameResult": {
+          "info": {
+            "symbolGrid": {
+              "mainGrid": [[...], [...], ...],  // 5x6 SymbolInstance[][]
+              "topRow": [...]  // 4 SymbolInstance[]
+            },
+            "steps": [...],  // Cascade steps (optional)
+            "topAllWild": false,
+            "bonusGambling": null,  // Or gambling state
+            "bonusGameState": null  // Or bonus state
+          },
+          "winAmount": 12.50,
+          "finalBalance": 999999987.50
+        }
+      }]
+    }
   }
 }
 ```
+
+**Process the result:**
+1. Update balance from `finalBalance`
+2. If `topAllWild` is true, show special message
+3. If `steps` exist, play cascade animation
+4. Otherwise, render final grid directly
+5. Show win amount if > 0
+6. Check for `bonusGambling` (4+ scatters) or `bonusGameState` (in bonus)
 
 ---
 
 ## Cascade Animation
 
-### Understanding Cascade Steps
+### Step Data
 
-When symbols form winning combinations, they are removed and new symbols drop in. Each step provides three grid states:
+Each cascade step contains:
 
 ```typescript
 interface CascadeStep {
-  step: number;                        // Step number (1, 2, 3...)
-  symbolGridBefore: SymbolGrid;        // Grid before removing wins
-  symbolGridAfterRemoval: SymbolGrid; // Grid after removing wins (nulls where wins were)
-  symbolGridAfterFill: SymbolGrid;    // Grid after new symbols dropped
-  winningColumns: ColumnWin[];         // Which symbols won
-  removedSymbols: SymbolRemoval[];    // Which symbols were removed
-  movements: SymbolMovement[];        // Backend-calculated animation data
-  totalWin: number;                   // Win amount for this step
+  symbolGridBefore: SymbolGrid;     // Grid before win
+  symbolGridAfterRemoval: SymbolGrid;  // Grid after removing wins
+  symbolGridAfterFill: SymbolGrid;  // Grid after filling
+  removedSymbols: RemovedSymbol[];  // Which symbols were removed
+  movements: Movement[];            // How symbols moved
+  winningColumns: WinInfo[];        // Win details
+  totalWin: number;                 // Step win amount
+  waysToWin: number;                // Total ways to win
+}
+
+interface RemovedSymbol {
+  row: number;
+  col: number;
+  id: string;
+  symbol: string;
+}
+
+interface Movement {
+  from: { row: number; col: number } | null;  // null = new symbol
+  to: { row: number; col: number };
+  symbolInstance: SymbolInstance;
+  isNew: boolean;
 }
 ```
 
-### Cascade Animation Flow
-
-```javascript
-async function animateCascades(steps) {
-  for (const step of steps) {
-    // 1. Show winning symbols (highlight them)
-    highlightWins(step.winningColumns);
-    await wait(500); // Show wins for 500ms
-    
-    // 2. Remove winning symbols (fade out)
-    await removeSymbols(step.removedSymbols);
-    
-    // 3. Show grid after removal (with nulls)
-    renderGrid(step.symbolGridAfterRemoval);
-    
-    // 4. Animate symbols falling down
-    await animateMovements(step.movements);
-    
-    // 5. Show grid after fill (new symbols dropped in)
-    renderGrid(step.symbolGridAfterFill);
-    
-    // 6. Show win amount for this step
-    showStepWin(step.totalWin);
-  }
-}
-```
-
-### Multi-Row Symbols in Cascades
-
-When a multi-row symbol is part of a win:
-
-```javascript
-// Example: Multi-row symbol with id "_5" spanning rows 0-1 in column 2
-// If it wins, BOTH cells are removed:
-
-// Before removal:
-// Row 0: [{"id":"_1"}, {"id":"_2"}, {"id":"_5"}, ...]
-// Row 1: [{"id":"_6"}, {"id":"_7"}, {"id":"_5"}, ...]
-
-// After removal:
-// Row 0: [{"id":"_1"}, {"id":"_2"}, null, ...]
-// Row 1: [{"id":"_6"}, {"id":"_7"}, null, ...]
-
-// The removedSymbols array will contain BOTH cells:
-// [
-//   {"symbolId": "_5", "symbol": "201", "row": 0, "col": 2},
-//   {"symbolId": "_5", "symbol": "201", "row": 1, "col": 2}
-// ]
-```
-
-**Important:** When animating multi-row symbol removal, remove ALL cells with the same `id` simultaneously.
+**Animation sequence:**
+1. Render `symbolGridBefore` and highlight winning symbols
+2. Animate removal of `removedSymbols`
+3. Render `symbolGridAfterRemoval`
+4. Apply movement animations from `movements`
+5. Render `symbolGridAfterFill`
+6. Repeat for next step
 
 ---
 
 ## Bonus System
 
-### Bonus Gambling (4+ Scatters)
+### Bonus Gambling
 
-When a spin results in 4+ scatters, the server returns a `bonusGambling` state:
+When 4+ scatters appear, the server sends `bonusGambling`:
 
 ```json
 {
   "bonusGambling": {
-    "freeSpinIndex": 0,          // Current position in values array
-    "multiplierIndex": 0,        // Current position in values array
     "freeSpinValues": [8, 10, 12, 14, 16],
     "multiplierValues": [18, 20, 22, 24],
-    "canGambleFreeSpin": true,
-    "canGambleMultiplier": true,
+    "freeSpinIndex": 0,
+    "multiplierIndex": 0,
     "currentFreeSpins": 8,
-    "currentMultiplier": 18
+    "currentMultiplier": 18,
+    "canGambleFreeSpin": true,
+    "canGambleMultiplier": true
   }
 }
 ```
 
-**UI Actions:**
+**Gamble actions:**
+- Send `SetBet` with `action: 'freeSpin'` to gamble for more spins
+- Send `SetBet` with `action: 'multiplier'` to gamble for higher multiplier
+- Send `SetBet` with `action: 'enter'` to enter bonus with current values
 
-```javascript
-// Gamble for more free spins
-ws.send(JSON.stringify({
-  type: '100000',
-  data: [{
-    subType: 100070,
-    subData: [{
-      opCode: 'SetBet',
-      message: { bet: 0, action: 'freeSpin' }
-    }]
-  }]
-}));
+### Free Spins Bonus
 
-// Gamble for higher multiplier
-ws.send(JSON.stringify({
-  type: '100000',
-  data: [{
-    subType: 100070,
-    subData: [{
-      opCode: 'SetBet',
-      message: { bet: 0, action: 'multiplier' }
-    }]
-  }]
-}));
-
-// Enter bonus with current values
-ws.send(JSON.stringify({
-  type: '100000',
-  data: [{
-    subType: 100070,
-    subData: [{
-      opCode: 'SetBet',
-      message: { bet: 0, action: 'enter' }
-    }]
-  }]
-}));
-```
-
-### Bonus Free Spins
-
-During bonus, the server returns `bonusGameState`:
+When in bonus, `bonusGameState` is present:
 
 ```json
 {
   "bonusGameState": {
-    "freeSpinsRemaining": 4,
-    "multiplier": 20,
-    "totalWin": 1250.50,
+    "freeSpinsRemaining": 8,
+    "multiplier": 18,
+    "totalWin": 0,
     "retriggerSpinsAwarded": 0
   }
 }
 ```
 
-**Note:** During bonus spins, `awardBase` is 0 (no bet deducted).
+---
+
+## Buy Bonus Feature
+
+The buy bonus feature allows players to pay a fixed price to instantly trigger a bonus round. The backend generates the pre-defined grid with the required scatter count.
+
+### Buy Bonus Request
+
+Send a `SetBet` message with `buyBonus: true`:
+
+```json
+{
+  "type": "setBet",
+  "bet": 1.00,
+  "buyBonus": true
+}
+```
+
+**Fields:**
+- `buyBonus`: `true` to activate buy bonus mode
+- `bet`: The current bet amount (cost will be `bet * priceMultiplier`)
+
+The backend handles:
+- Deducting the buy price from balance (`bet * 50`)
+- Generating a pre-defined grid with exactly 4 scatter symbols
+- Ensuring no regular wins occur on the buy spin
+- Entering bonus gambling automatically after the spin
+
+### Buy Bonus Response
+
+The server responds with a normal `SetBet` result. The response will contain:
+
+```json
+{
+  "gameResult": {
+    "info": {
+      "symbolGrid": {
+        "mainGrid": [...],
+        "topRow": [...]
+      },
+      "bonusGambling": {
+        "freeSpinValues": [8, 10, 12, 14, 16],
+        "multiplierValues": [18, 20, 22, 24],
+        "freeSpinIndex": 0,
+        "multiplierIndex": 0,
+        "currentFreeSpins": 8,
+        "currentMultiplier": 18,
+        "canGambleFreeSpin": true,
+        "canGambleMultiplier": true
+      }
+    }
+  }
+}
+```
+
+**Key behaviors:**
+- The buy bonus spin renders the server-generated grid immediately
+- No cascade animation occurs (no wins on buy spin)
+- The player enters bonus gambling UI automatically
+- The cost is deducted from balance before the spin
+- The backend ensures exactly 4 scatter symbols are present on the grid
+- Buy bonus can only be used during normal game (not in bonus or gambling)
+
+### Frontend Implementation
+
+```javascript
+function buyBonus() {
+  const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+  const buyPrice = currentBet * 50; // 50x multiplier
+
+  // Check balance
+  if (currentBalance < buyPrice) {
+    alert(`Insufficient balance! Buy bonus costs $${buyPrice.toFixed(2)}`);
+    return;
+  }
+
+  const buyPayload = { 
+    bet: currentBet,
+    buyBonus: true
+  };
+
+  wsClient.setBet(buyPayload);
+}
+```
+
+### Buy Bonus Button
+
+Add a buy bonus button to your UI:
+
+```html
+<button id="buyBonusButton" class="buy-bonus-button" onclick="buyBonus()">
+  💎 BUY BONUS (50x)
+</button>
+```
+
+```css
+.buy-bonus-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  border: 2px solid #ff6b6b;
+  background: linear-gradient(135deg, #ff6b6b, #ffd700);
+  color: #1a1a2e;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 10px;
+}
+
+.buy-bonus-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+}
+
+.buy-bonus-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+```
 
 ---
 
 ## Complete Example
-
-### Minimal Working Frontend
 
 ```javascript
 class CasishenwinFrontend {
@@ -655,12 +609,12 @@ class CasishenwinFrontend {
     this.ws = null;
     this.balance = 0;
     this.betSizeList = [];
-    this.currentBet = 0.20;
+    this.currentBet = 1.00;
     this.gridContainer = document.getElementById('grid');
     this.topRowContainer = document.getElementById('top-row');
   }
   
-  async connect() {
+  connect() {
     this.ws = new WebSocket('ws://localhost:3004');
     
     this.ws.onopen = () => {
@@ -669,34 +623,35 @@ class CasishenwinFrontend {
     
     this.ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      this.handleMessage(data);
+      this.handleResponse(data);
     };
   }
   
-  handleMessage(data) {
+  handleResponse(data) {
     const type = data.vals?.type;
     
-    if (type === 1) {
-      // Login response
-      this.balance = data.vals.data.balance;
-      this.joinRoom();
-    } else if (type === 100000) {
-      const subType = data.vals.data.subType;
-      
-      if (subType === 100005) {
-        // Join room response
-        this.handleJoinRoom(data);
-      } else if (subType === 100071) {
-        // Spin/gamble response
+    switch (type) {
+      case 1: // Login
+        this.balance = data.vals.data.balance;
+        this.updateBalanceDisplay();
+        this.joinRoom();
+        break;
+      case 100070: // Game action
         this.handleGameResult(data);
-      }
+        break;
     }
   }
   
   joinRoom() {
     this.ws.send(JSON.stringify({
       type: '100000',
-      data: [{ subType: 100004 }]
+      data: [{
+        subType: 100070,
+        subData: [{
+          opCode: 'JoinRoom',
+          message: { gameTypeId: 'moneygod' }
+        }]
+      }]
     }));
   }
   
@@ -717,6 +672,29 @@ class CasishenwinFrontend {
         subData: [{
           opCode: 'SetBet',
           message: { bet: this.currentBet }
+        }]
+      }]
+    }));
+  }
+  
+  buyBonus() {
+    const buyPrice = this.currentBet * 50;
+    
+    if (this.balance < buyPrice) {
+      alert(`Insufficient balance! Buy bonus costs $${buyPrice.toFixed(2)}`);
+      return;
+    }
+    
+    this.ws.send(JSON.stringify({
+      type: '100000',
+      data: [{
+        subType: 100070,
+        subData: [{
+          opCode: 'SetBet',
+          message: {
+            bet: this.currentBet,
+            buyBonus: true
+          }
         }]
       }]
     }));
@@ -895,59 +873,7 @@ game.connect();
 
 // Spin button
 document.getElementById('spin-btn').onclick = () => game.spin();
+
+// Buy bonus button
+document.getElementById('buy-bonus-btn').onclick = () => game.buyBonus();
 ```
-
----
-
-## Symbol Reference
-
-| ID | Symbol | Name | Type | Notes |
-|----|--------|------|------|-------|
-| 1 | 💎 | WILD | Special | Always single-row |
-| 2 | ⭐ | SCATTER | Special | Triggers bonus gambling (4+) |
-| 201 | 👑 | CROWN | High | Can be multi-row |
-| 202 | 💍 | RING | High | Can be multi-row |
-| 203 | 🏆 | TROPHY | High | Can be multi-row |
-| 204 | 💵 | CASH | High | Can be multi-row |
-| 205 | 🎴 | CARD | Medium | Can be multi-row |
-| 206 | 🌟 | STAR | Medium | Can be multi-row |
-| 101 | 🅰️ | ACE | Low | Can be multi-row |
-| 102 | 🇰 | KING | Low | Can be multi-row |
-| 103 | 🇶 | QUEEN | Low | Can be multi-row |
-| 104 | 🇯 | JACK | Low | Can be multi-row |
-| 105 | 🔟 | TEN | Low | Can be multi-row |
-
----
-
-## Win Table Format
-
-```javascript
-// winTable[symbolID] = [3x payout, 4x payout, 5x payout, 6x payout]
-{
-  "201": [10, 25, 50, 100],   // CROWN
-  "202": [5, 10, 20, 40],     // RING
-  "203": [4, 8, 15, 30],      // TROPHY
-  "204": [3, 6, 12, 24],      // CASH
-  "205": [2, 5, 10, 20],      // CARD
-  "206": [2, 4, 8, 16],       // STAR
-  "101": [1, 3, 6, 12],       // ACE
-  "102": [1, 2, 5, 10],       // KING
-  "103": [1, 2, 4, 8],        // QUEEN
-  "104": [1, 2, 3, 6],        // JACK
-  "105": [1, 2, 3, 5]         // TEN
-}
-```
-
-**Win Calculation:**
-```
-win = bet × payout × multiplier
-ways = product of symbol counts per consecutive column
-winRoad = payout × ways
-totalWin = sum of all winRoad values
-```
-
----
-
-*Document version: 1.0*  
-*For: Building new Casishenwin frontends*  
-*Last updated: 2026-06-01*

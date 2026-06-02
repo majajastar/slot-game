@@ -478,6 +478,34 @@ body {
     text-align: center;
 }
 
+/* Buy Bonus Button */
+.buy-bonus-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: 2px solid #ff6b6b;
+    background: linear-gradient(135deg, #ff6b6b, #ffd700);
+    color: #1a1a2e;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 10px;
+}
+
+.buy-bonus-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+}
+
+.buy-bonus-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* Spin Button */
 .spin-button {
     width: 100%;

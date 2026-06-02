@@ -274,9 +274,13 @@ async function handleSpinResult(betInfo) {
     }
     const gameResult = betInfo.gameResult
     const spinButton = document.getElementById('spinButton');
+    const buyButton = document.getElementById('buyBonusButton');
     if (spinButton) {
         spinButton.disabled = false;
         spinButton.classList.remove('spinning');
+    }
+    if (buyButton) {
+        buyButton.disabled = false;
     }
 
     if (!gameResult) return;
@@ -1456,9 +1460,13 @@ function spin() {
 
     isSpinning = true;
     const spinButton = document.getElementById('spinButton');
+    const buyButton = document.getElementById('buyBonusButton');
     if (spinButton) {
         spinButton.disabled = true;
         spinButton.classList.add('spinning');
+    }
+    if (buyButton) {
+        buyButton.disabled = true;
     }
 
     // Failsafe: auto-unlock after 10 seconds if server doesn't respond
@@ -1469,6 +1477,9 @@ function spin() {
             if (spinButton) {
                 spinButton.disabled = false;
                 spinButton.classList.remove('spinning');
+            }
+            if (buyButton) {
+                buyButton.disabled = false;
             }
         }
     }, 10000);
@@ -1485,6 +1496,45 @@ function spin() {
     }
     console.log(`spinPayload = ${JSON.stringify(spinPayload)}`)
     wsClient.setBet(spinPayload);
+}
+
+function buyBonus() {
+    if (isSpinning) {
+        console.log('[Casishenwin] Buy bonus ignored - already spinning');
+        return;
+    }
+    if (!wsClient) return;
+
+    isSpinning = true;
+    const spinButton = document.getElementById('spinButton');
+    const buyButton = document.getElementById('buyBonusButton');
+    if (spinButton) {
+        spinButton.disabled = true;
+        spinButton.classList.add('spinning');
+    }
+    if (buyButton) {
+        buyButton.disabled = true;
+    }
+
+    // Failsafe: auto-unlock after 10 seconds if server doesn't respond
+    spinTimeout = setTimeout(() => {
+        if (isSpinning) {
+            console.warn('[Casishenwin] Buy bonus timeout - auto unlocking');
+            isSpinning = false;
+            if (spinButton) {
+                spinButton.disabled = false;
+                spinButton.classList.remove('spinning');
+            }
+            if (buyButton) {
+                buyButton.disabled = false;
+            }
+        }
+    }, 10000);
+
+    const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+    
+    console.log(`[buyBonus] Buy bonus payload: bet=${bet}, buyBonus=true`);
+    wsClient.setBet({ bet, buyBonus: true });
 }
 
 function changeBet(direction) {
