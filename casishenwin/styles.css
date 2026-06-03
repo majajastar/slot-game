@@ -1,5 +1,9 @@
 /* Casishenwin Slot Game Styles */
 
+.hidden {
+    display: none !important;
+}
+
 * {
     margin: 0;
     padding: 0;

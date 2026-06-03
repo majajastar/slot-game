@@ -35,7 +35,10 @@ let bonusState = null;  // { freeSpinsRemaining, multiplier, totalWin }
 let currentGrid = null;
 let currentTopRow = null;
 
-// Initialize on page load
+let BUY_BONUS = {
+    enabled: false,
+    priceMultiplier: 50
+};
 document.addEventListener('DOMContentLoaded', async () => {
     initGrid();
     updateBetDisplay();
@@ -159,10 +162,28 @@ function handleJoinRoom(data) {
         BET_SIZE_LIST = betInfo.betSizeList;
     }
 
+    // Store buy bonus info
+    if (betInfo.buyBonus) {
+        BUY_BONUS = betInfo.buyBonus;
+        updateBuyBonusButton();
+    }
+
     // Update UI
     renderPaytable();
     updateBetDisplay();
     initDebugPanel();
+}
+
+function updateBuyBonusButton() {
+    const buyButton = document.getElementById('buyBonusButton');
+    if (!buyButton) return;
+
+    if (BUY_BONUS.enabled) {
+        buyButton.classList.remove('hidden');
+        buyButton.textContent = `💎 BUY BONUS (${BUY_BONUS.priceMultiplier}x)`;
+    } else {
+        buyButton.classList.add('hidden');
+    }
 }
 
 function initDebugPanel() {
