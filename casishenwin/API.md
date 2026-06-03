@@ -151,7 +151,11 @@ ws.send(JSON.stringify({
             "105": [0.05, 0.1, 0.15, 0.2]
           },
           "betSizeList": [0.20, 0.50, 1.00, 2.00, 5.00, 10.00, 20.00, 50.00, 100.00],
-          "defaultBet": 1.00
+          "defaultBet": 1.00,
+          "buyBonus": {
+            "enabled": true,
+            "priceMultiplier": 50
+          }
         }]
       }]
     }
@@ -159,7 +163,15 @@ ws.send(JSON.stringify({
 }
 ```
 
-Store `symbols`, `winTable`, and `betSizeList` for later use.
+Store `symbols`, `winTable`, `betSizeList`, and `buyBonus` for later use.
+
+**Buy Bonus Info (`buyBonus`):**
+| Field | Type | Description |
+|-------|------|-------------|
+| `enabled` | `boolean` | Whether the buy bonus feature is available |
+| `priceMultiplier` | `number` | Cost multiplier (e.g., `50` means cost = `bet × 50`) |
+
+Use `buyBonus.enabled` to conditionally show/hide the buy bonus button, and `buyBonus.priceMultiplier` to calculate and display the buy price dynamically.
 
 ---
 
@@ -495,10 +507,10 @@ Send a `SetBet` message with `buyBonus: true`:
 
 **Fields:**
 - `buyBonus`: `true` to activate buy bonus mode
-- `bet`: The current bet amount (cost will be `bet * priceMultiplier`)
+- `bet`: The current bet amount (cost will be `bet × priceMultiplier` from join room info)
 
 The backend handles:
-- Deducting the buy price from balance (`bet * 50`)
+- Deducting the buy price from balance (`bet × priceMultiplier`)
 - Generating a pre-defined grid with exactly 4 scatter symbols
 - Ensuring no regular wins occur on the buy spin
 - Entering bonus gambling automatically after the spin
@@ -543,7 +555,7 @@ The server responds with a normal `SetBet` result. The response will contain:
 ```javascript
 function buyBonus() {
   const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
-  const buyPrice = currentBet * 50; // 50x multiplier
+  const buyPrice = currentBet * BUY_BONUS_MULTIPLIER; // from join room info
 
   // Check balance
   if (currentBalance < buyPrice) {
@@ -562,12 +574,29 @@ function buyBonus() {
 
 ### Buy Bonus Button
 
-Add a buy bonus button to your UI:
+Add a buy bonus button to your UI. Use the `buyBonus` info from join room to conditionally render it and show the correct price:
 
 ```html
 <button id="buyBonusButton" class="buy-bonus-button" onclick="buyBonus()">
   💎 BUY BONUS (50x)
 </button>
+```
+
+### Dynamic Price Display
+
+Use the `priceMultiplier` from join room to show the correct buy price when the bet changes:
+
+```javascript
+function updateBuyBonusButton() {
+  const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
+  const buyPrice = currentBet * BUY_BONUS_MULTIPLIER;
+  
+  const btn = document.getElementById('buyBonusButton');
+  btn.textContent = `💎 BUY BONUS (${BUY_BONUS_MULTIPLIER}x) — $${buyPrice.toFixed(2)}`;
+  
+  // Disable if insufficient balance or not in normal game
+  btn.disabled = currentBalance < buyPrice || isInBonus || isGambling;
+}
 ```
 
 ```css
@@ -659,9 +688,29 @@ class CasishenwinFrontend {
     const betInfo = data.vals.data.subData[0].betInfo[0];
     this.betSizeList = betInfo.betSizeList;
     this.currentBet = betInfo.defaultBet;
+    this.buyBonusInfo = betInfo.buyBonus; // { enabled, priceMultiplier }
     
     // Setup bet selector UI
     this.setupBetSelector();
+    
+    // Setup buy bonus button
+    this.setupBuyBonusButton();
+  }
+  
+  setupBuyBonusButton() {
+    const btn = document.getElementById('buy-bonus-btn');
+    if (!this.buyBonusInfo?.enabled) {
+      btn.style.display = 'none';
+      return;
+    }
+    this.updateBuyBonusButton();
+  }
+  
+  updateBuyBonusButton() {
+    const btn = document.getElementById('buy-bonus-btn');
+    const buyPrice = this.currentBet * this.buyBonusInfo.priceMultiplier;
+    btn.textContent = `💎 BUY BONUS (${this.buyBonusInfo.priceMultiplier}x) — $${buyPrice.toFixed(2)}`;
+    btn.disabled = this.balance < buyPrice || this.isInBonus || this.isGambling;
   }
   
   spin() {
@@ -678,7 +727,7 @@ class CasishenwinFrontend {
   }
   
   buyBonus() {
-    const buyPrice = this.currentBet * 50;
+    const buyPrice = this.currentBet * this.buyBonusInfo.priceMultiplier;
     
     if (this.balance < buyPrice) {
       alert(`Insufficient balance! Buy bonus costs $${buyPrice.toFixed(2)}`);
@@ -710,6 +759,10 @@ class CasishenwinFrontend {
     
     const gameResult = subData.gameResult;
     
+    // Track bonus/gambling state for buy bonus button
+    this.isGambling = !!gameResult.bonusGambling;
+    this.isInBonus = !!gameResult.bonusGameState;
+    
     // Render the grid
     this.renderGrid(gameResult.info.symbolGrid);
     
@@ -726,6 +779,9 @@ class CasishenwinFrontend {
     // Update balance
     this.balance = gameResult.finalBalance;
     this.updateBalanceDisplay();
+    
+    // Update buy bonus button state
+    this.updateBuyBonusButton();
   }
   
   // ===== GRID RENDERING =====
@@ -845,7 +901,10 @@ class CasishenwinFrontend {
     this.betSizeList.forEach(bet => {
       const btn = document.createElement('button');
       btn.textContent = bet.toFixed(2);
-      btn.onclick = () => { this.currentBet = bet; };
+      btn.onclick = () => { 
+        this.currentBet = bet; 
+        this.updateBuyBonusButton();
+      };
       selector.appendChild(btn);
     });
   }
