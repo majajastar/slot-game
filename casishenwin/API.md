@@ -603,12 +603,25 @@ When in bonus, `bonusGameState` is present:
 {
   "bonusGameState": {
     "freeSpinsRemaining": 8,
+    "totalFreeSpins": 8,
     "multiplier": 18,
     "totalWin": 0,
-    "retriggerSpinsAwarded": 0
+    "processedFreeSpins": 0
   }
 }
 ```
+
+**Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `freeSpinsRemaining` | `number` | Free spins left in current bonus round |
+| `totalFreeSpins` | `number` | Total free spins awarded for this bonus round (initial + retriggers) |
+| `multiplier` | `number` | Current win multiplier (e.g., `18` means `18x`) |
+| `totalWin` | `number` | Accumulated total win for this bonus round |
+| `processedFreeSpins` | `number` | Number of free spins already played |
+
+**Note:** `totalFreeSpins` includes the initial free spins from gambling plus any retriggers awarded during the bonus. When `freeSpinsRemaining` reaches 0, the bonus round ends.
 
 ---
 
@@ -1105,6 +1118,7 @@ class CasishenwinFrontend {
   showBonusUI(bonusState) {
     document.getElementById('bonus-ui').style.display = 'block';
     document.getElementById('spins-remaining').textContent = bonusState.freeSpinsRemaining;
+    document.getElementById('total-free-spins').textContent = bonusState.totalFreeSpins;
     document.getElementById('bonus-multiplier').textContent = bonusState.multiplier;
   }
   
