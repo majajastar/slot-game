@@ -348,6 +348,37 @@ function renderGrid(symbolGrid) {
 
 ## Spin Flow
 
+### Base Message Structure
+
+All game actions use the standard WebSocket envelope:
+
+```javascript
+{
+  type: '100000',
+  data: [{
+    subType: 100070,
+    subData: [{
+      opCode: 'SetBet',
+      message: { /* action-specific data goes here */ }
+    }]
+  }]
+}
+```
+
+> **Reference:** See `08-set-bet-request-lambda-function.ts` for the authoritative backend parsing. The server reads all spin parameters from `body.data[0].subData[0].message`.
+
+### SetBet Message Parameters (all inside `message`)
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `bet` | number | Yes | Bet amount (must be from `betSizeList`) |
+| `action` | string | No | Gambling action: `'freeSpin'`, `'multiplier'`, `'enter'` |
+| `buyBonus` | boolean | No | Set to `true` to buy bonus (cost = `bet × priceMultiplier`) |
+| `forceTopAllWild` | boolean | No | Debug: Force top row all wild |
+| `forceSilverFrame` | boolean | No | Debug: Force silver frame |
+| `forceScatterCount` | number | No | Debug: Force scatter count |
+| `forceBonusRetrigger` | boolean | No | Debug: Force bonus retrigger |
+
 ### Step 3: Send Spin Request
 
 ```javascript
@@ -400,6 +431,98 @@ ws.send(JSON.stringify({
 4. Otherwise, render final grid directly
 5. Show win amount if > 0
 6. Check for `bonusGambling` (4+ scatters) or `bonusGameState` (in bonus)
+
+### Debug Mode Examples
+
+For testing, you can use these debug parameters inside `message`. These are only available in development/fake server mode.
+
+**Force Top Row All Wild:**
+```json
+{
+  "type": "100000",
+  "data": [{
+    "subType": 100070,
+    "subData": [{
+      "opCode": "SetBet",
+      "message": {
+        "bet": 1.00,
+        "forceTopAllWild": true
+      }
+    }]
+  }]
+}
+```
+
+**Force Silver Frame:**
+```json
+{
+  "type": "100000",
+  "data": [{
+    "subType": 100070,
+    "subData": [{
+      "opCode": "SetBet",
+      "message": {
+        "bet": 1.00,
+        "forceSilverFrame": true
+      }
+    }]
+  }]
+}
+```
+
+**Force Scatter Count:**
+```json
+{
+  "type": "100000",
+  "data": [{
+    "subType": 100070,
+    "subData": [{
+      "opCode": "SetBet",
+      "message": {
+        "bet": 1.00,
+        "forceScatterCount": 4
+      }
+    }]
+  }]
+}
+```
+
+**Force Bonus Retrigger:**
+```json
+{
+  "type": "100000",
+  "data": [{
+    "subType": 100070,
+    "subData": [{
+      "opCode": "SetBet",
+      "message": {
+        "bet": 1.00,
+        "forceBonusRetrigger": true
+      }
+    }]
+  }]
+}
+```
+
+**Combined Debug (multiple flags):**
+```json
+{
+  "type": "100000",
+  "data": [{
+    "subType": 100070,
+    "subData": [{
+      "opCode": "SetBet",
+      "message": {
+        "bet": 1.00,
+        "forceTopAllWild": true,
+        "forceSilverFrame": true,
+        "forceScatterCount": 4,
+        "forceBonusRetrigger": true
+      }
+    }]
+  }]
+}
+```
 
 ---
 
@@ -495,19 +618,27 @@ The buy bonus feature allows players to pay a fixed price to instantly trigger a
 
 ### Buy Bonus Request
 
-Send a `SetBet` message with `buyBonus: true`:
+Send a `SetBet` message with `buyBonus: true` inside `message`:
 
 ```json
 {
-  "type": "setBet",
-  "bet": 1.00,
-  "buyBonus": true
+  "type": "100000",
+  "data": [{
+    "subType": 100070,
+    "subData": [{
+      "opCode": "SetBet",
+      "message": {
+        "bet": 1.00,
+        "buyBonus": true
+      }
+    }]
+  }]
 }
 ```
 
-**Fields:**
-- `buyBonus`: `true` to activate buy bonus mode
-- `bet`: The current bet amount (cost will be `bet × priceMultiplier` from join room info)
+**Fields (all inside `message`):**
+- `bet`: The current bet amount
+- `buyBonus`: `true` to activate buy bonus mode (cost = `bet × priceMultiplier` from join room info)
 
 The backend handles:
 - Deducting the buy price from balance (`bet × priceMultiplier`)
@@ -563,12 +694,19 @@ function buyBonus() {
     return;
   }
 
-  const buyPayload = { 
-    bet: currentBet,
-    buyBonus: true
-  };
-
-  wsClient.setBet(buyPayload);
+  ws.send(JSON.stringify({
+    type: '100000',
+    data: [{
+      subType: 100070,
+      subData: [{
+        opCode: 'SetBet',
+        message: {
+          bet: currentBet,
+          buyBonus: true
+        }
+      }]
+    }]
+  }));
 }
 ```
 
@@ -721,6 +859,55 @@ class CasishenwinFrontend {
         subData: [{
           opCode: 'SetBet',
           message: { bet: this.currentBet }
+        }]
+      }]
+    }));
+  }
+  
+  // Gambling actions — all fields go inside message
+  gambleFreeSpin() {
+    this.ws.send(JSON.stringify({
+      type: '100000',
+      data: [{
+        subType: 100070,
+        subData: [{
+          opCode: 'SetBet',
+          message: {
+            bet: this.currentBet,
+            action: 'freeSpin'
+          }
+        }]
+      }]
+    }));
+  }
+  
+  gambleMultiplier() {
+    this.ws.send(JSON.stringify({
+      type: '100000',
+      data: [{
+        subType: 100070,
+        subData: [{
+          opCode: 'SetBet',
+          message: {
+            bet: this.currentBet,
+            action: 'multiplier'
+          }
+        }]
+      }]
+    }));
+  }
+  
+  enterBonus() {
+    this.ws.send(JSON.stringify({
+      type: '100000',
+      data: [{
+        subType: 100070,
+        subData: [{
+          opCode: 'SetBet',
+          message: {
+            bet: this.currentBet,
+            action: 'enter'
+          }
         }]
       }]
     }));
