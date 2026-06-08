@@ -1,4 +1,4 @@
-// Configuration for Casishenwin Frontend
+// Configuration for MoneyGod Frontend
 // Uses GLOBAL_CONFIG for server settings
 
 const CONFIG = {
@@ -6,7 +6,7 @@ const CONFIG = {
     get serverMode() { return GLOBAL_CONFIG.serverMode; },
 
     // Use global fake server URL
-    get fakeWsUrl() { return GLOBAL_CONFIG.fakeServers.casishenwin; },
+    get fakeWsUrl() { return GLOBAL_CONFIG.fakeServers.moneygod; },
 
     // Use global real server URLs
     get sidUrl() { return GLOBAL_CONFIG.realServers.sidUrl; },

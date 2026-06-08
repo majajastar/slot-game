@@ -10,7 +10,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -21,12 +21,12 @@
             padding: 40px 20px;
             color: #fff;
         }
-        
+
         .header {
             text-align: center;
             margin-bottom: 50px;
         }
-        
+
         .header h1 {
             font-size: 3rem;
             margin-bottom: 10px;
@@ -35,12 +35,12 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .header p {
             color: #888;
             font-size: 1.1rem;
         }
-        
+
         .games-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -48,7 +48,7 @@
             max-width: 1200px;
             width: 100%;
         }
-        
+
         .game-card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
@@ -59,13 +59,13 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .game-card:hover {
             transform: translateY(-10px);
             border-color: #ffd700;
             box-shadow: 0 20px 40px rgba(255, 215, 0, 0.2);
         }
-        
+
         .game-card::before {
             content: '';
             position: absolute;
@@ -77,30 +77,30 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        
+
         .game-card:hover::before {
             opacity: 1;
         }
-        
+
         .game-icon {
             font-size: 4rem;
             margin-bottom: 20px;
             display: block;
         }
-        
+
         .game-name {
             font-size: 1.8rem;
             font-weight: bold;
             margin-bottom: 10px;
             color: #ffd700;
         }
-        
+
         .game-description {
             color: #aaa;
             margin-bottom: 15px;
             line-height: 1.5;
         }
-        
+
         .game-stats {
             display: flex;
             gap: 20px;
@@ -108,23 +108,23 @@
             padding-top: 20px;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
-        
+
         .stat {
             text-align: center;
         }
-        
+
         .stat-value {
             font-size: 1.3rem;
             font-weight: bold;
             color: #4ecdc4;
         }
-        
+
         .stat-label {
             font-size: 0.8rem;
             color: #666;
             text-transform: uppercase;
         }
-        
+
         .play-button {
             margin-top: 20px;
             padding: 12px 30px;
@@ -138,11 +138,11 @@
             transition: transform 0.2s;
             width: 100%;
         }
-        
+
         .play-button:hover {
             transform: scale(1.05);
         }
-        
+
         .new-badge {
             position: absolute;
             top: 15px;
@@ -154,28 +154,28 @@
             font-size: 0.8rem;
             font-weight: bold;
         }
-        
+
         .coming-soon {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
+
         .coming-soon:hover {
             transform: none;
             border-color: transparent;
         }
-        
+
         .footer {
             margin-top: 60px;
             text-align: center;
             color: #666;
         }
-        
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
             }
-            
+
             .games-grid {
                 grid-template-columns: 1fr;
             }
@@ -187,15 +187,15 @@
         <h1>🎰 Game Lobby</h1>
         <p>Select a game to start playing</p>
     </div>
-    
+
     <div class="games-grid" id="gamesGrid">
         <!-- Games will be loaded dynamically -->
     </div>
-    
+
     <div class="footer">
         <p>More games coming soon!</p>
     </div>
-    
+
     <script>
         // Game registry - easy to add new games
         const GAMES = [
@@ -228,8 +228,8 @@
                 isAvailable: true
             },
             {
-                id: 'casishenwin',
-                name: 'Casishenwin',
+                id: 'moneygod',
+                name: 'MoneyGod',
                 icon: '🍀',
                 description: '6x5 grid with multi-row occupancy and rolling top row. Features Silver/Golden frames that progress to Wilds with cascading wins!',
                 stats: {
@@ -237,23 +237,23 @@
                     volatility: 'Medium-High',
                     lines: 'WinRoad'
                 },
-                path: 'casishenwin/index.html',
+                path: 'moneygod/index.html',
                 isNew: true,
                 isAvailable: true
             }
         ];
-        
+
         function renderGames() {
             const grid = document.getElementById('gamesGrid');
-            
+
             GAMES.forEach(game => {
                 const card = document.createElement('div');
                 card.className = `game-card ${!game.isAvailable ? 'coming-soon' : ''}`;
-                
+
                 if (game.isNew) {
                     card.innerHTML += '<span class="new-badge">NEW</span>';
                 }
-                
+
                 card.innerHTML += `
                     <span class="game-icon">${game.icon}</span>
                     <h2 class="game-name">${game.name}</h2>
@@ -276,17 +276,17 @@
                         ${game.isAvailable ? '▶ PLAY NOW' : '🔒 COMING SOON'}
                     </button>
                 `;
-                
+
                 if (game.isAvailable) {
                     card.addEventListener('click', () => {
                         window.location.href = game.path;
                     });
                 }
-                
+
                 grid.appendChild(card);
             });
         }
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', renderGames);
     </script>

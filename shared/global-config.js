@@ -38,7 +38,7 @@ const GLOBAL_CONFIG = {
     // SERVER MODE
     // ==========================================
     // Use local config if available, otherwise default to 'real'
-    serverMode: (useFakeServer) ? 'fake' :  'real', 
+    serverMode: (useFakeServer) ? 'fake' :  'real',
 
     // ==========================================
     // FAKE SERVER (Local Testing)
@@ -46,7 +46,7 @@ const GLOBAL_CONFIG = {
     fakeServers: {
         lebandit: 'ws://35.78.80.187:3003',
         theluxe: 'ws://35.78.80.187:3002',
-        casishenwin: 'ws://35.78.80.187:3004'  // Casishenwin fake server
+        moneygod: 'ws://35.78.80.187:3004'  // MoneyGod fake server
     },
 
     // ==========================================

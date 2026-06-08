@@ -1,7 +1,7 @@
-# Casishenwin Frontend Integration Guide
+# MoneyGod Frontend Integration Guide
 
-**Purpose:** Build a new frontend for the Casishenwin slot game  
-**Protocol:** WebSocket (JSON messages)  
+**Purpose:** Build a new frontend for the MoneyGod slot game
+**Protocol:** WebSocket (JSON messages)
 **Server:** `ws://localhost:3004` (fake server) or AWS API Gateway (production)
 
 ---
@@ -38,7 +38,7 @@
 
 ```
 Top Row (cols 1-4):    [  ?  ] [  ?  ] [  ?  ] [  ?  ]
-                         
+
 Main Grid (5 rows x 6 cols):
 Row 0:  [ sym ] [ sym ] [ sym ] [ sym ] [ sym ] [ sym ]
 Row 1:  [ sym ] [ sym ] [ sym ] [ sym ] [ sym ] [ sym ]
@@ -234,14 +234,14 @@ null  // Empty cell (symbol doesn't reach here)
 ```javascript
 function findMultiRowSymbols(symbolGrid) {
   const multiRowSymbols = [];
-  
+
   for (let col = 0; col < 6; col++) {
     const idCounts = new Map();
-    
+
     for (let row = 0; row < 5; row++) {
       const cell = symbolGrid.mainGrid[row][col];
       if (!cell) continue;
-      
+
       if (!idCounts.has(cell.id)) {
         idCounts.set(cell.id, { count: 0, positions: [] });
       }
@@ -249,7 +249,7 @@ function findMultiRowSymbols(symbolGrid) {
       info.count++;
       info.positions.push({ row, col });
     }
-    
+
     for (const [id, info] of idCounts) {
       if (info.count > 1) {
         multiRowSymbols.push({
@@ -263,7 +263,7 @@ function findMultiRowSymbols(symbolGrid) {
       }
     }
   }
-  
+
   return multiRowSymbols;
 }
 ```
@@ -274,34 +274,34 @@ function findMultiRowSymbols(symbolGrid) {
 function renderGrid(symbolGrid) {
   const mainGrid = document.getElementById('mainGrid');
   const topRow = document.getElementById('topRow');
-  
+
   // Clear cells
   for (let cell of mainGrid.children) {
     cell.textContent = '';
     cell.className = 'grid-cell';
     cell.style = '';
   }
-  
+
   // Find multi-row symbols
   const multiRowSymbols = findMultiRowSymbols(symbolGrid);
-  
+
   // Render main grid
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 6; col++) {
       const cell = symbolGrid.mainGrid[row][col];
       if (!cell) continue;
-      
+
       const multiRowInfo = multiRowSymbols.find(s => s.id === cell.id);
       const index = row * 6 + col;
       const cellEl = mainGrid.children[index];
-      
+
       if (multiRowInfo && multiRowInfo.startRow === row) {
         // Master cell: render symbol spanning multiple rows
         cellEl.textContent = getSymbolEmoji(cell.symbol);
         cellEl.className = 'grid-cell multi-row-master';
         cellEl.style.gridRow = `${row + 1} / span ${multiRowInfo.rowSpan}`;
         cellEl.style.gridColumn = `${col + 1}`;
-        
+
         if (cell.frame) {
           cellEl.classList.add(`${cell.frame}-frame`);
         }
@@ -309,7 +309,7 @@ function renderGrid(symbolGrid) {
         // Single-row symbol
         cellEl.textContent = getSymbolEmoji(cell.symbol);
         cellEl.className = 'grid-cell';
-        
+
         if (cell.frame) {
           cellEl.classList.add(`${cell.frame}-frame`);
         }
@@ -317,7 +317,7 @@ function renderGrid(symbolGrid) {
       // Multi-row continuation cells: leave empty (hidden by CSS)
     }
   }
-  
+
   // Render top row
   for (let col = 0; col < 4; col++) {
     const cell = symbolGrid.topRow[col];
@@ -741,10 +741,10 @@ Use the `priceMultiplier` from join room to show the correct buy price when the 
 function updateBuyBonusButton() {
   const currentBet = BET_SIZE_LIST[CURRENT_BET_INDEX];
   const buyPrice = currentBet * BUY_BONUS_MULTIPLIER;
-  
+
   const btn = document.getElementById('buyBonusButton');
   btn.textContent = `💎 BUY BONUS (${BUY_BONUS_MULTIPLIER}x) — $${buyPrice.toFixed(2)}`;
-  
+
   // Disable if insufficient balance or not in normal game
   btn.disabled = currentBalance < buyPrice || isInBonus || isGambling;
 }
@@ -784,7 +784,7 @@ function updateBuyBonusButton() {
 ## Complete Example
 
 ```javascript
-class CasishenwinFrontend {
+class MoneyGodFrontend {
   constructor() {
     this.ws = null;
     this.balance = 0;
@@ -793,23 +793,23 @@ class CasishenwinFrontend {
     this.gridContainer = document.getElementById('grid');
     this.topRowContainer = document.getElementById('top-row');
   }
-  
+
   connect() {
     this.ws = new WebSocket('ws://localhost:3004');
-    
+
     this.ws.onopen = () => {
       this.ws.send(JSON.stringify({ type: '0' }));
     };
-    
+
     this.ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       this.handleResponse(data);
     };
   }
-  
+
   handleResponse(data) {
     const type = data.vals?.type;
-    
+
     switch (type) {
       case 1: // Login
         this.balance = data.vals.data.balance;
@@ -821,7 +821,7 @@ class CasishenwinFrontend {
         break;
     }
   }
-  
+
   joinRoom() {
     this.ws.send(JSON.stringify({
       type: '100000',
@@ -834,20 +834,20 @@ class CasishenwinFrontend {
       }]
     }));
   }
-  
+
   handleJoinRoom(data) {
     const betInfo = data.vals.data.subData[0].betInfo[0];
     this.betSizeList = betInfo.betSizeList;
     this.currentBet = betInfo.defaultBet;
     this.buyBonusInfo = betInfo.buyBonus; // { enabled, priceMultiplier }
-    
+
     // Setup bet selector UI
     this.setupBetSelector();
-    
+
     // Setup buy bonus button
     this.setupBuyBonusButton();
   }
-  
+
   setupBuyBonusButton() {
     const btn = document.getElementById('buy-bonus-btn');
     if (!this.buyBonusInfo?.enabled) {
@@ -856,14 +856,14 @@ class CasishenwinFrontend {
     }
     this.updateBuyBonusButton();
   }
-  
+
   updateBuyBonusButton() {
     const btn = document.getElementById('buy-bonus-btn');
     const buyPrice = this.currentBet * this.buyBonusInfo.priceMultiplier;
     btn.textContent = `💎 BUY BONUS (${this.buyBonusInfo.priceMultiplier}x) — $${buyPrice.toFixed(2)}`;
     btn.disabled = this.balance < buyPrice || this.isInBonus || this.isGambling;
   }
-  
+
   spin() {
     this.ws.send(JSON.stringify({
       type: '100000',
@@ -876,7 +876,7 @@ class CasishenwinFrontend {
       }]
     }));
   }
-  
+
   // Gambling actions — all fields go inside message
   gambleFreeSpin() {
     this.ws.send(JSON.stringify({
@@ -893,7 +893,7 @@ class CasishenwinFrontend {
       }]
     }));
   }
-  
+
   gambleMultiplier() {
     this.ws.send(JSON.stringify({
       type: '100000',
@@ -909,7 +909,7 @@ class CasishenwinFrontend {
       }]
     }));
   }
-  
+
   enterBonus() {
     this.ws.send(JSON.stringify({
       type: '100000',
@@ -925,15 +925,15 @@ class CasishenwinFrontend {
       }]
     }));
   }
-  
+
   buyBonus() {
     const buyPrice = this.currentBet * this.buyBonusInfo.priceMultiplier;
-    
+
     if (this.balance < buyPrice) {
       alert(`Insufficient balance! Buy bonus costs $${buyPrice.toFixed(2)}`);
       return;
     }
-    
+
     this.ws.send(JSON.stringify({
       type: '100000',
       data: [{
@@ -948,58 +948,58 @@ class CasishenwinFrontend {
       }]
     }));
   }
-  
+
   handleGameResult(data) {
     const subData = data.vals.data.subData[0];
-    
+
     if (subData.errCode !== 0) {
       console.error('Error:', subData.errMsg);
       return;
     }
-    
+
     const gameResult = subData.gameResult;
-    
+
     // Track bonus/gambling state for buy bonus button
     this.isGambling = !!gameResult.bonusGambling;
     this.isInBonus = !!gameResult.bonusGameState;
-    
+
     // Render the grid
     this.renderGrid(gameResult.info.symbolGrid);
-    
+
     // Handle bonus gambling
     if (gameResult.bonusGambling) {
       this.showGamblingUI(gameResult.bonusGambling);
     }
-    
+
     // Handle bonus state
     if (gameResult.bonusGameState) {
       this.showBonusUI(gameResult.bonusGameState);
     }
-    
+
     // Update balance
     this.balance = gameResult.finalBalance;
     this.updateBalanceDisplay();
-    
+
     // Update buy bonus button state
     this.updateBuyBonusButton();
   }
-  
+
   // ===== GRID RENDERING =====
-  
+
   renderGrid(symbolGrid) {
     this.gridContainer.innerHTML = '';
     this.topRowContainer.innerHTML = '';
-    
+
     const multiRowSymbols = this.findMultiRowSymbols(symbolGrid);
-    
+
     // Render main grid
     for (let row = 0; row < 5; row++) {
       for (let col = 0; col < 6; col++) {
         const cell = symbolGrid.mainGrid[row][col];
         if (!cell) continue;
-        
+
         const multiRowInfo = multiRowSymbols.find(s => s.id === cell.id);
-        
+
         if (multiRowInfo && multiRowInfo.startRow === row) {
           this.renderMultiRowSymbol(cell, multiRowInfo);
         } else if (!multiRowInfo) {
@@ -1007,24 +1007,24 @@ class CasishenwinFrontend {
         }
       }
     }
-    
+
     // Render top row
     for (let col = 0; col < 4; col++) {
       const cell = symbolGrid.topRow[col];
       if (cell) this.renderTopRowSymbol(cell, col);
     }
   }
-  
+
   findMultiRowSymbols(symbolGrid) {
     const multiRowSymbols = [];
-    
+
     for (let col = 0; col < 6; col++) {
       const idCounts = new Map();
-      
+
       for (let row = 0; row < 5; row++) {
         const cell = symbolGrid.mainGrid[row][col];
         if (!cell) continue;
-        
+
         if (!idCounts.has(cell.id)) {
           idCounts.set(cell.id, { count: 0, positions: [] });
         }
@@ -1032,7 +1032,7 @@ class CasishenwinFrontend {
         info.count++;
         info.positions.push({ row, col });
       }
-      
+
       for (const [id, info] of idCounts) {
         if (info.count > 1) {
           multiRowSymbols.push({
@@ -1046,10 +1046,10 @@ class CasishenwinFrontend {
         }
       }
     }
-    
+
     return multiRowSymbols;
   }
-  
+
   renderMultiRowSymbol(cell, info) {
     const el = document.createElement('div');
     el.className = `multi-row-symbol ${info.frame ? info.frame + '-frame' : ''}`;
@@ -1064,7 +1064,7 @@ class CasishenwinFrontend {
     el.innerHTML = `<img src="/assets/${cell.symbol}.png" style="width:100%;height:100%">`;
     this.gridContainer.appendChild(el);
   }
-  
+
   renderSingleSymbol(cell, row, col) {
     const el = document.createElement('div');
     el.className = 'symbol';
@@ -1078,7 +1078,7 @@ class CasishenwinFrontend {
     el.innerHTML = `<img src="/assets/${cell.symbol}.png" style="width:100%;height:100%">`;
     this.gridContainer.appendChild(el);
   }
-  
+
   renderTopRowSymbol(cell, col) {
     const el = document.createElement('div');
     el.className = 'top-row-symbol';
@@ -1092,43 +1092,43 @@ class CasishenwinFrontend {
     el.innerHTML = `<img src="/assets/${cell.symbol}.png" style="width:100%;height:100%">`;
     this.topRowContainer.appendChild(el);
   }
-  
+
   // ===== UI METHODS =====
-  
+
   setupBetSelector() {
     const selector = document.getElementById('bet-selector');
     selector.innerHTML = '';
     this.betSizeList.forEach(bet => {
       const btn = document.createElement('button');
       btn.textContent = bet.toFixed(2);
-      btn.onclick = () => { 
-        this.currentBet = bet; 
+      btn.onclick = () => {
+        this.currentBet = bet;
         this.updateBuyBonusButton();
       };
       selector.appendChild(btn);
     });
   }
-  
+
   showGamblingUI(gamblingState) {
     document.getElementById('gambling-ui').style.display = 'block';
     document.getElementById('free-spins').textContent = gamblingState.currentFreeSpins;
     document.getElementById('multiplier').textContent = gamblingState.currentMultiplier;
   }
-  
+
   showBonusUI(bonusState) {
     document.getElementById('bonus-ui').style.display = 'block';
     document.getElementById('spins-remaining').textContent = bonusState.freeSpinsRemaining;
     document.getElementById('total-free-spins').textContent = bonusState.totalFreeSpins;
     document.getElementById('bonus-multiplier').textContent = bonusState.multiplier;
   }
-  
+
   updateBalanceDisplay() {
     document.getElementById('balance').textContent = this.balance.toFixed(2);
   }
 }
 
 // Initialize
-const game = new CasishenwinFrontend();
+const game = new MoneyGodFrontend();
 game.connect();
 
 // Spin button

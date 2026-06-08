@@ -1,7 +1,7 @@
 /**
- * Casishenwin Slot Game - Direct WebSocket Client
+ * MoneyGod Slot Game - Direct WebSocket Client
  * 6x5 grid with multi-row occupancy, top row rolling, and frame progression
- * 
+ *
  * Backend sends SymbolInstance objects and pre-calculated movements
  */
 
@@ -73,7 +73,7 @@ async function connect() {
 
         // Event: Login success
         wsClient.on('login', (data) => {
-            console.log('[Casishenwin] Login success:', data);
+            console.log('[MoneyGod] Login success:', data);
             const loginData = data.vals?.data || data;
             currentBalance = loginData.balance || 0;
             updateBalanceDisplay();
@@ -84,13 +84,13 @@ async function connect() {
 
         // Event: Join room (game config)
         wsClient.on('joinRoom', (data) => {
-            console.log('[Casishenwin] Join room:', data);
+            console.log('[MoneyGod] Join room:', data);
             handleJoinRoom(data);
         });
 
         // Event: Spin result (now also handles gambling results)
         wsClient.on('setBet', (data) => {
-            console.log('[Casishenwin] SetBet result:', data);
+            console.log('[MoneyGod] SetBet result:', data);
             handleSetBetResult(data);
         });
 
@@ -99,31 +99,31 @@ async function connect() {
 
         // Event: Sync room info (reconnect)
         wsClient.on('syncRoom', (data) => {
-            console.log('[Casishenwin] Sync room:', data);
+            console.log('[MoneyGod] Sync room:', data);
             handleSyncRoom(data);
         });
 
         // Event: Records
         wsClient.on('getRecords', (data) => {
-            console.log('[Casishenwin] Records:', data);
+            console.log('[MoneyGod] Records:', data);
         });
 
         // Event: Error
         wsClient.on('error', (error) => {
-            console.error('[Casishenwin] WebSocket error:', error);
+            console.error('[MoneyGod] WebSocket error:', error);
             statusEl.textContent = '🔴 Error';
         });
 
         // Event: Close
         wsClient.on('close', () => {
-            console.log('[Casishenwin] WebSocket closed');
+            console.log('[MoneyGod] WebSocket closed');
             statusEl.textContent = '🔴 Disconnected';
         });
 
         await wsClient.connect();
 
     } catch (error) {
-        console.error('[Casishenwin] Connection failed:', error);
+        console.error('[MoneyGod] Connection failed:', error);
         statusEl.textContent = '🔴 Failed';
         document.getElementById('loading').textContent = 'Connection failed. Please refresh.';
     }
@@ -139,7 +139,7 @@ function handleJoinRoom(data) {
         console.log(`[handleJoinRoom] No betInfo available, betInfo=${JSON.stringify(betInfo)}`)
         return;
     }
- 
+
     // console.log(`betInfo: ${JSON.stringify(betInfo)}`)
     // Store symbols
     if (betInfo.symbols) {
@@ -250,7 +250,7 @@ function handleSyncRoom(data) {
     if (lastResumeInfo) {
         const spinType = lastResumeInfo.spinType;
         console.log(`[handleSyncRoom] Server resume info: spinType=${spinType}`);
-        
+
         if (spinType === 'base' || spinType === 'bonus') {
             // Resume from SpinResult - restore the grid
             if (lastResumeInfo.symbolGrid) {
@@ -264,7 +264,7 @@ function handleSyncRoom(data) {
                     console.log(`[handleSyncRoom] No grid info`)
                 }
             }
-            
+
             // Restore bonus game state if present
             if (lastResumeInfo.bonusGameState && lastResumeInfo.bonusGameState.freeSpinsRemaining > 0) {
                 isInBonus = true;
@@ -327,7 +327,7 @@ async function handleSpinResult(betInfo) {
         if (info.symbolGrid) {
             // Use SymbolGrid if available (has IDs for multi-row detection)
             renderSymbolGrid(info.symbolGrid, document.getElementById('mainGrid'), document.getElementById('topRow'));
-            
+
             // Debug: pretty print the grid even when no cascade
             console.log('%c[No Cascade - Final Grid]', 'color: #4ecdc4; font-weight: bold;');
             prettyPrintGrid(info.symbolGrid, null, null);
@@ -364,7 +364,7 @@ async function handleSpinResult(betInfo) {
     if (info.bonusGameState) {
         const bonus = info.bonusGameState;
         console.log('[handleSpinResult] Bonus spin result:', bonus);
-        
+
         // Enter bonus mode if not already
         if (!isInBonus) {
             isInBonus = true;
@@ -375,7 +375,7 @@ async function handleSpinResult(betInfo) {
             bonusState = bonus;
             updateBonusUI(bonusState);
         }
-        
+
         // Show retrigger notification if server awarded extra spins this spin
         if (bonus.retriggerSpinsAwarded && bonus.retriggerSpinsAwarded > 0) {
             const winDisplay = document.getElementById('winDisplay');
@@ -385,7 +385,7 @@ async function handleSpinResult(betInfo) {
                 setTimeout(() => winDisplay.classList.remove('show', 'bonus-retrigger'), 2000);
             }
         }
-        
+
         // Bonus ended?
         if (bonus.freeSpinsRemaining <= 0) {
             console.log('[handleSpinResult] Bonus ended');
@@ -446,7 +446,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
     if (!symbolGrid || !symbolGrid.mainGrid) return;
 
     const cells = mainGridEl.children;
-    
+
     // Reset main grid cells first - clear any previous multi-row styling
     for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
@@ -458,16 +458,16 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
         delete cell.dataset.rowSpan;
         delete cell.dataset.minRow;
         delete cell.dataset.maxRow;
-        
+
         // Explicitly remove all inline styles
         cell.removeAttribute('style');
-        
+
         // Re-apply base styles
         cell.style.display = 'flex';
         cell.style.alignItems = 'center';
         cell.style.justifyContent = 'center';
     }
-    
+
     // Reset top row cells
     if (topRowEl) {
         const topCells = topRowEl.children;
@@ -480,7 +480,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             cell.style.display = 'flex';
         }
     }
-    
+
     // First pass: identify multi-row symbols and their positions
     const multiRowInfo = new Map();
     for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
@@ -494,7 +494,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             }
         }
     }
-    
+
     // Debug: log ALL symbols with their IDs
     if (CONFIG.debug) {
         console.log('[renderSymbolGrid] All symbols in grid:');
@@ -511,7 +511,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             console.log(`  Col ${col}: ${colSymbols.join(', ')}`);
         }
     }
-    
+
     // Debug: log multi-row symbols
     if (CONFIG.debug) {
         console.log('[renderSymbolGrid] Multi-row detection:');
@@ -522,14 +522,14 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             }
         });
     }
-    
+
     // Second pass: render cells
     for (let row = 0; row < symbolGrid.mainGrid.length; row++) {
         for (let col = 0; col < symbolGrid.mainGrid[row].length; col++) {
             //console.log(`Rendor ${row},${col}`)
             const index = row * CONFIG.cols + col;
             if (index >= cells.length) continue;
-            
+
             const cell = cells[index];
             const symbolInstance = symbolGrid.mainGrid[row][col];
             if (!symbolInstance || !symbolInstance.id) {
@@ -543,40 +543,40 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                 cell.style.display = 'flex';
                 continue;
             }
-            
+
             const emoji = getSymbolEmoji(symbolInstance);
             const positions = multiRowInfo.get(symbolInstance.id);
             const isMultiRow = positions && positions.length > 1;
-            
+
             // Debug log for multi-row detection
             if (CONFIG.debug && isMultiRow && row === Math.min(...positions.map(p => p.row))) {
                 console.log(`[renderSymbolGrid] Multi-row at col ${col}: ID ${symbolInstance.id}, symbol ${symbolInstance.symbol}, span ${positions.length} rows`);
             }
-            
+
             if (isMultiRow) {
                 // Calculate vertical span
                 const minRow = Math.min(...positions.map(p => p.row));
                 const maxRow = Math.max(...positions.map(p => p.row));
                 const rowSpan = maxRow - minRow + 1;
-                
+
                 if (row === minRow) {
                     // This is the top cell - render as master with CSS Grid spanning
                     cell.textContent = emoji;
-                    
+
                     // Apply frame styling
                     const frameClass = symbolInstance.frame ? `${symbolInstance.frame}-frame` : '';
                     cell.className = `grid-cell multi-row-master ${frameClass}`;
-                    
+
                     cell.dataset.symbolId = symbolInstance.id;
                     cell.dataset.masterCell = 'true';
                     delete cell.dataset.multiRow;
-                    
+
                     // Use CSS grid to span multiple rows
                     // grid-row: start-line / span count
                     cell.style.gridRow = `${minRow + 1} / span ${rowSpan}`;
                     cell.style.gridColumn = `${col + 1}`;
                     cell.style.display = 'flex';
-                    
+
                     // Store span info for debugging
                     cell.dataset.rowSpan = String(rowSpan);
                     cell.dataset.minRow = String(minRow);
@@ -595,15 +595,15 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
             } else {
                 // Single row symbol - normal rendering
                 cell.textContent = emoji;
-                
+
                 // Apply frame styling
                 const frameClass = symbolInstance.frame ? `${symbolInstance.frame}-frame` : '';
                 cell.className = `grid-cell ${frameClass}`;
-                
+
                 cell.dataset.symbolId = symbolInstance.id;
                 cell.dataset.masterCell = 'true';
                 delete cell.dataset.multiRow;
-                
+
                 // Set explicit grid position for single-row symbols too
                 cell.style.gridRow = `${row + 1}`;
                 cell.style.gridColumn = `${col + 1}`;
@@ -620,7 +620,7 @@ function renderSymbolGrid(symbolGrid, mainGridEl, topRowEl) {
                 const symbolInstance = symbolGrid.topRow[col];
                 const emoji = getSymbolEmoji(symbolInstance);
                 cell.textContent = emoji;
-                
+
                 // Store symbol ID
                 if (symbolInstance && symbolInstance.id) {
                     cell.dataset.symbolId = symbolInstance.id;
@@ -668,11 +668,11 @@ async function renderCascade(steps, finalGrid) {
         // Step 1: Show grid before win and highlight winning symbols
         if (step.symbolGridBefore) {
             renderSymbolGrid(step.symbolGridBefore, document.getElementById('mainGrid'), document.getElementById('topRow'));
-            
+
             // Pretty print grid with winning symbols highlighted
             console.log('%c[Step ' + (i + 1) + ' BEFORE]', 'color: #ffd700; font-weight: bold;');
             prettyPrintGrid(step.symbolGridBefore, step.winningColumns, step.removedSymbols);
-            
+
             // Highlight winning positions
             if (step.winningColumns) {
                 const positions = [];
@@ -697,7 +697,7 @@ async function renderCascade(steps, finalGrid) {
             prettyPrintGrid(step.symbolGridAfterRemoval, null, null);
             await sleep(200);
         }
-        
+
         // Step 4: Animate movements (backend calculated)
         if (step.movements && step.movements.length > 0) {
             if (step.symbolGridAfterFill) {
@@ -706,7 +706,7 @@ async function renderCascade(steps, finalGrid) {
                 await sleep(500);
                 clearAnimations();
             }
-            
+
             console.log('%c[Step ' + (i + 1) + ' AFTER FILL]', 'color: #4ecdc4; font-weight: bold;');
             if (step.symbolGridAfterFill) {
                 prettyPrintGrid(step.symbolGridAfterFill, null, null);
@@ -766,17 +766,17 @@ async function renderCascade(steps, finalGrid) {
 function applyMovementAnimations(movements) {
     const mainGrid = document.getElementById('mainGrid');
     const topRow = document.getElementById('topRow');
-    
+
     // Apply all animation classes at once
     movements.forEach(movement => {
         const isTopRow = movement.to.row === -1;
-        
+
         if (isTopRow) {
             // Top row
             const topRowIndex = movement.to.col - 1; // convert actual col to top row index
             if (topRowIndex >= 0 && topRowIndex < topRow.children.length) {
                 const cell = topRow.children[topRowIndex];
-                
+
                 if (movement.isNew) {
                     // New symbols slide in from right
                     cell.classList.add('slide-in-right');
@@ -784,7 +784,7 @@ function applyMovementAnimations(movements) {
                     // Existing symbols shift left
                     cell.classList.add('shift-left');
                 }
-                
+
                 // Update symbol ID
                 if (movement.symbolInstance && movement.symbolInstance.id) {
                     cell.dataset.symbolId = movement.symbolInstance.id;
@@ -795,7 +795,7 @@ function applyMovementAnimations(movements) {
             const index = movement.to.row * CONFIG.cols + movement.to.col;
             if (index < mainGrid.children.length) {
                 const cell = mainGrid.children[index];
-                
+
                 if (movement.isNew) {
                     // New symbols: offset UP so they appear above the grid
                     // Then fall down to their final position
@@ -803,7 +803,7 @@ function applyMovementAnimations(movements) {
                     const gap = 6;
                     const rowsAbove = movement.to.row + 1; // +1 because -1 is above row 0
                     const offsetY = -(rowsAbove * (cellHeight + gap));
-                    
+
                     cell.style.setProperty('--fall-offset', `${offsetY}px`);
                     cell.classList.add('falling');
                 } else if (movement.from) {
@@ -813,11 +813,11 @@ function applyMovementAnimations(movements) {
                     const cellHeight = cell.offsetHeight || 70;
                     const gap = 6;
                     const offsetY = rowDelta * (cellHeight + gap);
-                    
+
                     cell.style.setProperty('--fall-offset', `${offsetY}px`);
                     cell.classList.add('falling');
                 }
-                
+
                 // Update symbol ID
                 if (movement.symbolInstance && movement.symbolInstance.id) {
                     cell.dataset.symbolId = movement.symbolInstance.id;
@@ -840,14 +840,14 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
         console.log('  [Empty grid]');
         return;
     }
-    
+
     // Detect if this is a SymbolGrid (has objects with .id) or simple grid (strings)
     const isSymbolGrid = gridData.mainGrid[0][0] && typeof gridData.mainGrid[0][0] === 'object';
-    
+
     // Build winning groups with letters
     const winningGroups = new Map(); // position -> group letter
     const groupLetters = ['a', 'b', 'c', 'd', 'e'];
-    
+
     if (winningColumns) {
         winningColumns.forEach((win, index) => {
             const letter = groupLetters[index % groupLetters.length];
@@ -860,7 +860,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             }
         });
     }
-    
+
     // Build removed positions set
     const removedPositions = new Set();
     if (removedSymbols) {
@@ -868,7 +868,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             removedPositions.add(rs.row + ',' + rs.col);
         });
     }
-    
+
     // First pass: identify multi-row symbols and their span
     // For SymbolGrid: use cell.id. For simple grid: use col+symbol key
     const multiRowInfo = new Map();
@@ -898,7 +898,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             }
         }
     }
-    
+
     // Build span info for quick lookup
     const spanInfo = new Map();
     multiRowInfo.forEach((positions, key) => {
@@ -912,12 +912,12 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
                 }
                 colGroups.get(pos.col).push(pos.row);
             });
-            
+
             // For each column, find consecutive row spans
             colGroups.forEach((rows, col) => {
                 // Sort rows
                 rows.sort((a, b) => a - b);
-                
+
                 // Find consecutive groups
                 let currentGroup = [rows[0]];
                 for (let i = 1; i < rows.length; i++) {
@@ -962,10 +962,10 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             }
         }
     });
-    
+
     // Calculate column widths (now includes ID)
     const colWidths = [10, 10, 10, 10, 10, 10]; // Minimum width for symbol+id
-    
+
     // Check top row for max width
     if (gridData.topRow) {
         for (let col = 1; col <= 4; col++) {
@@ -988,7 +988,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             }
         }
     }
-    
+
     // Check main grid for max width
     for (let row = 0; row < gridData.mainGrid.length; row++) {
         for (let col = 0; col < gridData.mainGrid[row].length; col++) {
@@ -1011,13 +1011,13 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             colWidths[col] = Math.max(colWidths[col], displayStr.length);
         }
     }
-    
+
     // Build separator line
     const separator = '  +' + colWidths.map(w => '-'.repeat(w + 2)).join('+') + '+';
-    
+
     console.log('  Combined Grid (Top Row + Main Grid):');
     console.log(separator);
-    
+
     // Print top row first (row -1)
     if (gridData.topRow) {
         let topRowStr = ' -1 |';
@@ -1027,7 +1027,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             let groupLetter = '';
             let isRemoved = false;
             let frameTag = '';
-            
+
             if (col >= 1 && col <= 4) {
                 const topRowIndex = col - 1;
                 if (topRowIndex < gridData.topRow.length) {
@@ -1043,7 +1043,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
                     isRemoved = removedPositions.has('-1,' + col);
                 }
             }
-            
+
             let displayStr = symbol + (shortId ? ':' + shortId : '') + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
@@ -1057,7 +1057,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
         console.log(topRowStr);
         console.log(separator);
     }
-    
+
     // Print main grid
     for (let row = 0; row < gridData.mainGrid.length; row++) {
         let rowStr = '  ' + row + ' |';
@@ -1065,13 +1065,13 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
             const cell = gridData.mainGrid[row][col];
             const symbol = (cell && typeof cell === 'object') ? (cell.symbol || '') : (cell || '');
             const shortId = (cell && typeof cell === 'object' && cell.id) ? cell.id.slice(-4) : '';
-            
+
             const span = spanInfo.get(row + ',' + col);
             const spanTag = span ? 'x' + span : '';
             const groupLetter = winningGroups.get(row + ',' + col) || '';
             const isRemoved = removedPositions.has(row + ',' + col);
             const frameTag = (cell && typeof cell === 'object' && cell.frame) ? cell.frame[0].toUpperCase() : '';
-            
+
             let displayStr = symbol + (shortId ? ':' + shortId : '') + spanTag + frameTag;
             if (groupLetter) {
                 displayStr += groupLetter;
@@ -1088,7 +1088,7 @@ function prettyPrintGrid(gridData, winningColumns, removedSymbols) {
         }
     }
     console.log(separator);
-    
+
     // Print column indices
     let indexStr = '     |';
     for (let col = 0; col < 6; col++) {
@@ -1103,7 +1103,7 @@ function highlightWinningSymbols(positions) {
 
     const mainGrid = document.getElementById('mainGrid');
     const topRow = document.getElementById('topRow');
-    
+
     positions.forEach(pos => {
         if (pos.row === -1) {
             // Top row
@@ -1156,14 +1156,14 @@ function animateRemovals(removedSymbols) {
 function clearAnimations() {
     const mainGrid = document.getElementById('mainGrid');
     const topRow = document.getElementById('topRow');
-    
+
     // Clear animation classes but preserve grid positioning
     for (let cell of mainGrid.children) {
         cell.classList.remove('winning', 'removing', 'falling', 'shifting');
         cell.style.removeProperty('--fall-offset');
         // Don't remove gridRow/gridColumn - they were set by renderSymbolGrid
     }
-    
+
     for (let cell of topRow.children) {
         cell.classList.remove('winning', 'removing', 'falling', 'slide-in-right', 'shift-left');
     }
@@ -1305,25 +1305,25 @@ function updateBonusGamblingUI(state) {
     panel.innerHTML = `
         <div class="bonus-gambling-title">🎰 BONUS GAMBLE</div>
         <div class="bonus-gambling-subtitle">4+ Scatters! Gamble for bigger bonus!</div>
-        
+
         <div class="gamble-track">
             <div class="gamble-label">Free Spins:</div>
             <div class="gamble-values">${freeSpinsHtml}</div>
             ${state.canGambleFreeSpin ? `<button class="gamble-btn" onclick="gambleFor('freeSpin')">🎲 Gamble for More Spins</button>` : '<div class="max-reached">MAX REACHED</div>'}
         </div>
-        
+
         <div class="gamble-track">
             <div class="gamble-label">Multiplier:</div>
             <div class="gamble-values">${multiplierHtml}</div>
             ${state.canGambleMultiplier ? `<button class="gamble-btn" onclick="gambleFor('multiplier')">🎲 Gamble for Higher Multiplier</button>` : '<div class="max-reached">MAX REACHED</div>'}
         </div>
-        
+
         <div class="current-values">
             Current: <span class="highlight">${state.currentFreeSpins || 8} Free Spins</span> @ <span class="highlight">${state.currentMultiplier || 18}x Multiplier</span>
         </div>
-        
+
         <button class="enter-bonus-btn" onclick="handleBonusGambling()">✅ ENTER BONUS</button>
-        
+
         <div id="gambleResult" class="gamble-result"></div>
     `;
 }
@@ -1331,25 +1331,25 @@ function updateBonusGamblingUI(state) {
 function hideBonusGamblingUI() {
     const panel = document.getElementById('bonusGamblingPanel');
     if (panel) panel.classList.add('hidden');
-    
+
     const controls = document.querySelector('.controls');
     if (controls) controls.classList.remove('hidden');
 }
 
 async function gambleFor(action) {
     if (!wsClient || !bonusGamblingState) return;
-    
+
     console.log('[gambleFor] Gambling for:', action);
-    
+
     // Send through SetBet with action field — backend handles gambling
     wsClient.setBet({ bet: 0, action: action });
 }
 
 async function handleBonusGambling() {
     if (!wsClient || !bonusGamblingState) return;
-    
+
     console.log('[handleBonusGambling] Entering bonus with:', bonusGamblingState.currentFreeSpins, 'spins @', bonusGamblingState.currentMultiplier + 'x');
-    
+
     // Send SetBet with action='enter' — backend handles bonus entry
     wsClient.setBet({ bet: 0, action: 'enter' });
 }
@@ -1432,7 +1432,7 @@ function showBonusUI(state) {
         document.body.appendChild(panel);
     }
     panel.classList.remove('hidden');
-    
+
     panel.innerHTML = `
         <div class="bonus-title">🎰 FREE SPINS</div>
         <div class="bonus-info">
@@ -1451,7 +1451,7 @@ function hideBonusUI() {
 function updateBonusUI(state) {
     const panel = document.getElementById('bonusPanel');
     if (!panel) return;
-    
+
     const infoEl = panel.querySelector('.bonus-info');
     if (infoEl) {
         infoEl.innerHTML = `
@@ -1459,7 +1459,7 @@ function updateBonusUI(state) {
             <div><span class="bonus-value">${state.multiplier}x</span> Multiplier</div>
         `;
     }
-    
+
     const totalEl = panel.querySelector('.bonus-total');
     if (totalEl) {
         totalEl.innerHTML = `Total Win: <span class="bonus-win">$${state.totalWin.toFixed(2)}</span>`;
@@ -1474,7 +1474,7 @@ let spinTimeout = null;
 
 function spin() {
     if (isSpinning) {
-        console.log('[Casishenwin] Spin ignored - already spinning');
+        console.log('[MoneyGod] Spin ignored - already spinning');
         return;
     }
     if (!wsClient) return;
@@ -1493,7 +1493,7 @@ function spin() {
     // Failsafe: auto-unlock after 10 seconds if server doesn't respond
     spinTimeout = setTimeout(() => {
         if (isSpinning) {
-            console.warn('[Casishenwin] Spin timeout - auto unlocking');
+            console.warn('[MoneyGod] Spin timeout - auto unlocking');
             isSpinning = false;
             if (spinButton) {
                 spinButton.disabled = false;
@@ -1506,7 +1506,7 @@ function spin() {
     }, 10000);
 
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
-    
+
     // Include debug options if any are enabled
     const spinPayload = { bet };
     if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame || debugOptions.forceScatterCount != null || debugOptions.forceBonusRetrigger) {
@@ -1521,7 +1521,7 @@ function spin() {
 
 function buyBonus() {
     if (isSpinning) {
-        console.log('[Casishenwin] Buy bonus ignored - already spinning');
+        console.log('[MoneyGod] Buy bonus ignored - already spinning');
         return;
     }
     if (!wsClient) return;
@@ -1540,7 +1540,7 @@ function buyBonus() {
     // Failsafe: auto-unlock after 10 seconds if server doesn't respond
     spinTimeout = setTimeout(() => {
         if (isSpinning) {
-            console.warn('[Casishenwin] Buy bonus timeout - auto unlocking');
+            console.warn('[MoneyGod] Buy bonus timeout - auto unlocking');
             isSpinning = false;
             if (spinButton) {
                 spinButton.disabled = false;
@@ -1553,7 +1553,7 @@ function buyBonus() {
     }, 10000);
 
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
-    
+
     console.log(`[buyBonus] Buy bonus payload: bet=${bet}, buyBonus=true`);
     wsClient.setBet({ bet, buyBonus: true });
 }

@@ -1,4 +1,4 @@
-/* Casishenwin Slot Game Styles */
+/* MoneyGod Slot Game Styles */
 
 .hidden {
     display: none !important;
@@ -222,13 +222,13 @@ body {
 }
 
 @keyframes silverPulse {
-    0%, 100% { 
-        box-shadow: 0 0 15px rgba(192, 192, 192, 0.5), 
-                    inset 0 0 15px rgba(192, 192, 192, 0.2); 
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(192, 192, 192, 0.5),
+                    inset 0 0 15px rgba(192, 192, 192, 0.2);
     }
-    50% { 
-        box-shadow: 0 0 25px rgba(192, 192, 192, 0.8), 
-                    inset 0 0 25px rgba(192, 192, 192, 0.5); 
+    50% {
+        box-shadow: 0 0 25px rgba(192, 192, 192, 0.8),
+                    inset 0 0 25px rgba(192, 192, 192, 0.5);
     }
 }
 
@@ -241,13 +241,13 @@ body {
 }
 
 @keyframes goldenPulse {
-    0%, 100% { 
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 
-                    inset 0 0 20px rgba(255, 215, 0, 0.3); 
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6),
+                    inset 0 0 20px rgba(255, 215, 0, 0.3);
     }
-    50% { 
-        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 
-                    inset 0 0 30px rgba(255, 215, 0, 0.5); 
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8),
+                    inset 0 0 30px rgba(255, 215, 0, 0.5);
     }
 }
 
@@ -271,13 +271,13 @@ body {
 }
 
 @keyframes goldenPulse {
-    0%, 100% { 
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 
-                    inset 0 0 20px rgba(255, 215, 0, 0.3); 
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6),
+                    inset 0 0 20px rgba(255, 215, 0, 0.3);
     }
-    50% { 
-        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 
-                    inset 0 0 30px rgba(255, 215, 0, 0.5); 
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8),
+                    inset 0 0 30px rgba(255, 215, 0, 0.5);
     }
 }
 
@@ -288,13 +288,13 @@ body {
 }
 
 @keyframes winPulse {
-    from { 
-        transform: scale(1); 
-        box-shadow: 0 0 20px rgba(46, 204, 113, 0.5); 
+    from {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
     }
-    to { 
-        transform: scale(1.1); 
-        box-shadow: 0 0 40px rgba(46, 204, 113, 0.8); 
+    to {
+        transform: scale(1.1);
+        box-shadow: 0 0 40px rgba(46, 204, 113, 0.8);
     }
 }
 
@@ -946,7 +946,7 @@ body {
     .main-layout {
         grid-template-columns: 1fr;
     }
-    
+
     .left-panel, .right-panel {
         display: none;
     }
@@ -956,11 +956,11 @@ body {
     .game-container {
         padding: 10px;
     }
-    
+
     .header-center h1 {
         font-size: 1.2rem;
     }
-    
+
     .grid-cell, .top-cell {
         font-size: 1.5rem;
         min-width: 40px;

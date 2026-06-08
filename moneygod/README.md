@@ -1,4 +1,4 @@
-# Casishenwin Slot Game - Frontend
+# MoneyGod Slot Game - Frontend
 
 A 6x5 grid slot game with multi-row occupancy, rolling top row, and Silver/Golden frame progression.
 
@@ -7,13 +7,13 @@ A 6x5 grid slot game with multi-row occupancy, rolling top row, and Silver/Golde
 ```bash
 cd slot-game
 node server.js
-# Open http://localhost:8080/casishenwin/
+# Open http://localhost:8080/moneygod/
 ```
 
 ## Architecture
 
 ```
-casishenwin/
+moneygod/
 ├── app.js          # Main game logic, WebSocket client, rendering
 ├── config.js       # Game configuration, symbol emojis, grid layout
 ├── styles.css      # Game styling, animations
@@ -45,10 +45,10 @@ Connects to backend via WebSocket with auto-ping:
 ```javascript
 // config.js
 const CONFIG = {
-  gameTypeId: 'casishenwin',    // Game identifier
+  gameTypeId: 'moneygod',    // Game identifier
   serverMode: 'fake',            // 'fake' or 'real'
   fakeServers: {
-    casishenwin: 'ws://localhost:3004'
+    moneygod: 'ws://localhost:3004'
   },
   gridLayout: {
     ROWS_VISIBLE: 5,
