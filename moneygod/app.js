@@ -22,7 +22,8 @@ let debugOptions = {
     forceTopAllWild: false,
     forceSilverFrame: false,
     forceScatterCount: null,  // null = random, 1-6 = force specific scatter count
-    forceBonusRetrigger: false // true = force scatter count to 4, 5, or 6 for bonus retrigger testing
+    forceBonusRetrigger: false, // true = force scatter count to 4, 5, or 6 for bonus retrigger testing
+    forceGoldenToWild: false  // true = retry spin until at least one golden→wild transformation occurs
 };
 
 // Bonus gambling state
@@ -226,6 +227,7 @@ function updateDebugStatus() {
         const active = [];
         if (debugOptions.forceTopAllWild) active.push('TopAllWild');
         if (debugOptions.forceSilverFrame) active.push('SilverFrame');
+        if (debugOptions.forceGoldenToWild) active.push('Golden→Wild');
         if (debugOptions.forceScatterCount != null) active.push('Scatter:' + debugOptions.forceScatterCount);
         if (debugOptions.forceBonusRetrigger) active.push('BonusRetrigger');
         if (active.length > 0) {
@@ -1509,11 +1511,12 @@ function spin() {
 
     // Include debug options if any are enabled
     const spinPayload = { bet };
-    if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame || debugOptions.forceScatterCount != null || debugOptions.forceBonusRetrigger) {
+    if (debugOptions.forceTopAllWild || debugOptions.forceSilverFrame || debugOptions.forceScatterCount != null || debugOptions.forceBonusRetrigger || debugOptions.forceGoldenToWild) {
         if (debugOptions.forceTopAllWild) spinPayload.forceTopAllWild = true;
         if (debugOptions.forceSilverFrame) spinPayload.forceSilverFrame = true;
         if (debugOptions.forceScatterCount != null) spinPayload.forceScatterCount = debugOptions.forceScatterCount;
         if (debugOptions.forceBonusRetrigger) spinPayload.forceBonusRetrigger = true;
+        if (debugOptions.forceGoldenToWild) spinPayload.forceGoldenToWild = true;
     }
     console.log(`spinPayload = ${JSON.stringify(spinPayload)}`)
     wsClient.setBet(spinPayload);

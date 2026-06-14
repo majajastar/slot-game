@@ -186,10 +186,14 @@ interface SymbolInstance {
   id: string;        // Unique ID (e.g., "sym_001", "sym_002")
   symbol: string;    // Symbol type (e.g., "201", "1", "2")
   frame?: string;    // "silver" or "golden" (optional)
+  fromTransformPosition?: boolean; // true if this WILD came from golden→wild transformation
 }
 ```
 
 **Key rule:** Symbols with the same `id` in the same column are the SAME multi-row symbol.
+
+**`fromTransformPosition` flag:**
+When a golden frame symbol transforms into WILDs, each resulting WILD `SymbolInstance` will have `fromTransformPosition: true`. This lets the frontend visually distinguish WILDs that came from a golden→wild transformation vs. regular WILDs that appeared naturally on the grid.
 
 ### Single-Row Symbols
 
@@ -377,7 +381,7 @@ All game actions use the standard WebSocket envelope:
 | `forceTopAllWild` | boolean | No | Debug: Force top row all wild |
 | `forceSilverFrame` | boolean | No | Debug: Force silver frame |
 | `forceScatterCount` | number | No | Debug: Force scatter count |
-| `forceBonusRetrigger` | boolean | No | Debug: Force bonus retrigger |
+| `forceGoldenToWild` | boolean | No | Debug: Force golden→wild transformation (priority over bad luck) |
 
 ### Step 3: Send Spin Request
 
@@ -504,6 +508,23 @@ For testing, you can use these debug parameters inside `message`. These are only
 }
 ```
 
+**Force Golden→Wild:**
+```json
+{
+  "type": "100000",
+  "data": [{
+    "subType": 100070,
+    "subData": [{
+      "opCode": "SetBet",
+      "message": {
+        "bet": 1.00,
+        "forceGoldenToWild": true
+      }
+    }]
+  }]
+}
+```
+
 **Combined Debug (multiple flags):**
 ```json
 {
@@ -517,7 +538,8 @@ For testing, you can use these debug parameters inside `message`. These are only
         "forceTopAllWild": true,
         "forceSilverFrame": true,
         "forceScatterCount": 4,
-        "forceBonusRetrigger": true
+        "forceBonusRetrigger": true,
+        "forceGoldenToWild": true
       }
     }]
   }]
@@ -538,6 +560,8 @@ interface CascadeStep {
   symbolGridAfterRemoval: SymbolGrid;  // Grid after removing wins
   symbolGridAfterFill: SymbolGrid;  // Grid after filling
   removedSymbols: RemovedSymbol[];  // Which symbols were removed
+  transformedPositions: Array<{ row: number, col: number, oldFrame: 'silver' | 'golden', newFrame: 'golden' | 'wild', newSymbol: string }>; // Frame transformations
+  goldenToWildPositions: Array<{ row: number, col: number }>; // Positions where golden→wild occurred (for marking WILDs)
   movements: Movement[];            // How symbols moved
   winningColumns: WinInfo[];        // Win details
   totalWin: number;                 // Step win amount

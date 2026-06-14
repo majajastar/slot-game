@@ -129,6 +129,10 @@
                                     <input type="checkbox" id="debugSilverFrame" onchange="toggleDebugOption('forceSilverFrame', this.checked)">
                                     <span>Force Silver Frames</span>
                                 </label>
+                                <label class="debug-option">
+                                    <input type="checkbox" id="debugGoldenToWild" onchange="toggleDebugOption('forceGoldenToWild', this.checked)">
+                                    <span>Force Golden→Wild (retry ≤100)</span>
+                                </label>
                                 <div class="debug-option scatter-control">
                                     <span>Force Scatter Count:</span>
                                     <select id="debugScatterCount" onchange="setScatterCount(this.value)">
