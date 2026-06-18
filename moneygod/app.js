@@ -345,7 +345,7 @@ async function handleSpinResult(betInfo) {
         showWin(winAmount);
     }
 
-    // Calculate total ways to win from all steps
+    // Calculate total ways to win from all steps or top-level waysToWin
     let totalWaysToWin = 0;
     if (info.steps && info.steps.length > 0) {
         info.steps.forEach(step => {
@@ -353,11 +353,20 @@ async function handleSpinResult(betInfo) {
                 totalWaysToWin = step.waysToWin;
             }
         });
+    } else if (info.waysToWin > 0) {
+        // No cascade but still show ways to win for the initial grid
+        totalWaysToWin = info.waysToWin;
     }
 
     // Update win display with ways to win
     const waysDisplay = totalWaysToWin > 0 ? ` (${totalWaysToWin} ways)` : '';
     document.getElementById('winAmount').textContent = winAmount.toFixed(2) + waysDisplay;
+
+    // Clear bonus panel for normal spins (not in bonus mode)
+    if (!isInBonus && !info.bonusGameState) {
+        hideBonusUI();
+        hideBonusGamblingUI();
+    }
 
     // --- BONUS SPIN RESULT: Server sends bonusGameState to separate bonus spins from normal spins ---
     // When bonusGameState is present, this is a bonus spin result (not a normal spin).
@@ -1435,12 +1444,17 @@ function showBonusUI(state) {
     }
     panel.classList.remove('hidden');
 
+    const retriggerHtml = state.retriggerSpinsAwarded && state.retriggerSpinsAwarded > 0
+        ? `<div class="bonus-retrigger">+${state.retriggerSpinsAwarded} Retrigger Spins</div>`
+        : '';
+
     panel.innerHTML = `
         <div class="bonus-title">🎰 FREE SPINS</div>
         <div class="bonus-info">
             <div><span class="bonus-value">${state.freeSpinsRemaining}</span> Spins Remaining</div>
             <div><span class="bonus-value">${state.multiplier}x</span> Multiplier</div>
         </div>
+        ${retriggerHtml}
         <div class="bonus-total">Total Win: <span class="bonus-win">$${state.totalWin.toFixed(2)}</span></div>
     `;
 }
@@ -1460,6 +1474,19 @@ function updateBonusUI(state) {
             <div><span class="bonus-value">${state.freeSpinsRemaining}</span> Spins Remaining</div>
             <div><span class="bonus-value">${state.multiplier}x</span> Multiplier</div>
         `;
+    }
+
+    // Update or add retrigger info
+    let retriggerEl = panel.querySelector('.bonus-retrigger');
+    if (state.retriggerSpinsAwarded && state.retriggerSpinsAwarded > 0) {
+        if (!retriggerEl) {
+            retriggerEl = document.createElement('div');
+            retriggerEl.className = 'bonus-retrigger';
+            panel.insertBefore(retriggerEl, panel.querySelector('.bonus-total'));
+        }
+        retriggerEl.textContent = `+${state.retriggerSpinsAwarded} Retrigger Spins`;
+    } else if (retriggerEl) {
+        retriggerEl.remove();
     }
 
     const totalEl = panel.querySelector('.bonus-total');
@@ -1558,7 +1585,7 @@ function buyBonus() {
     const bet = BET_SIZE_LIST[CURRENT_BET_INDEX];
 
     console.log(`[buyBonus] Buy bonus payload: bet=${bet}, buyBonus=true`);
-    wsClient.setBet({ bet, buyBonus: true });
+    wsClient.setBet({ bet, buyBonus: true, action:''});
 }
 
 function changeBet(direction) {
