@@ -46,7 +46,8 @@ const GLOBAL_CONFIG = {
     fakeServers: {
         lebandit: 'ws://35.78.80.187:3003',
         theluxe: 'ws://35.78.80.187:3002',
-        moneygod: 'ws://35.78.80.187:3004'  // MoneyGod fake server
+        moneygod: 'ws://35.78.80.187:3004',  // MoneyGod fake server
+        superace: 'ws://43.206.107.204:3005'   // SuperAce fake server
     },
 
     // ==========================================

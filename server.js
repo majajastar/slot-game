@@ -38,6 +38,8 @@ const server = http.createServer((req, res) => {
     filePath = './theluxe/index.html';
   } else if (urlPath === '/lebandit' || urlPath === '/lebandit/') {
     filePath = './lebandit/index.html';
+  } else if (urlPath === '/superace' || urlPath === '/superace/') {
+    filePath = './superace/index.html';
   } else if (urlPath === '/lobby' || urlPath === '/lobby/') {
     filePath = './index.html';
   } else if (urlPath === '/moneygod' || urlPath === '/moneygod/') {
@@ -47,6 +49,8 @@ const server = http.createServer((req, res) => {
   } else if (urlPath.startsWith('/lebandit/')) {
     filePath = '.' + urlPath;
   } else if (urlPath.startsWith('/moneygod/')) {
+    filePath = '.' + urlPath;
+  } else if (urlPath.startsWith('/superace/')) {
     filePath = '.' + urlPath;
   } else if (urlPath.startsWith('/lobby/')) {
     filePath = '.' + urlPath;
@@ -102,6 +106,7 @@ server.listen(PORT, () => {
   console.log(`  - Lobby:      http://localhost:${PORT}/lobby/`);
   console.log(`  - TheLuxe:    http://localhost:${PORT}/theluxe/`);
   console.log(`  - LeBandit:   http://localhost:${PORT}/lebandit/`);
-  console.log(`  - MoneyGod: http://localhost:${PORT}/moneygod/`);
+  console.log(`  - MoneyGod:   http://localhost:${PORT}/moneygod/`);
+  console.log(`  - Super Ace:  http://localhost:${PORT}/superace/`);
   console.log(`=================================`);
 });
