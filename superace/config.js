@@ -29,39 +29,40 @@ const CONFIG = {
     gameTypeId: 'superace',
 
     // Symbol emojis for display
-    // 4 High payout: A, K, Q, J
-    // 4 Low payout: Spade, Heart, Diamond, Club
+    // Every WILD is either Big Joker or Little Joker - no plain WILD
     symbols: {
-        '1': '🃏',      // WILD / JOKER
+        '1': '🃏',      // WILD (Big Joker or Little Joker - shown with jokerType indicator)
         '2': '⭐',      // SCATTER
-        '3': '🤡',      // BIG JOKER
-        '4': '🎭',      // LITTLE JOKER
         // High payout
-        'A': '🅰️',      // ACE
-        'K': '🇰',      // KING
-        'Q': '🇶',      // QUEEN
-        'J': '🇯',      // JACK
+        '201': '🅰️',    // ACE
+        '202': '🇰',    // KING
+        '203': '🇶',    // QUEEN
+        '204': '🇯',    // JACK
         // Low payout
-        'S': '♠️',      // SPADE
-        'H': '♥️',      // HEART
-        'D': '♦️',      // DIAMOND
-        'C': '♣️',      // CLUB
+        '101': '♠️',    // SPADE
+        '102': '♥️',    // HEART
+        '103': '♦️',    // DIAMOND
+        '104': '♣️',    // CLUB
+    },
+
+    // Joker type emojis (shown alongside WILD)
+    jokerTypeEmojis: {
+        'big': '🤡',
+        'little': '🎭'
     },
 
     // Symbol names for paytable
     symbolNames: {
         '1': 'Joker (Wild)',
         '2': 'Scatter',
-        '3': 'Big Joker',
-        '4': 'Little Joker',
-        'A': 'Ace',
-        'K': 'King',
-        'Q': 'Queen',
-        'J': 'Jack',
-        'S': 'Spade',
-        'H': 'Heart',
-        'D': 'Diamond',
-        'C': 'Club'
+        '201': 'Ace',
+        '202': 'King',
+        '203': 'Queen',
+        '204': 'Jack',
+        '101': 'Spade',
+        '102': 'Heart',
+        '103': 'Diamond',
+        '104': 'Club'
     },
 
     // Grid dimensions

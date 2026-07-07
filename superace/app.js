@@ -17,9 +17,7 @@ let currentBalance = 0;
 // Debug options
 let debugOptions = {
     forceScatterCount: null,
-    forceGoldenCard: false,
-    forceBigJoker: false,
-    forceLittleJoker: false
+    forceGoldenCard: false
 };
 
 // Bonus state
@@ -180,8 +178,6 @@ function updateDebugStatus() {
     if (statusEl) {
         const active = [];
         if (debugOptions.forceGoldenCard) active.push('GoldenCard');
-        if (debugOptions.forceBigJoker) active.push('BigJoker');
-        if (debugOptions.forceLittleJoker) active.push('LittleJoker');
         if (debugOptions.forceScatterCount != null) active.push('Scatter:' + debugOptions.forceScatterCount);
         if (active.length > 0) {
             statusEl.textContent = 'Active: ' + active.join(', ');
@@ -440,10 +436,13 @@ function renderSymbolGrid(symbolGrid, mainGridEl) {
             cell.dataset.symbolId = symbolInstance.id || `${row}-${col}`;
 
             const symbol = symbolInstance.symbol;
-            if (symbol === '1') cell.classList.add('wild-symbol');
+            if (symbol === '1') {
+                // WILD - check jokerType for styling
+                if (symbolInstance.jokerType === 'big') cell.classList.add('big-joker-symbol');
+                else if (symbolInstance.jokerType === 'little') cell.classList.add('little-joker-symbol');
+                else cell.classList.add('wild-symbol');
+            }
             else if (symbol === '2') cell.classList.add('scatter-symbol');
-            else if (symbol === '3') cell.classList.add('big-joker-symbol');
-            else if (symbol === '4') cell.classList.add('little-joker-symbol');
             // Golden is an attribute, not a symbol
             if (symbolInstance.isGolden) cell.classList.add('golden-symbol');
         }
@@ -457,10 +456,14 @@ function getSymbolEmoji(symbolInstance) {
     }
     const symbolId = String(symbolInstance.symbol || '');
     if (symbolId === '') return '';
-    // Golden is an attribute - show a golden indicator alongside the symbol
     const baseEmoji = CONFIG.symbols[symbolId] || '❓';
+    // WILD with jokerType shows the joker type emoji
+    if (symbolId === '1' && symbolInstance.jokerType) {
+        return CONFIG.jokerTypeEmojis[symbolInstance.jokerType] || '🃏';
+    }
+    // Golden is an attribute - show a golden indicator alongside the symbol
     if (symbolInstance.isGolden) {
-        return baseEmoji + '✨'; // Add sparkle for golden attribute
+        return baseEmoji + '✨';
     }
     return baseEmoji;
 }
@@ -607,10 +610,28 @@ function prettyPrintStep(step, stepNum) {
         step.removedSymbols.forEach(rs => {
             const oldEmoji = CONFIG.symbols[rs.symbol] || rs.symbol;
             const newEmoji = rs.changedTo ? (CONFIG.symbols[rs.changedTo] || rs.changedTo) : '✨';
-            const goldenTag = rs.goldenToJoker ? ' (Golden→Joker)' : '';
+            const jokerTag = rs.jokerType ? ` (${rs.jokerType === 'big' ? 'BigJoker' : 'LittleJoker'})` : '';
             const oldId = (rs.symbolId || '').substring(0, 8).padEnd(8, ' ');
             const goldenIndicator = rs.goldenToJoker ? '✨' : '  ';
-            console.log(`  (${String(rs.row).padStart(2, ' ')},${String(rs.col).padStart(2, ' ')}): ${oldEmoji}${goldenIndicator} id=${oldId} sym=${String(rs.symbol).padStart(3, ' ')} → ${newEmoji} ${rs.changedTo ? 'sym=' + String(rs.changedTo).padStart(3, ' ') : 'REMOVED    '}${goldenTag}`);
+            console.log(`  (${String(rs.row).padStart(2, ' ')},${String(rs.col).padStart(2, ' ')}): ${oldEmoji}${goldenIndicator} id=${oldId} sym=${String(rs.symbol).padStart(3, ' ')} → ${newEmoji}${jokerTag} ${rs.changedTo ? 'sym=' + String(rs.changedTo).padStart(3, ' ') : 'REMOVED    '}`);
+        });
+    }
+
+    // Print golden to joker transforms
+    if (step.goldenToJokerTransforms && step.goldenToJokerTransforms.length > 0) {
+        console.log('%c[GOLDEN→JOKER]', 'color: #ffd700; font-weight: bold;');
+        step.goldenToJokerTransforms.forEach(t => {
+            const jokerEmoji = t.jokerType === 'big' ? '🤡' : '🎭';
+            console.log(`  (${String(t.row).padStart(2, ' ')},${String(t.col).padStart(2, ' ')}): Golden → ${jokerEmoji} ${t.jokerType}Joker`);
+        });
+    }
+
+    // Print big joker extra replacements
+    if (step.bigJokerReplacements && step.bigJokerReplacements.length > 0) {
+        console.log('%c[BIG JOKER EXTRAS]', 'color: #ff6b6b; font-weight: bold;');
+        step.bigJokerReplacements.forEach(r => {
+            const oldEmoji = CONFIG.symbols[r.oldSymbol] || r.oldSymbol;
+            console.log(`  (${String(r.row).padStart(2, ' ')},${String(r.col).padStart(2, ' ')}): ${oldEmoji} → 🤡 BigJoker`);
         });
     }
 
@@ -648,14 +669,18 @@ function printGrid(symbolGrid) {
     }
     console.log(sep);
 
-    // Rows - each cell shows "emoji+golden+id" together
+    // Rows - each cell shows "emoji+golden/joker+id" together
     for (let row = 0; row < grid.length; row++) {
         let line = ' ' + row + '  |';
         for (let col = 0; col < grid[row].length; col++) {
             const cell = grid[row][col];
             let display = '';
             if (cell && cell.symbol) {
-                const emoji = CONFIG.symbols[cell.symbol] || cell.symbol;
+                let emoji = CONFIG.symbols[cell.symbol] || cell.symbol;
+                // WILD with jokerType shows joker emoji
+                if (cell.symbol === '1' && cell.jokerType) {
+                    emoji = CONFIG.jokerTypeEmojis[cell.jokerType] || '🃏';
+                }
                 const goldenTag = cell.isGolden ? '✨' : '';
                 const idStr = (cell.id || '').substring(0, 4);
                 display = emoji + goldenTag + idStr;
@@ -914,8 +939,6 @@ function spin() {
     const spinPayload = { bet };
     if (debugOptions.forceScatterCount != null) spinPayload.forceScatterCount = debugOptions.forceScatterCount;
     if (debugOptions.forceGoldenCard) spinPayload.forceGoldenCard = true;
-    if (debugOptions.forceBigJoker) spinPayload.forceBigJoker = true;
-    if (debugOptions.forceLittleJoker) spinPayload.forceLittleJoker = true;
 
     console.log(`[spin] spinPayload = ${JSON.stringify(spinPayload)}`);
     wsClient.setBet(spinPayload);

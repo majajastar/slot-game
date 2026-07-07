@@ -42,10 +42,12 @@
                             <p>Transforms to Joker after elimination</p>
                         </div>
 
-                        <div class="info-subtitle">🃏 Joker Symbols</div>
+                        <div class="info-subtitle">🃏 Joker (WILD)</div>
                         <div class="rule-detail">
-                            <p><strong>Big Joker:</strong> Replaces 1-4 random symbols on reels 2-5</p>
-                            <p><strong>Little Joker:</strong> Transforms all Golden to Joker</p>
+                            <p>Every WILD is either <strong>Big Joker</strong> or <strong>Little Joker</strong></p>
+                            <p>Appears when a <strong>Golden symbol wins</strong></p>
+                            <p><strong>Big Joker:</strong> Golden → WILD + replaces 0-3 extra symbols</p>
+                            <p><strong>Little Joker:</strong> Golden → WILD (no extras)</p>
                             <p>Joker substitutes for all except Scatter</p>
                         </div>
 
@@ -128,14 +130,6 @@
                                 <label class="debug-option">
                                     <input type="checkbox" id="debugGoldenCard" onchange="toggleDebugOption('forceGoldenCard', this.checked)">
                                     <span>Force Golden Card</span>
-                                </label>
-                                <label class="debug-option">
-                                    <input type="checkbox" id="debugBigJoker" onchange="toggleDebugOption('forceBigJoker', this.checked)">
-                                    <span>Force Big Joker</span>
-                                </label>
-                                <label class="debug-option">
-                                    <input type="checkbox" id="debugLittleJoker" onchange="toggleDebugOption('forceLittleJoker', this.checked)">
-                                    <span>Force Little Joker</span>
                                 </label>
                                 <div class="debug-option scatter-control">
                                     <span>Force Scatter Count:</span>
