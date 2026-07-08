@@ -17,7 +17,9 @@ let currentBalance = 0;
 // Debug options
 let debugOptions = {
     forceScatterCount: null,
-    forceGoldenCard: false
+    forceGoldenCard: false,
+    forceGoldenChance: null,
+    forceJokerType: null
 };
 
 // Bonus state
@@ -163,11 +165,15 @@ function toggleDebugOption(option, value) {
     if (option === 'forceScatterCount') {
         debugOptions.forceScatterCount = value === '' || value === null ? null : parseInt(value);
         if (debugOptions.forceScatterCount != null) {
-            if (debugOptions.forceScatterCount < 1) debugOptions.forceScatterCount = 1;
+            if (debugOptions.forceScatterCount < 0) debugOptions.forceScatterCount = 0;
             if (debugOptions.forceScatterCount > 5) debugOptions.forceScatterCount = 5;
         }
-    } else {
-        debugOptions[option] = value;
+    } else if (option === 'forceGoldenCard') {
+        debugOptions.forceGoldenCard = value === true;
+    } else if (option === 'forceGoldenChance') {
+        debugOptions.forceGoldenChance = value === null ? null : 0.3;
+    } else if (option === 'forceJokerType') {
+        debugOptions.forceJokerType = value === null ? null : value;
     }
     updateDebugStatus();
     console.log('[Debug] Options:', debugOptions);
@@ -179,6 +185,8 @@ function updateDebugStatus() {
         const active = [];
         if (debugOptions.forceGoldenCard) active.push('GoldenCard');
         if (debugOptions.forceScatterCount != null) active.push('Scatter:' + debugOptions.forceScatterCount);
+        if (debugOptions.forceGoldenChance != null) active.push('GoldenChance:' + debugOptions.forceGoldenChance);
+        if (debugOptions.forceJokerType != null) active.push('Joker:' + debugOptions.forceJokerType);
         if (active.length > 0) {
             statusEl.textContent = 'Active: ' + active.join(', ');
             statusEl.classList.add('active');
@@ -272,8 +280,10 @@ async function handleSpinResult(betInfo) {
     if (info.steps && info.steps.length > 0) {
         await renderCascade(info.steps, info.symbolGrid || info.grid);
     } else {
-        if (info.symbolGrid) {
-            renderSymbolGrid(info.symbolGrid, document.getElementById('mainGrid'));
+        // No win - still render the grid to show the result
+        const gridToRender = info.symbolGrid || info.grid;
+        if (gridToRender) {
+            renderSymbolGrid(gridToRender, document.getElementById('mainGrid'));
         }
     }
 
@@ -443,8 +453,8 @@ function renderSymbolGrid(symbolGrid, mainGridEl) {
                 else cell.classList.add('wild-symbol');
             }
             else if (symbol === '2') cell.classList.add('scatter-symbol');
-            // Golden is an attribute, not a symbol
-            if (symbolInstance.isGolden) cell.classList.add('golden-symbol');
+            // Golden is an attribute, not a symbol - scatter should not use golden frame
+            else if (symbolInstance.isGolden) cell.classList.add('golden-symbol');
         }
     }
 }
@@ -460,10 +470,6 @@ function getSymbolEmoji(symbolInstance) {
     // WILD with jokerType shows the joker type emoji
     if (symbolId === '1' && symbolInstance.jokerType) {
         return CONFIG.jokerTypeEmojis[symbolInstance.jokerType] || '🃏';
-    }
-    // Golden is an attribute - show a golden indicator alongside the symbol
-    if (symbolInstance.isGolden) {
-        return baseEmoji + '✨';
     }
     return baseEmoji;
 }
@@ -595,6 +601,22 @@ function prettyPrintStep(step, stepNum) {
     console.log('%c[BEFORE]', 'color: #4ecdc4; font-weight: bold;');
     printGrid(step.symbolGridBefore);
 
+    // Print golden cards info
+    if (step.symbolGridBefore) {
+        const goldenCards = [];
+        for (let row = 0; row < step.symbolGridBefore.mainGrid.length; row++) {
+            for (let col = 0; col < step.symbolGridBefore.mainGrid[row].length; col++) {
+                const cell = step.symbolGridBefore.mainGrid[row][col];
+                if (cell && cell.isGolden) {
+                    goldenCards.push(`(${row},${col}): ${CONFIG.symbols[cell.symbol] || cell.symbol} ✨`);
+                }
+            }
+        }
+        if (goldenCards.length > 0) {
+            console.log('%c[GOLDEN CARDS] ' + goldenCards.join(', '), 'color: #ffd700; font-weight: bold;');
+        }
+    }
+
     // Print winning info
     if (step.winningColumns && step.winningColumns.length > 0) {
         console.log('%c[WINS]', 'color: #ffd700; font-weight: bold;');
@@ -604,18 +626,25 @@ function prettyPrintStep(step, stepNum) {
         });
     }
 
-    // Print symbol changes
+    // Print symbol changes (removed)
     if (step.removedSymbols && step.removedSymbols.length > 0) {
-        console.log('%c[SYMBOL CHANGES]', 'color: #ff6b6b; font-weight: bold;');
+        console.log('%c[REMOVED SYMBOLS]', 'color: #ff6b6b; font-weight: bold;');
         step.removedSymbols.forEach(rs => {
             const oldEmoji = CONFIG.symbols[rs.symbol] || rs.symbol;
-            const newEmoji = rs.changedTo ? (CONFIG.symbols[rs.changedTo] || rs.changedTo) : '✨';
-            const jokerTag = rs.jokerType ? ` (${rs.jokerType === 'big' ? 'BigJoker' : 'LittleJoker'})` : '';
+            let goldenIndicator = '';
+            if (rs.goldenToJoker) {
+                goldenIndicator = rs.jokerType === 'big' ? ' → 🤡 BigJoker' : ' → 🎭 LittleJoker';
+            } else if (rs.isGolden) {
+                goldenIndicator = ' ✨';
+            }
             const oldId = (rs.symbolId || '').substring(0, 8).padEnd(8, ' ');
-            const goldenIndicator = rs.goldenToJoker ? '✨' : '  ';
-            console.log(`  (${String(rs.row).padStart(2, ' ')},${String(rs.col).padStart(2, ' ')}): ${oldEmoji}${goldenIndicator} id=${oldId} sym=${String(rs.symbol).padStart(3, ' ')} → ${newEmoji}${jokerTag} ${rs.changedTo ? 'sym=' + String(rs.changedTo).padStart(3, ' ') : 'REMOVED    '}`);
+            console.log(`  (${String(rs.row).padStart(2, ' ')},${String(rs.col).padStart(2, ' ')}): ${oldEmoji}${goldenIndicator} id=${oldId} sym=${String(rs.symbol).padStart(3, ' ')} REMOVED`);
         });
     }
+
+    // Print grid after removal
+    console.log('%c[AFTER REMOVAL]', 'color: #ff6b6b; font-weight: bold;');
+    printGrid(step.symbolGridAfterRemoval);
 
     // Print golden to joker transforms
     if (step.goldenToJokerTransforms && step.goldenToJokerTransforms.length > 0) {
@@ -635,12 +664,12 @@ function prettyPrintStep(step, stepNum) {
         });
     }
 
-    // Print combo multiplier
+    // Print combo multiplier and step win
     console.log('%c[COMBO] x' + step.comboMultiplier, 'color: #ff6b6b; font-weight: bold;');
     console.log('%c[STEP WIN] $' + (step.totalWin || 0).toFixed(2), 'color: #ffd700; font-weight: bold;');
 
-    // Print grid after
-    console.log('%c[AFTER]', 'color: #4ecdc4; font-weight: bold;');
+    // Print grid after fill
+    console.log('%c[AFTER FILL]', 'color: #4ecdc4; font-weight: bold;');
     printGrid(step.symbolGridAfterFill);
 
     console.log('%c=====================================\n', 'color: #ffd700; font-size: 16px; font-weight: bold;');
@@ -681,9 +710,11 @@ function printGrid(symbolGrid) {
                 if (cell.symbol === '1' && cell.jokerType) {
                     emoji = CONFIG.jokerTypeEmojis[cell.jokerType] || '🃏';
                 }
+                // Golden card indicator
                 const goldenTag = cell.isGolden ? '✨' : '';
+                const jokerTag = cell.jokerType ? `(${cell.jokerType[0]})` : '';
                 const idStr = (cell.id || '').substring(0, 4);
-                display = emoji + goldenTag + idStr;
+                display = emoji + goldenTag + jokerTag + idStr;
             }
             line += display.padStart(cellWidth, ' ') + '|';
         }
@@ -691,6 +722,20 @@ function printGrid(symbolGrid) {
     }
 
     console.log(sep);
+
+    // Print golden cards summary
+    let goldenCards = [];
+    for (let row = 0; row < grid.length; row++) {
+        for (let col = 0; col < grid[row].length; col++) {
+            const cell = grid[row][col];
+            if (cell && cell.isGolden) {
+                goldenCards.push(`(${row},${col}): ${CONFIG.symbols[cell.symbol] || cell.symbol} ✨`);
+            }
+        }
+    }
+    if (goldenCards.length > 0) {
+        console.log('%c[GOLDEN CARDS] ' + goldenCards.join(', '), 'color: #ffd700; font-size: 11px;');
+    }
 }
 
 function animateSymbolChanges(removedSymbols) {
@@ -711,28 +756,6 @@ function animateSymbolChanges(removedSymbols) {
     });
 }
 
-function animateFill(symbolGridAfterFill, symbolGridAfterRemoval) {
-    if (!symbolGridAfterFill || !symbolGridAfterRemoval) return;
-
-    const mainGrid = document.getElementById('mainGrid');
-    const cells = mainGrid.children;
-
-    for (let row = 0; row < symbolGridAfterFill.mainGrid.length; row++) {
-        for (let col = 0; col < symbolGridAfterFill.mainGrid[row].length; col++) {
-            const index = row * CONFIG.cols + col;
-            if (index >= cells.length) continue;
-
-            const cell = cells[index];
-            const afterFill = symbolGridAfterFill.mainGrid[row][col];
-            const afterRemoval = symbolGridAfterRemoval.mainGrid[row][col];
-
-            if (afterFill && afterFill.symbol && (!afterRemoval || !afterRemoval.symbol)) {
-                cell.classList.add('filling');
-            }
-        }
-    }
-}
-
 function highlightWinningSymbols(positions) {
     if (!positions || positions.length === 0) return;
 
@@ -741,20 +764,6 @@ function highlightWinningSymbols(positions) {
         const index = pos.row * CONFIG.cols + pos.col;
         if (index < mainGrid.children.length) {
             mainGrid.children[index].classList.add('winning');
-        }
-    });
-}
-
-function animateRemovals(removedSymbols) {
-    if (!removedSymbols || removedSymbols.length === 0) return;
-
-    const mainGrid = document.getElementById('mainGrid');
-    removedSymbols.forEach(rs => {
-        const index = rs.row * CONFIG.cols + rs.col;
-        if (index < mainGrid.children.length) {
-            const cell = mainGrid.children[index];
-            cell.classList.remove('winning');
-            cell.classList.add('removing');
         }
     });
 }
@@ -810,8 +819,15 @@ function updateBalanceDisplay() {
 
 function updateBetDisplay() {
     const el = document.getElementById('currentBet');
-    if (el && BET_SIZE_LIST[CURRENT_BET_INDEX]) {
+    if (!el) return;
+
+    if (isInBonus && bonusState) {
+        // During bonus, show the fixed bet
+        el.textContent = '$' + bonusState.bonusFixBet.toFixed(2);
+        el.classList.add('bonus-bet');
+    } else {
         el.textContent = '$' + BET_SIZE_LIST[CURRENT_BET_INDEX].toFixed(2);
+        el.classList.remove('bonus-bet');
     }
 }
 
@@ -854,15 +870,21 @@ function showBonusUI(state) {
         <div class="bonus-info">
             <div><span class="bonus-value">${state.freeSpinsRemaining}</span> Spins Remaining</div>
             <div><span class="bonus-value">${state.multiplier}x</span> Multiplier</div>
+            <div><span class="bonus-value">$${state.bonusFixBet.toFixed(2)}</span> Fixed Bet</div>
         </div>
         ${retriggerHtml}
         <div class="bonus-total">Total Win: <span class="bonus-win">$${state.totalWin.toFixed(2)}</span></div>
     `;
+
+    // Update bet display to show fixed bet
+    updateBetDisplay();
 }
 
 function hideBonusUI() {
     const panel = document.getElementById('bonusPanel');
     if (panel) panel.classList.add('hidden');
+    // Reset bet display to normal
+    updateBetDisplay();
 }
 
 function updateBonusUI(state) {
@@ -874,6 +896,7 @@ function updateBonusUI(state) {
         infoEl.innerHTML = `
             <div><span class="bonus-value">${state.freeSpinsRemaining}</span> Spins Remaining</div>
             <div><span class="bonus-value">${state.multiplier}x</span> Multiplier</div>
+            <div><span class="bonus-value">$${state.bonusFixBet.toFixed(2)}</span> Fixed Bet</div>
         `;
     }
 
@@ -893,6 +916,9 @@ function updateBonusUI(state) {
     if (totalEl) {
         totalEl.innerHTML = `Total Win: <span class="bonus-win">$${state.totalWin.toFixed(2)}</span>`;
     }
+
+    // Update bet display to show fixed bet
+    updateBetDisplay();
 }
 
 // ==========================================
@@ -939,6 +965,8 @@ function spin() {
     const spinPayload = { bet };
     if (debugOptions.forceScatterCount != null) spinPayload.forceScatterCount = debugOptions.forceScatterCount;
     if (debugOptions.forceGoldenCard) spinPayload.forceGoldenCard = true;
+    if (debugOptions.forceGoldenChance != null) spinPayload.forceGoldenChance = debugOptions.forceGoldenChance;
+    if (debugOptions.forceJokerType != null) spinPayload.forceJokerType = debugOptions.forceJokerType;
 
     console.log(`[spin] spinPayload = ${JSON.stringify(spinPayload)}`);
     wsClient.setBet(spinPayload);
@@ -984,6 +1012,7 @@ function buyBonus() {
 
 function changeBet(direction) {
     if (isSpinning) return;
+    if (isInBonus) return; // Cannot change bet during bonus
 
     CURRENT_BET_INDEX += direction;
     if (CURRENT_BET_INDEX < 0) CURRENT_BET_INDEX = 0;

@@ -131,10 +131,23 @@
                                     <input type="checkbox" id="debugGoldenCard" onchange="toggleDebugOption('forceGoldenCard', this.checked)">
                                     <span>Force Golden Card</span>
                                 </label>
+                                <label class="debug-option">
+                                    <input type="checkbox" id="debugGoldenChance" onchange="toggleDebugOption('forceGoldenChance', this.checked ? 0.3 : null)">
+                                    <span>Golden Chance 30%</span>
+                                </label>
+                                <label class="debug-option">
+                                    <input type="checkbox" id="debugForceBigJoker" onchange="toggleDebugOption('forceJokerType', this.checked ? 'big' : null)">
+                                    <span>Force Big Joker</span>
+                                </label>
+                                <label class="debug-option">
+                                    <input type="checkbox" id="debugForceLittleJoker" onchange="toggleDebugOption('forceJokerType', this.checked ? 'little' : null)">
+                                    <span>Force Little Joker</span>
+                                </label>
                                 <div class="debug-option scatter-control">
                                     <span>Force Scatter Count:</span>
                                     <select id="debugScatterCount" onchange="toggleDebugOption('forceScatterCount', this.value)">
                                         <option value="">Random</option>
+                                        <option value="0">0 (No Scatter)</option>
                                         <option value="1">1</option>
                                         <option value="2">2</option>
                                         <option value="3">3 (Bonus)</option>
