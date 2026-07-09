@@ -93,7 +93,7 @@ Sent when the player enters the game room.
     },
     "buyBonus": {
       "enabled": true,
-      "priceMultiplier": 75
+      "priceMultiplier": 40.5
     }
   }]
 }
@@ -112,7 +112,7 @@ Sent when the player enters the game room.
 | `winTable` | object | Payout multipliers for 3, 4, 5 consecutive columns |
 | `buyBonus` | object | Buy bonus configuration |
 | `buyBonus.enabled` | boolean | Whether buy bonus is enabled |
-| `buyBonus.priceMultiplier` | number | Cost multiplier for buy bonus (e.g., 75x bet) |
+| `buyBonus.priceMultiplier` | number | Cost multiplier for buy bonus (e.g., 40.5x bet) |
 
 ---
 
@@ -152,9 +152,9 @@ Sent to synchronize room state, typically on reconnection or page refresh.
       },
       "spinType": "bonus",
       "bonusGameState": {
-        "freeSpinsRemaining": 8,
-        "totalFreeSpins": 8,
-        "multiplier": 2,
+        "freeSpinsRemaining": 10,
+        "totalFreeSpins": 10,
+        "multiplier": 1,
         "totalWin": 0,
         "steps": [],
         "bonusFixBet": 1.00,
@@ -335,7 +335,7 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
         ],
         "symbolGrid": {
           "mainGrid": [
-            [{ "id": "_1", "symbol": "3", "isGolden": true }, ...],
+            [{ "id": "_1", "symbol": "201", "isGolden": true }, ...],
             ...
           ]
         },
@@ -347,18 +347,18 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
             "symbolGridAfterFill": { ... },
             "winningColumns": [
               {
-                "symbol": "3",
+                "symbol": "201",
                 "positions": [{ "row": 0, "col": 0 }, ...],
-                "payout": 50,
+                "payout": 0.5,
                 "winRoad": 4,
                 "consecutiveCols": 5,
-                "totalWin": 200
+                "totalWin": 2.0
               }
             ],
             "removedSymbols": [
               {
                 "symbolId": "_1",
-                "symbol": "3",
+                "symbol": "201",
                 "row": 0,
                 "col": 0,
                 "goldenToJoker": true,
@@ -366,14 +366,14 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
                 "changedTo": "1"
               }
             ],
-            "totalWin": 200.00,
+            "totalWin": 2.00,
             "waysToWin": 4,
             "comboMultiplier": 1,
             "goldenToJokerTransforms": [
               { "row": 0, "col": 0, "jokerType": "big" }
             ],
             "bigJokerReplacements": [
-              { "row": 1, "col": 2, "oldSymbol": "9" }
+              { "row": 1, "col": 2, "oldSymbol": "103" }
             ]
           }
         ],
@@ -381,9 +381,9 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
         "scatterCount": 3,
         "awardBase": 1.00,
         "bonusGameState": {
-          "freeSpinsRemaining": 8,
-          "totalFreeSpins": 8,
-          "multiplier": 2,
+          "freeSpinsRemaining": 10,
+          "totalFreeSpins": 10,
+          "multiplier": 1,
           "totalWin": 0,
           "steps": [],
           "bonusFixBet": 1.00,
@@ -454,7 +454,7 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
 | Field | Type | Description |
 |-------|------|-------------|
 | `symbolId` | string | Unique symbol ID |
-| `symbol` | string | Symbol type (e.g., "3" for ACE) |
+| `symbol` | string | Symbol type (e.g., "201" for ACE) |
 | `row` | number | Row position (0-3) |
 | `col` | number | Column position (0-4) |
 | `goldenToJoker` | boolean | Whether golden transformed to joker |
@@ -529,9 +529,9 @@ Retrieves game history/record list.
           "scatterCount": 3,
           "gameState": "bonus",
           "bonusGameState": {
-            "freeSpinsRemaining": 8,
-            "totalFreeSpins": 8,
-            "multiplier": 2,
+            "freeSpinsRemaining": 10,
+            "totalFreeSpins": 10,
+            "multiplier": 1,
             "totalWin": 0,
             "bonusFixBet": 1.00,
             "processedFreeSpins": 0,
@@ -570,14 +570,14 @@ Retrieves game history/record list.
 ### Bonus Free Spins
 
 - Triggered by 3+ scatter symbols
-- 8 free spins awarded initially
+- 10 free spins awarded initially
 - Bet is fixed to the triggering spin's bet amount
-- Retrigger: 3 scatters = +5 spins, 4 scatters = +8 spins, 5 scatters = +12 spins
+- Retrigger: 3 scatters = +5 spins
 - Win multiplier applied to all bonus wins
 
 ### Buy Bonus
 
-- Cost: 75x current bet (configurable)
+- Cost: 40.5x current bet (configurable)
 - Guaranteed 3+ scatters on next spin
 - Cannot buy bonus while already in bonus mode
 
@@ -685,16 +685,16 @@ All game parameters are configurable via `weights.ts`:
 - `applyInBonus`: true
 
 ### Bonus
-- `freeSpins`: 8
-- `multiplier`: 2
+- `freeSpins`: 10
+- `multiplier`: 1
 - `minScatters`: 3
 
 ### Retrigger
-- `awards`: {3: 5, 4: 8, 5: 12}
+- `awards`: {3: 5}
 
 ### Buy Bonus
 - `enabled`: true
-- `priceMultiplier`: 75
+- `priceMultiplier`: 40.5
 - `scatterCount`: 3
 
 ---
@@ -712,7 +712,7 @@ All game parameters are configurable via `weights.ts`:
 ### Buy Bonus Flow
 
 1. Client sends `setBet` with `{bet: 1.00, buyBonus: true}`
-2. Server deducts 75x bet (75.00) and guarantees bonus trigger
+2. Server deducts 40.5x bet (40.50) and guarantees bonus trigger
 3. Subsequent spins use `bonusFixBet` (1.00) with `awardBase: 0`
 
 ### Retrigger Flow
