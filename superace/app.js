@@ -129,7 +129,11 @@ function handleJoinRoom(data) {
     if (betInfo.symbols) {
         betInfo.symbols.forEach(sym => {
             SYMBOLS[sym.id] = sym;
+            // Populate server symbol maps from joinRoom response
+            SERVER_SYMBOLS[sym.id] = sym.emoji;
+            SERVER_SYMBOL_NAMES[sym.id] = sym.name;
         });
+        console.log('[handleJoinRoom] Symbols loaded from server:', Object.keys(SERVER_SYMBOLS));
     }
 
     if (betInfo.winTable) {
@@ -462,16 +466,20 @@ function renderSymbolGrid(symbolGrid, mainGridEl) {
 function getSymbolEmoji(symbolInstance) {
     if (!symbolInstance) return '';
     if (typeof symbolInstance === 'string') {
-        return symbolInstance === '' ? '' : (CONFIG.symbols[symbolInstance] || '❓');
+        return symbolInstance === '' ? '' : (getSymbolEmojiById(symbolInstance) || '❓');
     }
     const symbolId = String(symbolInstance.symbol || '');
     if (symbolId === '') return '';
-    const baseEmoji = CONFIG.symbols[symbolId] || '❓';
+    const baseEmoji = getSymbolEmojiById(symbolId) || '❓';
     // WILD with jokerType shows the joker type emoji
     if (symbolId === '1' && symbolInstance.jokerType) {
-        return CONFIG.jokerTypeEmojis[symbolInstance.jokerType] || '🃏';
+        return getJokerTypeEmoji(symbolInstance.jokerType);
     }
     return baseEmoji;
+}
+
+function getSymbolEmojiById(id) {
+    return SERVER_SYMBOLS[id] || FALLBACK_SYMBOLS[id] || '❓';
 }
 
 // ==========================================
@@ -552,8 +560,8 @@ async function renderCascade(steps, finalGrid) {
         if (step.removedSymbols && step.removedSymbols.length > 0) {
             changeDetails = '<div class="step-changes">';
             step.removedSymbols.forEach(rs => {
-                const oldEmoji = CONFIG.symbols[rs.symbol] || '❓';
-                const newEmoji = rs.changedTo ? (CONFIG.symbols[rs.changedTo] || '❓') : '✨';
+                const oldEmoji = getSymbolEmojiById(rs.symbol) || '❓';
+                const newEmoji = rs.changedTo ? (getSymbolEmojiById(rs.changedTo) || '❓') : '✨';
                 changeDetails += `<div class="change-line">${oldEmoji} → ${newEmoji} @(${rs.row},${rs.col})</div>`;
             });
             changeDetails += '</div>';
@@ -563,7 +571,7 @@ async function renderCascade(steps, finalGrid) {
         if (step.winningColumns && step.winningColumns.length > 0) {
             winDetails = '<div class="step-wins">';
             step.winningColumns.forEach(win => {
-                const symbolEmoji = CONFIG.symbols[win.symbol] || '❓';
+                const symbolEmoji = getSymbolEmojiById(win.symbol) || '❓';
                 const waysInfo = win.winRoad ? `<span class="ways">${win.winRoad} ways</span>` : '<span class="ways">0 ways</span>';
                 winDetails += `<div class="win-line">${symbolEmoji} ${win.consecutiveCols} cols ${waysInfo} = $${(win.payout * win.winRoad).toFixed(2)}</div>`;
             });
@@ -608,7 +616,7 @@ function prettyPrintStep(step, stepNum) {
             for (let col = 0; col < step.symbolGridBefore.mainGrid[row].length; col++) {
                 const cell = step.symbolGridBefore.mainGrid[row][col];
                 if (cell && cell.isGolden) {
-                    goldenCards.push(`(${row},${col}): ${CONFIG.symbols[cell.symbol] || cell.symbol} ✨`);
+                    goldenCards.push(`(${row},${col}): ${getSymbolEmojiById(cell.symbol) || cell.symbol} ✨`);
                 }
             }
         }
@@ -621,7 +629,7 @@ function prettyPrintStep(step, stepNum) {
     if (step.winningColumns && step.winningColumns.length > 0) {
         console.log('%c[WINS]', 'color: #ffd700; font-weight: bold;');
         step.winningColumns.forEach((win, idx) => {
-            const emoji = CONFIG.symbols[win.symbol] || win.symbol;
+            const emoji = getSymbolEmojiById(win.symbol) || win.symbol;
             console.log(`  ${String(idx + 1).padStart(2, ' ')}. ${emoji} sym=${String(win.symbol).padStart(3, ' ')} | ${String(win.consecutiveCols).padStart(2, ' ')} cols | ${String(win.winRoad).padStart(4, ' ')} ways | payout=${String(win.payout).padStart(4, ' ')} | total=${String(win.totalWin).padStart(6, ' ')}`);
         });
     }
@@ -630,7 +638,7 @@ function prettyPrintStep(step, stepNum) {
     if (step.removedSymbols && step.removedSymbols.length > 0) {
         console.log('%c[REMOVED SYMBOLS]', 'color: #ff6b6b; font-weight: bold;');
         step.removedSymbols.forEach(rs => {
-            const oldEmoji = CONFIG.symbols[rs.symbol] || rs.symbol;
+            const oldEmoji = getSymbolEmojiById(rs.symbol) || rs.symbol;
             let goldenIndicator = '';
             if (rs.goldenToJoker) {
                 goldenIndicator = rs.jokerType === 'big' ? ' → 🤡 BigJoker' : ' → 🎭 LittleJoker';
@@ -659,7 +667,7 @@ function prettyPrintStep(step, stepNum) {
     if (step.bigJokerReplacements && step.bigJokerReplacements.length > 0) {
         console.log('%c[BIG JOKER EXTRAS]', 'color: #ff6b6b; font-weight: bold;');
         step.bigJokerReplacements.forEach(r => {
-            const oldEmoji = CONFIG.symbols[r.oldSymbol] || r.oldSymbol;
+            const oldEmoji = getSymbolEmojiById(r.oldSymbol) || r.oldSymbol;
             console.log(`  (${String(r.row).padStart(2, ' ')},${String(r.col).padStart(2, ' ')}): ${oldEmoji} → 🤡 BigJoker`);
         });
     }
@@ -705,10 +713,10 @@ function printGrid(symbolGrid) {
             const cell = grid[row][col];
             let display = '';
             if (cell && cell.symbol) {
-                let emoji = CONFIG.symbols[cell.symbol] || cell.symbol;
+                let emoji = getSymbolEmojiById(cell.symbol) || cell.symbol;
                 // WILD with jokerType shows joker emoji
                 if (cell.symbol === '1' && cell.jokerType) {
-                    emoji = CONFIG.jokerTypeEmojis[cell.jokerType] || '🃏';
+                    emoji = getJokerTypeEmoji(cell.jokerType);
                 }
                 // Golden card indicator
                 const goldenTag = cell.isGolden ? '✨' : '';
@@ -729,7 +737,7 @@ function printGrid(symbolGrid) {
         for (let col = 0; col < grid[row].length; col++) {
             const cell = grid[row][col];
             if (cell && cell.isGolden) {
-                goldenCards.push(`(${row},${col}): ${CONFIG.symbols[cell.symbol] || cell.symbol} ✨`);
+                goldenCards.push(`(${row},${col}): ${getSymbolEmojiById(cell.symbol) || cell.symbol} ✨`);
             }
         }
     }
@@ -750,7 +758,7 @@ function animateSymbolChanges(removedSymbols) {
             cell.classList.add('changing');
             // Update emoji to new symbol if available
             if (rs.changedTo) {
-                cell.textContent = CONFIG.symbols[rs.changedTo] || rs.changedTo;
+                cell.textContent = getSymbolEmojiById(rs.changedTo) || rs.changedTo;
             }
         }
     });
@@ -789,14 +797,20 @@ function renderPaytable() {
 
     container.innerHTML = '';
 
-    Object.entries(CONFIG.symbolNames).forEach(([id, name]) => {
+    // Use server-provided symbol names, fallback to local
+    const symbolIds = Object.keys(SERVER_SYMBOL_NAMES).length > 0
+        ? Object.keys(SERVER_SYMBOL_NAMES)
+        : Object.keys(FALLBACK_SYMBOL_NAMES);
+
+    symbolIds.forEach(id => {
+        const name = SERVER_SYMBOL_NAMES[id] || FALLBACK_SYMBOL_NAMES[id];
         const payouts = WIN_TABLE[id];
         if (!payouts) return;
 
         const item = document.createElement('div');
         item.className = 'paytable-item';
 
-        const emoji = CONFIG.symbols[id] || '❓';
+        const emoji = SERVER_SYMBOLS[id] || FALLBACK_SYMBOLS[id] || '❓';
         const payoutText = payouts
             .map((value, index) => `${index + 3}x: ${value}x`)
             .join(', ');

@@ -70,19 +70,26 @@ Sent when the player enters the game room.
     "symbols": [
       { "id": "1", "name": "WILD", "emoji": "🃏" },
       { "id": "2", "name": "SCATTER", "emoji": "⭐" },
-      { "id": "3", "name": "ACE", "emoji": "🅰️" },
-      { "id": "4", "name": "KING", "emoji": "👑" },
-      { "id": "5", "name": "QUEEN", "emoji": "👸" },
-      { "id": "6", "name": "JACK", "emoji": "🤴" },
-      { "id": "7", "name": "SPADE", "emoji": "♠️" },
-      { "id": "8", "name": "HEART", "emoji": "♥️" },
-      { "id": "9", "name": "DIAMOND", "emoji": "♦️" },
-      { "id": "10", "name": "CLUB", "emoji": "♣️" }
+      { "id": "201", "name": "ACE", "emoji": "🅰️" },
+      { "id": "202", "name": "KING", "emoji": "🇰" },
+      { "id": "203", "name": "QUEEN", "emoji": "🇶" },
+      { "id": "204", "name": "JACK", "emoji": "🇯" },
+      { "id": "101", "name": "SPADE", "emoji": "♠️" },
+      { "id": "102", "name": "HEART", "emoji": "♥️" },
+      { "id": "103", "name": "DIAMOND", "emoji": "♦️" },
+      { "id": "104", "name": "CLUB", "emoji": "♣️" }
     ],
     "winTable": {
-      "3": [0, 0, 0, 50, 30, 20, 10, 8, 5, 3],
-      "4": [0, 0, 0, 200, 100, 50, 30, 20, 15, 10],
-      "5": [0, 0, 0, 500, 300, 200, 100, 50, 30, 20]
+      "201": [0.5, 1.5, 2.5],
+      "202": [0.4, 1.2, 2.0],
+      "203": [0.3, 0.9, 1.5],
+      "204": [0.2, 0.6, 1.0],
+      "101": [0.1, 0.3, 0.5],
+      "102": [0.1, 0.3, 0.5],
+      "103": [0.05, 0.15, 0.25],
+      "104": [0.05, 0.15, 0.25],
+      "1": [0, 0, 0],
+      "2": [0, 0, 0]
     },
     "buyBonus": {
       "enabled": true,
@@ -139,7 +146,7 @@ Sent to synchronize room state, typically on reconnection or page refresh.
     "lastResumeInfo": {
       "symbolGrid": {
         "mainGrid": [
-          [{ "id": "_1", "symbol": "3", "isGolden": true }, ...],
+          [{ "id": "_1", "symbol": "201", "isGolden": true }, ...],
           ...
         ]
       },
@@ -321,10 +328,10 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
       "winAmount": 25.50,
       "info": {
         "grid": [
-          ["3", "7", "3", "3", "8"],
-          ["4", "3", "9", "3", "7"],
-          ["5", "8", "3", "4", "3"],
-          ["6", "3", "7", "5", "3"]
+          ["201", "101", "201", "201", "102"],
+          ["202", "201", "103", "201", "101"],
+          ["203", "102", "201", "202", "201"],
+          ["204", "201", "101", "203", "201"]
         ],
         "symbolGrid": {
           "mainGrid": [
@@ -627,14 +634,14 @@ Active: GoldenCard, Scatter:3, Joker:big
 |----|--------|-------|
 | 1 | WILD | 🃏 |
 | 2 | SCATTER | ⭐ |
-| 3 | ACE | 🅰️ |
-| 4 | KING | 👑 |
-| 5 | QUEEN | 👸 |
-| 6 | JACK | 🤴 |
-| 7 | SPADE | ♠️ |
-| 8 | HEART | ♥️ |
-| 9 | DIAMOND | ♦️ |
-| 10 | CLUB | ♣️ |
+| 201 | ACE | 🅰️ |
+| 202 | KING | 🇰 |
+| 203 | QUEEN | 🇶 |
+| 204 | JACK | 🇯 |
+| 101 | SPADE | ♠️ |
+| 102 | HEART | ♥️ |
+| 103 | DIAMOND | ♦️ |
+| 104 | CLUB | ♣️ |
 
 ---
 
@@ -644,14 +651,14 @@ Payout multipliers for consecutive columns (3+ required):
 
 | Symbol | 3 Cols | 4 Cols | 5 Cols |
 |--------|--------|--------|--------|
-| ACE | 50x | 200x | 500x |
-| KING | 30x | 100x | 300x |
-| QUEEN | 20x | 50x | 200x |
-| JACK | 10x | 30x | 100x |
-| SPADE | 8x | 20x | 50x |
-| HEART | 5x | 15x | 30x |
-| DIAMOND | 3x | 10x | 20x |
-| CLUB | 3x | 10x | 20x |
+| ACE (201) | 0.5x | 1.5x | 2.5x |
+| KING (202) | 0.4x | 1.2x | 2.0x |
+| QUEEN (203) | 0.3x | 0.9x | 1.5x |
+| JACK (204) | 0.2x | 0.6x | 1.0x |
+| SPADE (101) | 0.1x | 0.3x | 0.5x |
+| HEART (102) | 0.1x | 0.3x | 0.5x |
+| DIAMOND (103) | 0.05x | 0.15x | 0.25x |
+| CLUB (104) | 0.05x | 0.15x | 0.25x |
 
 ---
 

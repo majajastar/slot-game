@@ -28,43 +28,6 @@ const CONFIG = {
 
     gameTypeId: 'superace',
 
-    // Symbol emojis for display
-    // Every WILD is either Big Joker or Little Joker - no plain WILD
-    symbols: {
-        '1': '🃏',      // WILD (Big Joker or Little Joker - shown with jokerType indicator)
-        '2': '⭐',      // SCATTER
-        // High payout
-        '201': '🅰️',    // ACE
-        '202': '🇰',    // KING
-        '203': '🇶',    // QUEEN
-        '204': '🇯',    // JACK
-        // Low payout
-        '101': '♠️',    // SPADE
-        '102': '♥️',    // HEART
-        '103': '♦️',    // DIAMOND
-        '104': '♣️',    // CLUB
-    },
-
-    // Joker type emojis (shown alongside WILD)
-    jokerTypeEmojis: {
-        'big': '🤡',
-        'little': '🎭'
-    },
-
-    // Symbol names for paytable
-    symbolNames: {
-        '1': 'Joker (Wild)',
-        '2': 'Scatter',
-        '201': 'Ace',
-        '202': 'King',
-        '203': 'Queen',
-        '204': 'Jack',
-        '101': 'Spade',
-        '102': 'Heart',
-        '103': 'Diamond',
-        '104': 'Club'
-    },
-
     // Grid dimensions
     rows: 4,
     cols: 5,
@@ -72,6 +35,58 @@ const CONFIG = {
     // Combo multiplier levels
     comboLevels: [1, 2, 3, 5]
 };
+
+// Symbol data populated from server (joinRoom response)
+let SERVER_SYMBOLS = {};
+let SERVER_SYMBOL_NAMES = {};
+
+// Joker type emojis (shown alongside WILD)
+const JOKER_TYPE_EMOJIS = {
+    'big': '🤡',
+    'little': '🎭'
+};
+
+// Fallback symbols (used before joinRoom response arrives)
+const FALLBACK_SYMBOLS = {
+    '1': '🃏',
+    '2': '⭐',
+    '201': '🅰️',
+    '202': '🇰',
+    '203': '🇶',
+    '204': '🇯',
+    '101': '♠️',
+    '102': '♥️',
+    '103': '♦️',
+    '104': '♣️',
+};
+
+const FALLBACK_SYMBOL_NAMES = {
+    '1': 'Joker (Wild)',
+    '2': 'Scatter',
+    '201': 'Ace',
+    '202': 'King',
+    '203': 'Queen',
+    '204': 'Jack',
+    '101': 'Spade',
+    '102': 'Heart',
+    '103': 'Diamond',
+    '104': 'Club'
+};
+
+// Helper: get symbol emoji (server-provided or fallback)
+function getSymbolEmoji(id) {
+    return SERVER_SYMBOLS[id] || FALLBACK_SYMBOLS[id] || '❓';
+}
+
+// Helper: get symbol name (server-provided or fallback)
+function getSymbolName(id) {
+    return SERVER_SYMBOL_NAMES[id] || FALLBACK_SYMBOL_NAMES[id] || 'Unknown';
+}
+
+// Helper: get joker type emoji
+function getJokerTypeEmoji(type) {
+    return JOKER_TYPE_EMOJIS[type] || '🃏';
+}
 
 // Buy bonus config (populated from server)
 let BUY_BONUS = { enabled: false, priceMultiplier: 50 };
