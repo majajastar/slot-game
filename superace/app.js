@@ -663,12 +663,15 @@ function prettyPrintStep(step, stepNum) {
         });
     }
 
-    // Print big joker extra replacements
+    // Print big joker extra replacements (grouped by parent Big Joker)
     if (step.bigJokerReplacements && step.bigJokerReplacements.length > 0) {
         console.log('%c[BIG JOKER EXTRAS]', 'color: #ff6b6b; font-weight: bold;');
-        step.bigJokerReplacements.forEach(r => {
-            const oldEmoji = getSymbolEmojiById(r.oldSymbol) || r.oldSymbol;
-            console.log(`  (${String(r.row).padStart(2, ' ')},${String(r.col).padStart(2, ' ')}): ${oldEmoji} → 🤡 BigJoker`);
+        step.bigJokerReplacements.forEach(group => {
+            console.log(`  Parent Big Joker @(${String(group.parentRow).padStart(2, ' ')},${String(group.parentCol).padStart(2, ' ')}) → ${group.extras.length} extra(s):`);
+            group.extras.forEach(r => {
+                const oldEmoji = getSymbolEmojiById(r.oldSymbol) || r.oldSymbol;
+                console.log(`    (${String(r.row).padStart(2, ' ')},${String(r.col).padStart(2, ' ')}): ${oldEmoji} → 🤡 BigJoker`);
+            });
         });
     }
 

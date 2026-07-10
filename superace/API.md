@@ -373,7 +373,13 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
               { "row": 0, "col": 0, "jokerType": "big" }
             ],
             "bigJokerReplacements": [
-              { "row": 1, "col": 2, "oldSymbol": "103" }
+              {
+                "parentRow": 0,
+                "parentCol": 0,
+                "extras": [
+                  { "row": 1, "col": 2, "oldSymbol": "103" }
+                ]
+              }
             ]
           }
         ],
@@ -469,7 +475,15 @@ When `NODE_ENV !== 'prod'`, the following debug parameters are accepted:
 | `col` | number | Column position |
 | `jokerType` | string | `"big"` or `"little"` |
 
-#### Big Joker Replacement
+#### Big Joker Replacement Group
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `parentRow` | number | Row of the parent Big Joker that triggered these extras |
+| `parentCol` | number | Column of the parent Big Joker that triggered these extras |
+| `extras` | object[] | List of extra symbols replaced by this Big Joker |
+
+#### Big Joker Extra
 
 | Field | Type | Description |
 |-------|------|-------------|
